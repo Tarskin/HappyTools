@@ -14,13 +14,9 @@ import tkFileDialog
 import tkMessageBox
 
 # Custom libraries
+sys.path.append('..')
 import batchFunctions
-
-# Variables
-points = 100
-start = 5
-end = 30
-backgroundOrder = 1
+import HappyTools
 
 # Functions
 def addFile(fig,canvas):
@@ -47,15 +43,15 @@ def baselineCorrection(fig,canvas):
 
     # Background determination
     background = []
-    chunks = [data[0][1][x:x+points] for x in xrange(0, len(data[0][1]), points)]
+    chunks = [data[0][1][x:x+HappyTools.points] for x in xrange(0, len(data[0][1]), HappyTools.points)]
     for i in chunks:
         buff1, buff2 = zip(*i)
         min_index, min_value = min(enumerate(buff2), key=operator.itemgetter(1))
-        if buff1[0] > start and buff1[-1] < end:
+        if buff1[0] > HappyTools.start and buff1[-1] < HappyTools.end:
             background.append((buff1[min_index], buff2[min_index]))
     time, intensity = zip(*background)
     newX = np.linspace(min(time), max(time),100)
-    func = np.polyfit(time, intensity, backgroundOrder)
+    func = np.polyfit(time, intensity, HappyTools.backgroundOrder)
     p = np.poly1d(func)
 
     # Transform

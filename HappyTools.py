@@ -27,6 +27,13 @@ import functions
 
 # General variables
 version = "0.0.1a"
+points = 100
+start = 5
+end = 30
+backgroundOrder = 1
+backgroundWindow = 15
+noise = "RMS"
+output = "summary.results"
 
 # Applicatiom
 class App():
@@ -34,7 +41,7 @@ class App():
     def __init__(self, master):
 
         # CANVAS
-        self.fig = matplotlib.figure.Figure(figsize=(8, 6))
+        self.fig = matplotlib.figure.Figure(figsize=(12, 6))
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
         self.toolbar = NavigationToolbar2TkAgg(self.canvas, master)
         self.canvas.get_tk_widget().pack(fill=BOTH, expand=YES)
