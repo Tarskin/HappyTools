@@ -25,21 +25,27 @@ import os
 sys.path.append('libs')
 import functions
 
+# Innate variables
+version = "0.0.1b"
+build = "170522a"
+
 # General variables
-version = "0.0.1a"
-points = 100
-start = 5
-end = 30
-backgroundOrder = 1
-backgroundWindow = 15
-noise = "RMS"
 output = "summary.results"
+settings = "HappyTools.ini"
+
+# Debug variables
+logFile = "HappyTools.log"
+logging = True
+logLevel = 1
 
 # Applicatiom
 class App():
 
     def __init__(self, master):
 
+        # SETTINGS
+        if os.path.isfile(settings):
+            functions.getSettings()
         # CANVAS
         self.fig = matplotlib.figure.Figure(figsize=(12, 6))
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
@@ -77,7 +83,13 @@ class App():
         menu.add_cascade(label="Multi File", menu=multimenu)
         multimenu.add_command(label="Batch Plot", command=lambda: functions.batchPlot(self.fig, self.canvas))
         
+        advancedmenu = Menu(menu, tearoff=0)
+        menu.add_cascade(label="Advanced Tools", menu=advancedmenu)
+        advancedmenu.add_command(label="Peak Detection", command=lambda: functions.peakDetection(self.fig, self.canvas))
+        
         menu.add_command(label="Batch Process", command=functions.batchPopup)
+        
+        menu.add_command(label="Settings", command=functions.settingsPopup)
 
         # CLEANUP
         functions.fileCleanup()

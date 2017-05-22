@@ -1,0 +1,15 @@
+18 April 2017
+ - Added background subtracted version of absolute area
+ - Added background subtracted version of relative area
+ - Added peak noise output (standard deviation of the quantitation window)
+ - Added a filter on calibration (files that contain 'blank' or 'blanc' won't be calibrated)
+
+22 April 2017
+ - Fixed background subtraction (standard absolute/relative areas were already background
+   subtracted)
+ - Added a HappyTools settings block to the results file
+ - Added a build variable (US notation of the date, additional letters (a, b, etc.) if
+   multiple builds on one day
+ - Added progress bars to HappyTools (calibration and integration) by implementing MassyTools
+   based logic. The code to update the progress bar has been turned into a reusable function
+   (functions.updateProgressBar)
