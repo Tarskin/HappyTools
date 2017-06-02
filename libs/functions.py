@@ -36,6 +36,19 @@ peakDetectionMin = 0.01
 createFigure = "True"
 
 # Advanced variables
+decimalNumbers = 6
+
+# Output variables
+root = Tk()
+root.withdraw()
+outputWindow = IntVar()
+absInt = IntVar()
+relInt = IntVar()
+bckSub = IntVar()
+bckNoise = IntVar()
+peakQual = IntVar()
+
+# Advanced variables
 noise = "RMS"                     # Accepts: RMS, MM
 backgroundNoiseMethod = "MT"      # Accepts: NOBAN, MT
 
@@ -227,10 +240,13 @@ def batchPopup():
     analyteLabel = Label(top, textvariable=analFile)
     analyteLabel.grid(row=2, column=1, sticky=W)
 
+    outputButton = Button(top, text="Output Options", command=lambda: outputPopup())
+    outputButton.grid(row=3, column=0, sticky=W)
+
     runButton = Button(top, text="Run", command=lambda: run())
-    runButton.grid(row=3, column=0, sticky=W)
+    runButton.grid(row=4, column=0, sticky=W)
     closeButton = Button(top, text="Close", command=lambda: close())
-    closeButton.grid(row=3, column=1, sticky=E)
+    closeButton.grid(row=4, column=1, sticky=E)
 
 def chromCalibration(fig,canvas):
     """ TODO
@@ -269,7 +285,7 @@ def chromCalibration(fig,canvas):
     f = np.poly1d(z)
     calibratedData = []
     for i in data[0][1]:
-        newX = f(i[0])
+        newX = format(float(f(i[0])),'0.'+str(decimalNumbers)+'f')
         calibratedData.append((newX,i[1]))
 
     # Plot & Write Data to Disk  
@@ -446,6 +462,61 @@ def openFile(fig,canvas):
         if data:
             writeData(data,os.path.split(file_path)[-1])
             plotData(data,fig,canvas,file_path)
+
+def outputPopup():
+    """ This function creates a pop up box to specify what output
+    should be shown in the final summary. The default value for all
+    variables is off (0) and by ticking a box it is set to on (1).
+
+    INPUT: None
+    OUTPUT: None
+    """
+    if outputWindow.get() == 1:
+        return
+    outputWindow.set(1)
+
+    def select_all():
+        absInt.set(1)
+        relInt.set(1)
+        bckSub.set(1)
+        bckNoise.set(1)
+        peakQual.set(1)
+
+    def select_none():
+        absInt.set(0)
+        relInt.set(0)
+        bckSub.set(0)
+        bckNoise.set(0)
+        peakQual.set(0)
+
+    def close():
+        outputWindow.set(0)
+        top.destroy()
+
+    top = Toplevel()
+    top.protocol("WM_DELETE_WINDOW", lambda: close())
+    selAll = Button(top, text="Select All", command=lambda: select_all())
+    selAll.grid(row=0, column=0, sticky=W)
+    none = Button(top, text="Select None", command=lambda: select_none())
+    none.grid(row=0, column=1, sticky=E)
+    text1 = Label(top, text="Base Outputs", font="bold")
+    text1.grid(row=1, column=0, sticky=W)
+    text2 = Label(top, text="Output Modifiers", font="bold")
+    text2.grid(row=1, column=1, sticky=W)
+    ai = Checkbutton(top, text=u"Analyte Intensity\u00B9", variable=absInt, onvalue=1, offvalue=0)
+    ai.grid(row=2, column=0, sticky=W)
+    ri = Checkbutton(top, text=u"Relative Intensity\u00B9", variable=relInt, onvalue=1, offvalue=0)
+    ri.grid(row=3, column=0, sticky=W)
+    pq = Checkbutton(top, text="Peak Quality Criteria", variable=peakQual, onvalue=1, offvalue=0)
+    pq.grid(row=4, column=0, sticky=W)
+    bn = Checkbutton(top, text="Background and Noise", variable=bckNoise, onvalue=1, offvalue=0)
+    bn.grid(row=5, column=0, sticky=W)
+    bck = Checkbutton(top, text=u"\u00B9Background subtracted Intensities", variable=bckSub, onvalue=1, offvalue=0)
+    bck.grid(row=2, column=1, sticky=W)
+    button = Button(top,text='Ok',command = lambda: close())
+    button.grid(row = 6, column = 0, columnspan = 2)
+    top.lift()
+    return
 
 def peakDetection(fig,canvas):
     """ TODO

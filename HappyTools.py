@@ -26,8 +26,8 @@ sys.path.append('libs')
 import functions
 
 # Innate variables
-version = "0.0.1b"
-build = "170522a"
+version = "0.0.1c"
+build = "170602a"
 
 # General variables
 output = "summary.results"
@@ -36,13 +36,12 @@ settings = "HappyTools.ini"
 # Debug variables
 logFile = "HappyTools.log"
 logging = True
-logLevel = 1
+logLevel = 2
 
 # Applicatiom
 class App():
 
     def __init__(self, master):
-
         # SETTINGS
         if os.path.isfile(settings):
             functions.getSettings()

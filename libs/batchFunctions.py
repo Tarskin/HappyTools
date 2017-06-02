@@ -2,7 +2,6 @@
 
 # General imports
 from datetime import datetime
-#from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
 from scipy.signal import argrelextrema
@@ -99,7 +98,7 @@ def batchChromCalibration(data, calFile):
     f = np.poly1d(z)
     calibratedData = []
     for i in data:
-        newX = float(f(i[0]))
+        newX = format(float(f(i[0])),'0.'+str(functions.decimalNumbers)+'f')
         calibratedData.append((newX,i[1]))
 
     # Return calibrated data
@@ -148,7 +147,7 @@ def batchProcess(calFile, analFile):
                         fw.write(str(datetime.now())+"\tCalibrating file: "+str(file)+"\n")
                 data = {'Data':functions.openChrom(file),'Name':file}
                 data['Data'] = batchBaselineCorrection(data['Data'])
-                if 'blank' in data['Name'] or 'blanc' in data['Name']:
+                if 'blank' in data['Name'].lower() or 'blanc' in data['Name'].lower():
                     pass
                 else:
                     data['Data'] = batchChromCalibration(data['Data'], calFile)
@@ -159,7 +158,7 @@ def batchProcess(calFile, analFile):
                     with open(HappyTools.logFile,'a') as fw:
                         fw.write(str(datetime.now())+"\tIgnoring file: "+str(file)+" for calibration\n")
                 pass
-    functions.updateProgressBar(progressbar, calPerc, len(filesGrabbed), len(filesGrabbed))
+    functions.updateProgressBar(progressbar, calPerc, 1, 1)
     # Integration
     if analFile.get() != "":
         try:
@@ -179,7 +178,11 @@ def batchProcess(calFile, analFile):
                 with open(HappyTools.logFile,'a') as fw:
                     fw.write(str(datetime.now())+"\tIgnoring a file: <UNKNOWN> for quantitation\n")
             pass    
-        functions.updateProgressBar(progressbar2, intPerc, len(filesGrabbed), len(filesGrabbed))
+        functions.updateProgressBar(progressbar2, intPerc, 1, 1)
+        
+        if HappyTools.logging == True and HappyTools.logLevel >= 1:
+            with open(HappyTools.logFile,'a') as fw:
+               fw.write(str(datetime.now())+"\tCreating summary file\n")
         combineResults()
     end = datetime.now()
     tkMessageBox.showinfo("Status Message", "Batch Process finished on "+str(end)+" and took a total time of "+str(end-start))
@@ -235,9 +238,6 @@ def batchQuantifyChrom(data, analFile):
         # 5. Calculate area under gaussian curve
         # 6. Calculate area under raw data points
         # 7. Calculate percentage of total area explained by gaussian area
-        if HappyTools.logging == True and HappyTools.logLevel > 1:
-            with open(HappyTools.logFile,'a') as fw:
-                fw.write(str(datetime.now())+"\tIdentifying local minima and maxima, using first derivative\n")
         x_data = np.array(time[low:high])
         y_data = np.array(intensity[low:high])
         newX = np.linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
@@ -268,7 +268,12 @@ def batchQuantifyChrom(data, analFile):
                         yData = [x - NOBAN['Background'] for x in newY[breaks[index]:-1]]
                     pass
         except IndexError:
-            pass
+            if HappyTools.logging == True and HappyTools.logLevel > 1:
+                with open(HappyTools.logFile,'a') as fw:
+                    fw.write(str(datetime.now())+"\tCould not determine a local maxima or minima for analyte "+str(i[0])+" at "+str(i[1])+" minutes\n")
+            xData = newX
+            yData = [x - NOBAN['Background'] for x in newY]
+            #pass
         # Gaussian fit on main points
         newGaussX = np.linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
         p0 = [np.max(yData), xData[np.argmax(yData)],0.1]
@@ -376,104 +381,113 @@ def combineResults():
         fw.write("\n")
 
         # Area (non background subtracted)
-        fw.write("Peak Area")
-        fw.write(header)
-        for i in Results:
-            fw.write(i['File'])
-            for j in i['Data']:
-                fw.write("\t"+str(j['Area']))
+        if functions.absInt.get() == 1 and functions.bckSub.get() == 0:
+            fw.write("Peak Area")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                for j in i['Data']:
+                    fw.write("\t"+str(j['Area']))
+                fw.write("\n")
             fw.write("\n")
-        fw.write("\n")
 
         # Area (Background subtracted)
-        fw.write("Peak Area (Background Subtracted)")
-        fw.write(header)
-        for i in Results:
-            fw.write(i['File'])
-            for j in i['Data']:
-                fw.write("\t"+str(max(j['Area']-j['BackgroundArea'],0)))
+        if functions.absInt.get() == 1 and functions.bckSub.get() == 1:
+            fw.write("Peak Area (Background Subtracted)")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                for j in i['Data']:
+                    fw.write("\t"+str(max(j['Area']-j['BackgroundArea'],0)))
+                fw.write("\n")
             fw.write("\n")
-        fw.write("\n")
 
         # Relative Area
-        fw.write("Relative Peak Area (TAN)")
-        fw.write(header)
-        for i in Results:
-            fw.write(i['File'])
-            total = 0.
-            for j in i['Data']:
-                total += j['Area']
-            for j in i['Data']:
-                try:
-                    fw.write("\t"+str(j['Area']/total))
-                except ZeroDivisionError:
-                    fw.write("\t"+str(0.0))
+        if functions.relInt.get() == 1 and functions.bckSub.get() == 0:
+            fw.write("Relative Peak Area (TAN)")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                total = 0.
+                for j in i['Data']:
+                    total += j['Area']
+                for j in i['Data']:
+                    try:
+                        fw.write("\t"+str(j['Area']/total))
+                    except ZeroDivisionError:
+                        fw.write("\t"+str(0.0))
+                fw.write("\n")
             fw.write("\n")
-        fw.write("\n")
 
         # Relative Area (Background subtracted)
-        fw.write("Relative Peak Area (TAN, Background Subtracted)")
-        fw.write(header)
-        for i in Results:
-            fw.write(i['File'])
-            total = 0.
-            for j in i['Data']:
-                total += max(j['Area']-j['BackgroundArea'],0)
-            for j in i['Data']:
-                try:
-                    fw.write("\t"+str(max(j['Area']-j['BackgroundArea'],0)/total))
-                except ZeroDivisionError:
-                    fw.write("\t"+str(0.0))
+        if functions.relInt.get() == 1 and functions.bckSub.get() == 1:
+            fw.write("Relative Peak Area (TAN, Background Subtracted)")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                total = 0.
+                for j in i['Data']:
+                    total += max(j['Area']-j['BackgroundArea'],0)
+                for j in i['Data']:
+                    try:
+                        fw.write("\t"+str(max(j['Area']-j['BackgroundArea'],0)/total))
+                    except ZeroDivisionError:
+                        fw.write("\t"+str(0.0))
+                fw.write("\n")
             fw.write("\n")
-        fw.write("\n")
 
         # Peak Noise (standard deviation of the integration window)
-        fw.write("Peak Noise (standard deviation of integration window)")
-        fw.write(header)
-        for i in Results:
-            fw.write(i['File'])
-            total = 0.
-            for j in i['Data']:
-                fw.write("\t"+str(j['PeakNoise']))
+        if functions.bckNoise.get() == 1:
+            fw.write("Peak Noise (standard deviation of integration window)")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                total = 0.
+                for j in i['Data']:
+                    fw.write("\t"+str(j['PeakNoise']))
+                fw.write("\n")
             fw.write("\n")
-        fw.write("\n")
         
         # Background
-        fw.write("Background")
-        fw.write(header)
-        for i in Results:
-            fw.write(i['File'])
-            for j in i['Data']:
-                fw.write("\t"+str(j['Background']))
+        if functions.bckNoise.get() == 1:
+            fw.write("Background")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                for j in i['Data']:
+                    fw.write("\t"+str(j['Background']))
+                fw.write("\n")
             fw.write("\n")
-        fw.write("\n")
 
         # Noise
-        fw.write("Noise")
-        fw.write(header)
-        for i in Results:
-            fw.write(i['File'])
-            for j in i['Data']:
-                fw.write("\t"+str(j['Noise']))
+        if functions.bckNoise.get() == 1:
+            fw.write("Noise")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                for j in i['Data']:
+                    fw.write("\t"+str(j['Noise']))
+                fw.write("\n")
             fw.write("\n")
-        fw.write("\n")
 
         # S/N
-        fw.write("Signal-to-Noise")
-        fw.write(header)
-        for i in Results:
-            fw.write(i['File'])
-            for j in i['Data']:
-                fw.write("\t"+str(j['S/N']))
+        if functions.peakQual.get() == 1:
+            fw.write("Signal-to-Noise")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                for j in i['Data']:
+                    fw.write("\t"+str(j['S/N']))
+                fw.write("\n")
             fw.write("\n")
-        fw.write("\n")
 
         # Residuals
-        fw.write("Residuals")
-        fw.write(header)
-        for i in Results:
-            fw.write(i['File'])
-            for j in i['Data']:
-                fw.write("\t"+str(j['Residual']))
+        if functions.peakQual.get() == 1:
+            fw.write("Residuals")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                for j in i['Data']:
+                    fw.write("\t"+str(j['Residual']))
+                fw.write("\n")
             fw.write("\n")
-        fw.write("\n")

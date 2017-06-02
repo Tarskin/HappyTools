@@ -13,3 +13,14 @@
  - Added progress bars to HappyTools (calibration and integration) by implementing MassyTools
    based logic. The code to update the progress bar has been turned into a reusable function
    (functions.updateProgressBar)
+
+24 April 2017
+ - Added option to select the desired outputs in the results file
+ - Added a format() to the retention time post calibration, ensuring that the numbers are
+   written as a decimal number as opposed to scientific notation
+
+2 June 2017
+ - Fixed a bug that would cause the program to crash when a local minima or maxima could
+   not be determined
+ - Added an option to specify the desired number of decimal numbers (this also fixes a bug
+   that caused the program to write scientific notation for some numbers)
