@@ -15,6 +15,7 @@ import numpy as np
 import operator
 import os
 import re
+import shutil
 import sys
 import tkFileDialog
 import tkMessageBox
@@ -32,7 +33,7 @@ baselineOrder = 1
 backgroundWindow = 1
 nobanStart = 0.25
 slicepoints = 5
-peakDetectionMin = 0.01
+peakDetectionMin = 0.05
 createFigure = "True"
 
 # Advanced variables
@@ -100,8 +101,7 @@ class ToolTip(object):
 # Functions #
 #############
 def addFile(fig,canvas):
-    """ TODO
-    """
+    """Ask for a file and draw it on the existing canvas."""
     data = readData()
     file_path = tkFileDialog.askopenfilename()
     if not file_path:
@@ -117,8 +117,14 @@ def addFile(fig,canvas):
     canvas.draw()
 
 def backgroundNoise(data):
-    """ Background and noise determination based on MassyTools
-        method.
+    """Return the background and noise.
+
+    This function determines the average and the standard deviation or
+    the maximum difference of all segments of data, where each segment
+    has the length specified in the slicepoints parameter.
+
+    Keyword arguments:
+    data -- list of intensities
     """
     background = sys.maxint
     for index,i in enumerate(data[:-slicepoints]):
@@ -132,7 +138,24 @@ def backgroundNoise(data):
     return {'Background': background, 'Noise': currNoise}
 
 def baselineCorrection(fig,canvas):
-    """ TODO
+    """Perform baseline correction and draw the corrected chromatogram.
+
+    This function determines the baseline of a chromatogram between
+    two timepoints, specified with the start and end parameter. The
+    chromatogram is split into segments of a length specified in the
+    points parameter. The lowest intensity of each segment is used to
+    determine a function of the order specified in the baselineOrder
+    using the numpy.polyfit function. The original chromatogram is then
+    transformed by subtracting the function from the original data. The
+    resulting chromatogram might have negative intensities between the
+    start and end timepoints, the minimum intensity within that region
+    is used to uplift the entire chromatogram. The transformed and
+    uplifted chromatogram is written to disk and plotted together with
+    the original chromatogram on the canvas.
+
+    Keyword arguments:
+    fig -- matplotlib figure object
+    canvas -- tkinter canvas object
     """
     data = readData()
 
@@ -149,12 +172,9 @@ def baselineCorrection(fig,canvas):
     func = np.polyfit(time, intensity, baselineOrder)
     p = np.poly1d(func)
 
-    # Transform
-    x = []
-    newChromIntensity = []
-    for i in data[0][1]:
-        x.append(i[0])
-        newChromIntensity.append(int(i[1]-p(i[0])))
+    # Transform 
+    x = [a for a,b in data[0][1]]
+    newChromIntensity = [b-p(a) for a,b in data[0][1]]
         
     # Uplift
     foo1, foo2 = zip(*data[0][1])
@@ -169,7 +189,15 @@ def baselineCorrection(fig,canvas):
     writeData(newData,os.path.split(data[0][0])[-1]+" (BC)")
 
 def plotMultiData(fig,canvas,data):
-    """ TODO
+    """Plot all chromatograms in data on the canvas.
+
+    This function first clears the canvas and then draws all the
+    chromatograms that are in the data list on the canvas.
+
+    Keyword arguments:
+    fig -- matplotlib figure object
+    canvas -- tkinter canvas object
+    data -- list of tuples, consisting of two numbers per tuple
     """
     fig.clear()
     axes = fig.add_subplot(111)
@@ -187,69 +215,115 @@ def plotMultiData(fig,canvas,data):
     canvas.draw()
 
 def batchPlot(fig,canvas):
-    """ TODO
+    """Read and plot all chromatograms in a directory.
+
+    This function asks the user to select a directory from which the
+    function will read all the files that are specified in the 
+    CALIBRATION_FILETYPES paramater of the batchFunctions file and plot
+    them to the canvas.
+
+    Keyword arguments:
+    fig -- matplotlib figure object
+    canvas -- tkinter canvas object
     """
     folder_path = tkFileDialog.askdirectory()
+    filesGrabbed = []
+    for files in batchFunctions.CALIBRATION_FILETYPES:
+        for file in glob.glob(str(os.path.join(folder_path,files))):
+            if openChrom(file):
+                filesGrabbed.append(file)
+
     data = []
-    for file in glob.glob(str(os.path.join(folder_path,"*.txt"))):
+    for file in filesGrabbed:
         data.append((str(file),openChrom(file)))
+
     fig.clear()
     axes = fig.add_subplot(111)
-    for i in data:
-        x_array, y_array = zip(*i[1])
-        axes.plot(x_array,y_array,label=str(os.path.split(i[0])[-1]))
-    axes.legend()
+    if data:
+        for i in data:
+            x_array, y_array = zip(*i[1])
+            axes.plot(x_array,y_array,label=str(os.path.split(i[0])[-1]))
+        axes.legend()
     canvas.draw()
 
 def batchPopup():
-    """ TODO
+    """Create a batch processing pop-up.
+
+    This function creates a new tkinter window that is used to control
+    the batch processing. Specifically, it allows the user to select a
+    calibration file, an analyte file, select the desired outputs (by
+    calling the outputPopup function) and starting the batch process.
+
+    Keyword arguments:
+    none
     """
 
     calFile = StringVar()
     analFile = StringVar()
 
     def close():
-        """ TODO
+        """Close the batch processing pop-up.
         """
         top.destroy()
 
     def calibrationFile():
-        """ TODO
+        """Ask for the calibration file.
         """
         calFile.set(tkFileDialog.askopenfilename(title="Calibration File"))
 
     def analyteFile():
-        """ TODO
+        """Ask for the analyte file.
         """
         analFile.set(tkFileDialog.askopenfilename(title="Analyte File"))
 
     def run():
-        """ TODO
+        """Start the batch process.
         """
         batchFunctions.batchProcess(calFile, analFile)
 
     top = Tk.top = Toplevel()
+    top.title("HappyTools "+str(HappyTools.version)+" Batch Process")
     top.protocol("WM_DELETE_WINDOW", lambda: close())
-    calibrationButton = Button(top, text="Calibration File", command=lambda: calibrationFile())
+    calibrationButton = Button(top, text="Calibration File", width=20, command=lambda: calibrationFile())
     calibrationButton.grid(row=1, column=0, sticky=W)
-    calibrationLabel = Label(top, textvariable=calFile)
-    calibrationLabel.grid(row=1, column=1, sticky=W)
+    calibrationLabel = Label(top, textvariable=calFile, width=20)
+    calibrationLabel.grid(row=1, column=1)
 
-    analyteButton = Button(top, text="Analyte File", command=lambda: analyteFile())
+    analyteButton = Button(top, text="Analyte File", width=20, command=lambda: analyteFile())
     analyteButton.grid(row=2, column=0, sticky=W)
-    analyteLabel = Label(top, textvariable=analFile)
-    analyteLabel.grid(row=2, column=1, sticky=W)
+    analyteLabel = Label(top, textvariable=analFile, width=20)
+    analyteLabel.grid(row=2, column=1)
 
     outputButton = Button(top, text="Output Options", command=lambda: outputPopup())
-    outputButton.grid(row=3, column=0, sticky=W)
+    outputButton.grid(row=3, column=0, columnspan=2, sticky=E+W)
 
-    runButton = Button(top, text="Run", command=lambda: run())
+    runButton = Button(top, text="Run", width=20, command=lambda: run())
     runButton.grid(row=4, column=0, sticky=W)
-    closeButton = Button(top, text="Close", command=lambda: close())
+    closeButton = Button(top, text="Close", width=20, command=lambda: close())
     closeButton.grid(row=4, column=1, sticky=E)
 
+    # Tooltips
+    createToolTip(calibrationButton,"This button will allow you to select your calibration file, the program expects a tab separated text file where each line consists of a peak ID, peak RT and a RT window.")
+    createToolTip(analyteButton,"This button will allow you to select your analyte file, the program expects a tab separated text file where each line consists of a peak ID, peak RT and a RT window.")
+    createToolTip(outputButton,"This button will open another window in which you can select which outputs you want HappyTools to show in the final summary.")
+
 def chromCalibration(fig,canvas):
-    """ TODO
+    """Ask for a reference file and calibrate the current chromatogram.
+
+    This function will first ask the user to select a reference file 
+    using a tkinter filedialog.  The function will then find the highest
+    intensity timepoint for each calibrant window. The actual
+    calibration is achieved by fitting a second degree polynomial
+    through the observed and expected retention times and applying the
+    formula on the original chromatogram, with the new retention time
+    being cast into a float of a user defined number of decimal numbers.
+    The function finishes by plotting the calibrated chromatograom on
+    top of the original chromatogram and writing the calibrated
+    chromatogram to the temporary file.
+
+    Keyword arguments:
+    fig -- matplotlib figure object
+    canvas -- tkinter canvas object
     """
     refFile = tkFileDialog.askopenfilename(title="Reference File")
     try:
@@ -294,7 +368,14 @@ def chromCalibration(fig,canvas):
     writeData(calibratedData,os.path.split(data[0][0])[-1]+" (Cal)")
 
 def fileCleanup():
-    """
+    """Clean up the temporary files.
+
+    This function will search open the temporary directory and attempt
+    to delete all files in that directory. A warning will be thrown
+    when a temporary file was open in another program.
+
+    Keyword arguments:
+    none
     """
     search = os.path.join(str(os.getcwd()),"temp","*.*")
     files = glob.glob(search)
@@ -305,6 +386,16 @@ def fileCleanup():
             tkMessageBox.showinfo("File Error", "A temporary file is open in another program. Please exit HappyTools and close all temporary files before running HappyTools.")
 
 def createToolTip(widget, text):
+    """Create a tooltip.
+
+    This function will create a tooltip and assign it to the widget that
+    was handed to this function. The widget will then show the provided
+    text upon a mouseover.
+
+    Keyword arguments:
+    widget -- tkinter object
+    text -- string
+    """ 
     toolTip = ToolTip(widget)
     def enter(event):
         toolTip.showtip(text)
@@ -314,13 +405,28 @@ def createToolTip(widget, text):
     widget.bind('<Leave>', leave)
 
 def gaussFunction(x, *p):
-    """ TODO
+    """Define and return a Gaussian function.
+
+    This function returns the value of a Gaussian function, using the
+    A, mu and sigma value that is provided as *p.
+
+    Keyword arguments:
+    x -- number
+    p -- A, mu and sigma numbers
     """
     A, mu, sigma = p
     return A*np.exp(-(x-mu)**2/(2.*sigma**2))
 
 def getSettings():
-    """ TODO
+    """Read the settings file.
+
+    This function opens the settings file (default is HappyTools.ini),
+    parses the lines of the settings file and takes the value from the
+    settings file as a value for the changeable settings (e.g. the start
+    variable can be read from the settings file).
+
+    Keyword arguments:
+    none
     """
     with open(HappyTools.settings,'r') as fr:
         for line in fr:
@@ -353,8 +459,46 @@ def getSettings():
                 global createFigure
                 createFigure = str(chunks[1])
 
+def infoPopup():
+    def close():
+        top.destroy()
+
+    top = Tk.top = Toplevel()
+    top.protocol("WM_DELETE_WINDOW", lambda: close())
+    top.title("HappyTools "+str(HappyTools.version)+" About")
+    information = ("HappyTools Version "+str(HappyTools.version)+" build "+str(HappyTools.build) +
+                   " by Bas Cornelis Jansen, bas.c.jansen@gmail.com\n\n" +
+                   "This software is released under the Apache 2.0 License." +
+                   " Full details regarding this license can be found at" +
+                   "the following URL:\n\n" +
+                   "http://www.apache.org/licenses/LICENSE-2.0")
+    about = Label(top, text=information, justify=LEFT, wraplength=250)
+    about.pack()
+    top.lift()
+
+def makeFunc(module):
+    """This function returns a lambda function for the plugins."""
+    return lambda: module.start()
+
 def noban(data):
-    """ NOBAN implementation based on Jansen et al, 2016.
+    """Determine background and noise using the NOBAN algorithm.
+
+    This function is based on the NOBAN algorith, published by Jansen et
+    al, in 2016. The function sorts the data by increasing intensity,
+    takes an initiale estimate (defined in nobanStart) and calculates
+    the background (average) and noise (root-mean-square or the maximum
+    difference) from the initial estimate. The algorithm will then loop
+    over the subsequent datapoints until the next datapoint falls
+    outside of the current average plus three times the standard
+    definition (as any point that is > 3SD is considered a signal).
+    Alternatively, the function can also shrink the initial region if it
+    appears that the initial estimate was too greedy. A major difference
+    between the original implementation and this implementation is that
+    this function should converge faster by allowing to take different
+    step sizes.
+
+    Keyword arguments:
+    data -- list of numbers
     """
     def calcValues(sortedData,currSize,currAverage,currNoise,increment):
         currSize += increment
@@ -402,7 +546,14 @@ def noban(data):
     return {'Background': currAverage, 'Noise': currNoise}
 
 def openChrom(file):
-    """ TODO
+    """Read a chromatogram and return the data.
+
+    This function opens a chromatogram (txt or arw), interprets the
+    local thousands/decimal seperators and creates a list of retention
+    time and intensity tuples which is returned.
+
+    Keyword arguments:
+    file -- unicode string
     """
     with open(file,'r') as fr:
         chromData = []
@@ -439,18 +590,24 @@ def openChrom(file):
                         chunks = chunks.split()
                         chromData.append((float(chunks[0]),float(chunks[1])))
                 except IndexError:
-                    # Skipping empty lines
                     pass
         else:
             print "Incorrect inputfile format, please upload a raw data 'txt' or 'arw' file."
     return chromData
 
 def openFile(fig,canvas):
-    """ TODO
+    """Open a file and show it on the canvas.
+
+    This function first asks the user to select a file via a file 
+    dialog. The function will then call two other functions to write a
+    temporary file to the disk (writeData) and to plot the selected file
+    on the canvas (plotData).
+
+    Keyword arguments:
+    fig -- matplotlib figure object
+    canvas -- tkinter canvas object
     """
-    #global inputFile
     file_path = tkFileDialog.askopenfilename()
-    #inputFile = file_path
     if not file_path:
         pass
     else:
@@ -464,18 +621,23 @@ def openFile(fig,canvas):
             plotData(data,fig,canvas,file_path)
 
 def outputPopup():
-    """ This function creates a pop up box to specify what output
-    should be shown in the final summary. The default value for all
-    variables is off (0) and by ticking a box it is set to on (1).
+    """Create a pop-up enabling output selection.
 
-    INPUT: None
-    OUTPUT: None
+    This function creates a pop up box that allows the user to specify 
+    what output should be shown in the final summary. The default value 
+    for all variables is off (0) and by ticking a box it is set to on
+    (1).
+
+    Keyword arguments:
+    none
     """
     if outputWindow.get() == 1:
         return
     outputWindow.set(1)
 
     def select_all():
+        """Set all variables to on (1).
+        """
         absInt.set(1)
         relInt.set(1)
         bckSub.set(1)
@@ -483,6 +645,8 @@ def outputPopup():
         peakQual.set(1)
 
     def select_none():
+        """Set all variables to off (0).
+        """
         absInt.set(0)
         relInt.set(0)
         bckSub.set(0)
@@ -490,11 +654,14 @@ def outputPopup():
         peakQual.set(0)
 
     def close():
+        """Close the output pop-up.
+        """
         outputWindow.set(0)
         top.destroy()
 
     top = Toplevel()
     top.protocol("WM_DELETE_WINDOW", lambda: close())
+    top.title("HappyTools "+str(HappyTools.version)+" Output Options")
     selAll = Button(top, text="Select All", command=lambda: select_all())
     selAll.grid(row=0, column=0, sticky=W)
     none = Button(top, text="Select None", command=lambda: select_none())
@@ -519,7 +686,27 @@ def outputPopup():
     return
 
 def peakDetection(fig,canvas):
-    """ TODO
+    """Detect all peaks in the currently active chromatogram.
+
+    This function performs peak detection by fitting a Gaussian function
+    through the highest data points in a chromatogram. The fitted
+    function is then subtracted from the original data to yield a 
+    chromatogram without the removed analyte, after which this process
+    is repeated until the highest datapoint falls below the specified
+    cut-off (determined by comparing the intensity of the most intense
+    analyte in the original data with the intensity of the most intense
+    analyte in the current (residual) data).
+    
+    The peak detection is based on the assumption that the first
+    derivative of the data is 0 at a local maxima or minima. 
+    
+    <<TODO>>
+    the current implementation is overly complex and can be optimized 
+    and the code has to be cleaned up.
+
+    Keyword arguments:
+    fig -- matplotlib figure object
+    canvas -- tkinter canvas object
     """
     data = readData()
     
@@ -557,22 +744,25 @@ def peakDetection(fig,canvas):
         fPP = fPrime.derivative()
         newY = f(newX)
         maxPoint = 0
-        if max(newY[0:breaks[0]]) > maxPoint:
-            maxPoint = max(newY[0:breaks[0]])
-            xData = newX[0:breaks[0]]
-            yData = [x - NOBAN['Background'] for x in newY[0:breaks[0]]]
-        for index,j in enumerate(breaks):
-            try:
-                if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
-                    maxPoint = max(newY[breaks[index]:breaks[index+1]])
-                    xData = newX[breaks[index]:breaks[index+1]]
-                    yData = [x - NOBAN['Background'] for x in newY[breaks[index]:breaks[index+1]]]
-            except IndexError:
-                if max(newY[breaks[index]:-1]) > maxPoint:
-                    maxPoint = max(newY[breaks[index]:-1])
-                    xData = newX[breaks[index]:-1]
-                    yData = [x - NOBAN['Background'] for x in newY[breaks[index]:-1]]
-                pass
+        try:
+            if max(newY[0:breaks[0]]) > maxPoint:
+                maxPoint = max(newY[0:breaks[0]])
+                xData = newX[0:breaks[0]]
+                yData = [x - NOBAN['Background'] for x in newY[0:breaks[0]]]
+            for index,j in enumerate(breaks):
+                try:
+                    if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
+                        maxPoint = max(newY[breaks[index]:breaks[index+1]])
+                        xData = newX[breaks[index]:breaks[index+1]]
+                        yData = [x - NOBAN['Background'] for x in newY[breaks[index]:breaks[index+1]]]
+                except IndexError:
+                    if max(newY[breaks[index]:-1]) > maxPoint:
+                        maxPoint = max(newY[breaks[index]:-1])
+                        xData = newX[breaks[index]:-1]
+                        yData = [x - NOBAN['Background'] for x in newY[breaks[index]:-1]]
+                    pass
+        except IndexError:
+            pass
         # Gaussian fit on main points
         newGaussX = np.linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
         p0 = [np.max(yData), xData[np.argmax(yData)],0.1]
@@ -592,7 +782,7 @@ def peakDetection(fig,canvas):
                 y_buff.append(ka)
         newGaussX = x_buff
         newGaussY = y_buff
-        functions.append(("Peak: "+str(xData[np.argmax(yData)]),zip(newGaussX,newGaussY)))
+        functions.append(("Peak: "+str("%.2f" % xData[np.argmax(yData)]),zip(newGaussX,newGaussY)))
         # Adjust data
         new_y = []
         for index,j in enumerate(x_data):
@@ -600,7 +790,15 @@ def peakDetection(fig,canvas):
         if max(new_y)-NOBAN['Background'] == max(y_data)-NOBAN['Background']:
             break
         y_data = new_y
-            
+    functions = sorted(functions, key=lambda tup: tup[0])
+
+    # Writing to temp folder
+    with open('temp/annotation.ref','w') as fw:
+        fw.write("Peak\tRT\tWindow\n")
+        for index, analyte in enumerate(functions):
+            peak = analyte[0].split()[-1]
+            fw.write(str(index+1)+"\t"+str(peak)+"\t"+"0.2"+"\n")
+
     # Plotting
     fig.clear()
     axes = fig.add_subplot(111)
@@ -613,23 +811,11 @@ def peakDetection(fig,canvas):
             yd.append(j[1])
         axes.plot(xd,yd,label=os.path.split(i[0])[-1])
         axes.fill_between(xd, 0, yd,alpha=0.2)
-        #ax.fill_between(x, y1, y2, where=y2 <= y1, facecolor='red'
     axes.set_xlabel("Time [m]")
     axes.set_ylabel("Intensity [au]")
     handles, labels = axes.get_legend_handles_labels()
-    fig.legend(handles,labels)
+    #fig.legend(handles,labels)
     canvas.draw()
-    """
-    # Gaussian fit on all points
-    #fig = plt.figure()
-    #ax = fig.add_subplot(111)
-    #plt.plot(orig_x, orig_y, 'b*')
-    #for i in functions:
-    #    x_data, y_data = zip(*i)
-    #    plt.plot(x_data,y_data)
-    #plt.plot((newX[0],newX[-1]),(backGround,backGround),'red',linestyle='dashed',alpha=0.5)
-    #plt.show()"""
-        
 
 def plotData(data,fig,canvas,file_path):
     """ TODO
@@ -727,6 +913,14 @@ def readData():
         data.append((name, dataBuffer))
     return data
 
+def saveAnnotation(fig, canvas):
+    """ TODO
+        Add correct try/except handling
+    """
+    origin = os.path.join(str(os.getcwd()),"temp","annotation.ref")
+    target = tkFileDialog.asksaveasfile(mode='w', defaultextension=".ref")
+    shutil.copyfile(origin,target.name)
+
 def saveChrom():
     """ TODO
     """
@@ -780,6 +974,7 @@ def settingsPopup():
             fw.write("createFigure:\t"+str(figureVariable.get())+"\n")
         
     top = Tk.top = Toplevel()
+    top.title("HappyTools "+str(HappyTools.version)+" Settings")
     top.protocol( "WM_DELETE_WINDOW", lambda: close())
     
     pointsLabel = Label(top, text="Datapoints", font="bold")
@@ -842,7 +1037,8 @@ def settingsPopup():
     createToolTip(baselineOrderLabel,"This setting tells the program what sort of function should be used to correct the baseline. A value of 1 refers to a linear function, while a value of 2 refers to a quadratic function. We advise to use a linear function as the need for any higher order function indicates an unexpected event in the chromatography.")
     createToolTip(backgroundWindowLabel,"This setting tells the program the size of the region that will be examined to determine the background. A value of 1 means that the program will look from 20.0 to 21.0 minutes and 21.4 to 22.4 for an analyte that elutes from 21.0 to 21.4 minutes.")
     createToolTip(nobanLabel,"This setting specifies the initial estimate for the NOBAN algorithm, specifically a value of 0.25 means that the lowest 25% of all data points will be used as an initial estimate for the background. This value should be changed depending on how many signals there are in the chromatogram, e.g. in a crowded chromatogram this value should be low.")
-    createToolTip(slicepointsLabel,"The number of consecutive data points that will be used to determine the background and noise using the MT method. The MT method will scan all datapoints that fall within the background window (specified above) to find the here specified number of consecutive data points that yield the lowest average intensity, the average of these data points is then used as background while the standard deviation of these data points is used as the noise.")
+    createToolTip(slicepointsLabel,"The number of conscutive data points that will be used to determine the background and noise using the MT method. The MT method will scan all datapoints that fall within the background window (specified above) to find the here specified number of consecutive data points that yield the lowest average intensity, the average of these data points is then used as background while the standard deviation of these data points is used as the noise.")
+    createToolTip(figureLabel,"This setting specifies if HappyTools should create a figure for each integrated peak, showing the raw datapoints, background, noise, S/N and GPQ values. This is a very performance intensive option and it is recommended to only use this on a subset of your samples (e.g. less than 25 samples).")
 
 def smoothChrom(fig, canvas):
     """ TODO

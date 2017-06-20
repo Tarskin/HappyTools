@@ -46,11 +46,8 @@ def batchBaselineCorrection(data):
     p = np.poly1d(func)
 
     # Transform
-    x = []
-    newChromIntensity = []
-    for i in data:
-        x.append(i[0])
-        newChromIntensity.append(int(i[1]-p(i[0])))
+    x = [a for a,b in data]
+    newChromIntensity = [b-p(a) for a,b in data]
     
     # Uplift
     foo1, foo2 = zip(*data)
@@ -188,7 +185,26 @@ def batchProcess(calFile, analFile):
     tkMessageBox.showinfo("Status Message", "Batch Process finished on "+str(end)+" and took a total time of "+str(end-start))
 
 def batchQuantifyChrom(data, analFile):
-    """ TODO
+    """Quantify the current chromatogram and write results to disk.
+    
+    This function will open the analyte file (analFile), read all lines
+    and split the line on tabs. The individual segments (name, time and
+    time window) are then appended as a tuple to the list peaks.
+    Next, the function will iterate over all tuples in the list peaks 
+    and isolate the relevant segment of the chromatogram using a binary
+    search. The local background and noise is then determined using 
+    either the NOBAN or MT method, prior to integrating the peak and
+    background areas. The best fitting Gaussian (for the highest
+    intensity datapoints) is determined and used to calculate the
+    overlap between the Gaussian and observed pattern. Optionally, a
+    figure is created showing the raw data, fitted Gaussian peak,
+    background, noise and the overlap percentage, which is saved to the
+    disk. Lastly, the function writes all results to the disk in a raw
+    file.
+
+    Keyword arguments:
+    data -- list of (time,intensity) tuples
+    analFile -- unicode string
     """
     peaks = []
     with open(analFile.get(),'r') as fr:
@@ -250,6 +266,10 @@ def batchQuantifyChrom(data, analFile):
         breaks = maxm[0].tolist() + minm[0].tolist()
         breaks = sorted(breaks)
         maxPoint = 0
+        # Initialize xData and yData
+        xData = newX
+        yData = [x - NOBAN['Background'] for x in newY]
+        # Isolate subset of xData and yData for 1 peak
         try:
             if max(newY[0:breaks[0]]) > maxPoint:
                 maxPoint = max(newY[0:breaks[0]])
@@ -271,9 +291,6 @@ def batchQuantifyChrom(data, analFile):
             if HappyTools.logging == True and HappyTools.logLevel > 1:
                 with open(HappyTools.logFile,'a') as fw:
                     fw.write(str(datetime.now())+"\tCould not determine a local maxima or minima for analyte "+str(i[0])+" at "+str(i[1])+" minutes\n")
-            xData = newX
-            yData = [x - NOBAN['Background'] for x in newY]
-            #pass
         # Gaussian fit on main points
         newGaussX = np.linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
         p0 = [np.max(yData), xData[np.argmax(yData)],0.1]
