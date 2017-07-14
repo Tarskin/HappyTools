@@ -34,3 +34,22 @@
  - Added plugin support to HappyTools (put a single file in the plugins directory that contains
    a start function as the entry point for HappyTools)
  - Added proper closing of the Python window when HappyTools is closed
+
+21 June 2017
+ - Added settings to choose minimum number of peaks for calibration and the minimum S/N
+   for a peak to be included in the calibration
+
+23 June 2017
+ - Added a plot of the entire chromatogram region of interest (between the start and end
+   parameters), if the saveFigure setting is set to True.
+
+12 July 2017
+ - Implemented calibrant validation based on specified minimum number of calibrant peaks
+   and the minimum S/N for a peak to be included in the calibration.
+ - Added function that creates basic PagesPdf file, which severely limits the number of PDF
+   files that are created by HappyTools.
+ - Added a check to see if the current file is not in the EXCLUSION_FILES of HappyTools.
+ - Added a default value for currNoise to functions.backgroundNoise, which should prevent
+   HappyTools from crashing when attempting to process a non-chromatogram input file.
+ - Added a check to see if the X-axis begin and end can be found (via a bisect search)
+   prior to opening a PdfPages object in batchQuantifyChrom.
