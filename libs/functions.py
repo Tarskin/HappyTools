@@ -33,10 +33,8 @@ baselineOrder = 1
 backgroundWindow = 1
 nobanStart = 0.25
 slicepoints = 5
-peakDetectionMin = 0.025
+peakDetectionMin = 0.05
 createFigure = "True"
-minPeaks = 4
-minPeakSN = 27
 
 # Advanced variables
 decimalNumbers = 6
@@ -129,7 +127,6 @@ def backgroundNoise(data):
     data -- list of intensities
     """
     background = sys.maxint
-    currNoise = 0
     for index,i in enumerate(data[:-slicepoints]):
         buffer = data[index:index+slicepoints]
         if np.mean(buffer) < background:
@@ -461,12 +458,6 @@ def getSettings():
             elif chunks[0] == "createFigure:":
                 global createFigure
                 createFigure = str(chunks[1])
-            elif chunks[0] == "minPeaks:":
-                global minPeaks
-                minPeaks = int(chunks[1])
-            elif chunks[0] == "minPeakSN:":
-                global minPeakSN
-                minPeakSN = int(chunks[1])
 
 def infoPopup():
     def close():
@@ -749,6 +740,8 @@ def peakDetection(fig,canvas):
         counter += 1
         print "Fitting peak: "+str(counter)
         f = InterpolatedUnivariateSpline(x_data, y_data)
+        fPrime = f.derivative()
+        fPP = fPrime.derivative()
         newY = f(newX)
         maxPoint = 0
         try:
@@ -821,7 +814,7 @@ def peakDetection(fig,canvas):
     axes.set_xlabel("Time [m]")
     axes.set_ylabel("Intensity [au]")
     handles, labels = axes.get_legend_handles_labels()
-    fig.legend(handles,labels)
+    #fig.legend(handles,labels)
     canvas.draw()
 
 def plotData(data,fig,canvas,file_path):
@@ -867,14 +860,16 @@ def quantifyChrom(fig, canvas):
         # Get signal-to-noise
         lowBackground = bisect.bisect_left(time,max(i[1]-backgroundWindow,start))
         highBackground = bisect.bisect_right(time,min(i[1]+backgroundWindow,end))
+        backgroundData = intensity[lowBackground:low]+intensity[high:highBackground]
         if backgroundNoiseMethod == "NOBAN":
-            NOBAN = noban(intensity[lowBackground:highBackground])
+            NOBAN = noban(backgroundData)
         elif backgroundNoiseMethod == "MT":
-            NOBAN = noban(intensity[lowBackground:highBackground])
+            NOBAN = backgroundNoise(backgroundData)
         signalNoise = (max(intensity[low:high])-NOBAN['Background'])/NOBAN['Noise']
-        # Get background subtracted peak area
+        # Get peak Area
         for index,j in enumerate(intensity[low:high]):
             try:
+                #peakArea += j * (time[low+index]-time[low+index-1])
                 peakArea += max(j-NOBAN['Background'],0) * (time[low+index]-time[low+index-1])
             except IndexError:
                 continue
@@ -936,7 +931,7 @@ def saveChrom():
             fw.write(str(i[0])+"\t"+str(i[1])+"\n")
 
 def settingsPopup():
-    """ TODO: Redesign settings window (it's fugly)
+    """ TODO
     """
 
     figureVariable = StringVar()
@@ -954,8 +949,6 @@ def settingsPopup():
         global nobanStart
         global slicepoints
         global createFigure
-        global minPeaks
-        global minPeakSN
         points = int(pointsWindow.get())
         start = float(startWindow.get())
         end = float(endWindow.get())
@@ -964,8 +957,6 @@ def settingsPopup():
         nobanStart = float(nobanWindow.get())
         slicepoints = int(slicepointsWindow.get())
         createFigure = str(figureVariable.get())
-        minPeaks = int(minPeakWindow.get())
-        minPeakSN = int(minPeakSNWindow.get())
         top.destroy()
     
     def save():
@@ -981,8 +972,6 @@ def settingsPopup():
             fw.write("noise:\t"+str(noise)+"\n")
             fw.write("slicepoints:\t"+str(slicepoints)+"\n")
             fw.write("createFigure:\t"+str(figureVariable.get())+"\n")
-            fw.write("minPeaks:\t"+str(minPeakWindow.get())+"\n")
-            fw.write("minPeakSN:\t"+str(minPeakSNWindow.get())+"\n")
         
     top = Tk.top = Toplevel()
     top.title("HappyTools "+str(HappyTools.version)+" Settings")
@@ -1036,22 +1025,10 @@ def settingsPopup():
     figureWindow = OptionMenu(top, figureVariable, *options)
     figureWindow.grid(row=7, column=1, sticky=W)
 
-    minPeakLabel = Label(top, text="Minimum Number of Peaks", font="bold")
-    minPeakLabel.grid(row=8, column=0, sticky=W)
-    minPeakWindow = Entry(top)
-    minPeakWindow.insert(0, minPeaks)
-    minPeakWindow.grid(row=8, column=1, sticky=W)
-
-    minPeakSNLabel = Label(top, text="Minimum S/N for Calibrant Peak", font="bold")
-    minPeakSNLabel.grid(row=9, column=0, sticky=W)
-    minPeakSNWindow = Entry(top)
-    minPeakSNWindow.insert(0, minPeakSN)
-    minPeakSNWindow.grid(row=9, column=1, sticky=W)
-
     saveButton = Button(top, text="Save", command=lambda: save())
-    saveButton.grid(row=10, column=0, sticky=W)
+    saveButton.grid(row=8, column=0, sticky=W)
     closeButton = Button(top, text="Close", command=lambda: close())
-    closeButton.grid(row=10, column=1, sticky=E)
+    closeButton.grid(row=8, column=1, sticky=E)
 
     # Tooltips
     createToolTip(pointsLabel,"The number of data points that is used to determine the baseline. Specifically, this setting specifies how large each segment of the whole chromatogram will be to identify the lowest data point per window, i.e. a setting of 100 means that the chromatogram is split into segments of 100 data points per segment.")
@@ -1062,8 +1039,6 @@ def settingsPopup():
     createToolTip(nobanLabel,"This setting specifies the initial estimate for the NOBAN algorithm, specifically a value of 0.25 means that the lowest 25% of all data points will be used as an initial estimate for the background. This value should be changed depending on how many signals there are in the chromatogram, e.g. in a crowded chromatogram this value should be low.")
     createToolTip(slicepointsLabel,"The number of conscutive data points that will be used to determine the background and noise using the MT method. The MT method will scan all datapoints that fall within the background window (specified above) to find the here specified number of consecutive data points that yield the lowest average intensity, the average of these data points is then used as background while the standard deviation of these data points is used as the noise.")
     createToolTip(figureLabel,"This setting specifies if HappyTools should create a figure for each integrated peak, showing the raw datapoints, background, noise, S/N and GPQ values. This is a very performance intensive option and it is recommended to only use this on a subset of your samples (e.g. less than 25 samples).")
-    createToolTip(minPeakLabel,"This setting specifies the minimum number of calibrant peaks that have to pass the specified S/N value that must be present in a chromatogram. A chromatogram for which there are not enough calibrant peaks passing the specified criteria will not be calibrated and excluded from further quantitation.")
-    createToolTip(minPeakSNLabel,"This setting specifies the minimum S/N value a calibrant peak must surpass to be included in the calibration. The actual S/N value that is determined by HappyTools depends heavily on which method to determine signal and noise is used, the default method being rather conservative.")
 
 def smoothChrom(fig, canvas):
     """ TODO
@@ -1072,7 +1047,7 @@ def smoothChrom(fig, canvas):
     time, intensity = zip(*data[0][1])
     new = savgol_filter(intensity,21,3)
     newData = zip(time,new)
-
+    
     # Plot & Write Data to Disk  
     multiData = [(os.path.split(data[0][0])[-1], data[0][1]),(os.path.split(data[0][0])[-1]+" (Smoothed)",newData)]
     plotMultiData(fig,canvas,multiData)
