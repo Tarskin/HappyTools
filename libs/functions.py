@@ -33,7 +33,7 @@ baselineOrder = 1
 backgroundWindow = 1
 nobanStart = 0.25
 slicepoints = 5
-peakDetectionMin = 0.025
+peakDetectionMin = 0.05
 createFigure = "True"
 minPeaks = 4
 minPeakSN = 27
@@ -233,8 +233,9 @@ def batchPlot(fig,canvas):
     filesGrabbed = []
     for files in batchFunctions.CALIBRATION_FILETYPES:
         for file in glob.glob(str(os.path.join(folder_path,files))):
-            if openChrom(file):
-                filesGrabbed.append(file)
+            if file not in batchFunctions.EXCLUSION_FILES:
+                if openChrom(file):
+                    filesGrabbed.append(file)
 
     data = []
     for file in filesGrabbed:
@@ -467,6 +468,9 @@ def getSettings():
             elif chunks[0] == "minPeakSN:":
                 global minPeakSN
                 minPeakSN = int(chunks[1])
+            elif chunks[0] == "peakDetectionMin:":
+                global peakDetectionMin
+                peakDetectionMin = float(chunks[1])
 
 def infoPopup():
     def close():
@@ -956,6 +960,7 @@ def settingsPopup():
         global createFigure
         global minPeaks
         global minPeakSN
+        global peakDetectionMin
         points = int(pointsWindow.get())
         start = float(startWindow.get())
         end = float(endWindow.get())
@@ -966,6 +971,7 @@ def settingsPopup():
         createFigure = str(figureVariable.get())
         minPeaks = int(minPeakWindow.get())
         minPeakSN = int(minPeakSNWindow.get())
+        peakDetectionMin = float(peakDetection.get())
         top.destroy()
     
     def save():
@@ -983,6 +989,7 @@ def settingsPopup():
             fw.write("createFigure:\t"+str(figureVariable.get())+"\n")
             fw.write("minPeaks:\t"+str(minPeakWindow.get())+"\n")
             fw.write("minPeakSN:\t"+str(minPeakSNWindow.get())+"\n")
+            fw.write("peakDetectionMin:\t"+str(peakDetection.get())+"\n")
         
     top = Tk.top = Toplevel()
     top.title("HappyTools "+str(HappyTools.version)+" Settings")
@@ -1018,40 +1025,46 @@ def settingsPopup():
     backgroundWindowWindow.insert(0, backgroundWindow)
     backgroundWindowWindow.grid(row=4, column=1, sticky=W)
 
+    peakDetectionLabel = Label(top, text="Peak Detection Threshold", font="bold")
+    peakDetectionLabel.grid(row=5, column=0, sticky=W)
+    peakDetection = Entry(top)
+    peakDetection.insert(0, peakDetectionMin)
+    peakDetection.grid(row=5, column=1, sticky=W)
+
     nobanLabel = Label(top, text="NOBAN Start", font="bold")
-    nobanLabel.grid(row=5, column=0, sticky=W)
+    nobanLabel.grid(row=6, column=0, sticky=W)
     nobanWindow = Entry(top)
     nobanWindow.insert(0, nobanStart)
-    nobanWindow.grid(row=5, column=1, sticky=W)
+    nobanWindow.grid(row=6, column=1, sticky=W)
 
     slicepointsLabel = Label(top, text="MT Slice points", font="bold")
-    slicepointsLabel.grid(row=6, column=0, sticky=W)
+    slicepointsLabel.grid(row=7, column=0, sticky=W)
     slicepointsWindow = Entry(top)
     slicepointsWindow.insert(0, slicepoints)
-    slicepointsWindow.grid(row=6, column=1, sticky=W)
+    slicepointsWindow.grid(row=7, column=1, sticky=W)
 
     figureLabel = Label(top, text="Create figure for each analyte", font="bold")
-    figureLabel.grid(row=7, column=0, sticky=W)
+    figureLabel.grid(row=8, column=0, sticky=W)
     options = ["True", "False"]
     figureWindow = OptionMenu(top, figureVariable, *options)
-    figureWindow.grid(row=7, column=1, sticky=W)
+    figureWindow.grid(row=8, column=1, sticky=W)
 
     minPeakLabel = Label(top, text="Minimum Number of Peaks", font="bold")
-    minPeakLabel.grid(row=8, column=0, sticky=W)
+    minPeakLabel.grid(row=9, column=0, sticky=W)
     minPeakWindow = Entry(top)
     minPeakWindow.insert(0, minPeaks)
-    minPeakWindow.grid(row=8, column=1, sticky=W)
+    minPeakWindow.grid(row=9, column=1, sticky=W)
 
     minPeakSNLabel = Label(top, text="Minimum S/N for Calibrant Peak", font="bold")
-    minPeakSNLabel.grid(row=9, column=0, sticky=W)
+    minPeakSNLabel.grid(row=10, column=0, sticky=W)
     minPeakSNWindow = Entry(top)
     minPeakSNWindow.insert(0, minPeakSN)
-    minPeakSNWindow.grid(row=9, column=1, sticky=W)
+    minPeakSNWindow.grid(row=10, column=1, sticky=W)
 
     saveButton = Button(top, text="Save", command=lambda: save())
-    saveButton.grid(row=10, column=0, sticky=W)
+    saveButton.grid(row=11, column=0, sticky=W)
     closeButton = Button(top, text="Close", command=lambda: close())
-    closeButton.grid(row=10, column=1, sticky=E)
+    closeButton.grid(row=11, column=1, sticky=E)
 
     # Tooltips
     createToolTip(pointsLabel,"The number of data points that is used to determine the baseline. Specifically, this setting specifies how large each segment of the whole chromatogram will be to identify the lowest data point per window, i.e. a setting of 100 means that the chromatogram is split into segments of 100 data points per segment.")
@@ -1064,6 +1077,7 @@ def settingsPopup():
     createToolTip(figureLabel,"This setting specifies if HappyTools should create a figure for each integrated peak, showing the raw datapoints, background, noise, S/N and GPQ values. This is a very performance intensive option and it is recommended to only use this on a subset of your samples (e.g. less than 25 samples).")
     createToolTip(minPeakLabel,"This setting specifies the minimum number of calibrant peaks that have to pass the specified S/N value that must be present in a chromatogram. A chromatogram for which there are not enough calibrant peaks passing the specified criteria will not be calibrated and excluded from further quantitation.")
     createToolTip(minPeakSNLabel,"This setting specifies the minimum S/N value a calibrant peak must surpass to be included in the calibration. The actual S/N value that is determined by HappyTools depends heavily on which method to determine signal and noise is used, the default method being rather conservative.")
+    createToolTip(peakDetectionLabel, "This setting specifies the minimum intensity, relative to the main peak in a chromatogram, that the peak detection algorithm will try to annotate. For example, a value of 0.01 means that the program will attempt to annotate peaks until the next highest peak is below 1% of the intensity of the main peak in the chromatogram.")
 
 def smoothChrom(fig, canvas):
     """ TODO

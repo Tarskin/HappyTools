@@ -53,3 +53,8 @@
    HappyTools from crashing when attempting to process a non-chromatogram input file.
  - Added a check to see if the X-axis begin and end can be found (via a bisect search)
    prior to opening a PdfPages object in batchQuantifyChrom.
+
+24 July 2017
+ - Added the peakDetectionMin setting to the settings window, including the possibility
+   to save this parameter (thereby ensuring that the user does not have to edit the code
+   of HappyTools).

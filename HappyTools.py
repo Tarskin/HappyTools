@@ -31,7 +31,7 @@ import functions
 
 # Innate variables
 version = "0.0.2"
-build = "170714a"
+build = "170724a"
 
 # General variables
 output = "summary.results"
@@ -107,7 +107,7 @@ class App():
 
         menu.add_command(label="Settings", command=functions.settingsPopup)
 
-        menu.add_command(label="About MassyTools", command=lambda: functions.infoPopup())
+        menu.add_command(label="About HappyTools", command=lambda: functions.infoPopup())
 
         if glob.glob(os.path.join(".","plugins","*.py")):
             import importlib

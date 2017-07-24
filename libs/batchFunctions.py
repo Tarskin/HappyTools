@@ -246,7 +246,7 @@ def batchQuantifyChrom(data, analFile):
     time, intensity = zip(*data['Data'])
     results = []
     # Plot chromatogram region of interest (check if X[0] and X[-1] can be found before start)
-    if functions.createFigure == "True" and bisect.bisect_left(time,functions.start) and high = bisect.bisect_right(time,functions.end):
+    if functions.createFigure == "True" and bisect.bisect_left(time,functions.start) and bisect.bisect_right(time,functions.end):
         pdf = PdfPages(str(data['Name'].split('.')[0])+".pdf")
         d = pdf.infodict()
         d['Title'] = 'PDF Report for: '+str(data['Name'].split('.')[0])
@@ -546,7 +546,7 @@ def combineResults():
 
         # Residuals
         if functions.peakQual.get() == 1:
-            fw.write("Residuals")
+            fw.write("GPQ (Gaussian Peak Quality)")
             fw.write(header)
             for i in Results:
                 fw.write(i['File'])
