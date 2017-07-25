@@ -381,7 +381,8 @@ def batchQuantifyChrom(data, analFile):
             residual = "Nan"
             pass
         results.append({'Peak':i[0], 'Time':i[1], 'Area':peakArea, 'PeakNoise':peakNoise, 'Residual':residual, 'S/N':signalNoise,'Background':NOBAN['Background'],'Noise':NOBAN['Noise'],'BackgroundArea':backgroundArea})
-    pdf.close()
+    if functions.createFigure == "True":
+        pdf.close()
     data['Name'] = str(data['Name'].split('.')[0])+".raw"
     with open(data['Name'],'w') as fw:
         fw.write("Name\tTime\tPeak Area\tS/N\tBackground\tNoise\tGaussian Residual RMS\tPeak Noise\tBackground Area\n")
