@@ -31,7 +31,7 @@ import functions
 
 # Innate variables
 version = "0.0.2"
-build = "170724a"
+build = "170823a"
 
 # General variables
 output = "summary.results"
@@ -47,6 +47,28 @@ def dynamic_update(foo):
     pass
 matplotlib.backends.backend_tkagg.NavigationToolbar2TkAgg.dynamic_update = dynamic_update
 
+# Custom toolbar
+class CustomToolbar(NavigationToolbar2TkAgg):
+    def plot_axes(self):
+        # This function currently makes it so that the 'original view' is lost
+        # TODO Fix the above bug
+        self.canvas.figure.axes[0].set_xlim([functions.start,functions.end])
+        self.canvas.draw()
+
+    def __init__(self,canvas_,parent_):
+        self.toolitems = (
+            ('Home', 'Reset original view', 'home', 'home'),
+            ('Back', 'Back to previous view', 'back', 'back'),
+            ('Forward', 'Forward to next view', 'forward', 'forward'),
+            ('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),
+            ('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'),
+            # TODO Get this poor thing a nice gif
+            ('Axes', 'Zoom in on region of interest (10-60)', 'subplots', 'plot_axes'),
+            ('Subplots', 'Configure subplots', 'subplots', 'configure_subplots'),
+            ('Save', 'Save the figure', 'filesave', 'save_figure'),
+            )
+        NavigationToolbar2TkAgg.__init__(self,canvas_,parent_)
+
 # Applicatiom
 class App():
 
@@ -58,7 +80,8 @@ class App():
         # CANVAS
         self.fig = matplotlib.figure.Figure(figsize=(12, 6))
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
-        self.toolbar = NavigationToolbar2TkAgg(self.canvas, master)
+        #self.toolbar = NavigationToolbar2TkAgg(self.canvas, master)
+        self.toolbar = CustomToolbar(self.canvas, master)
         self.canvas.get_tk_widget().pack(fill=BOTH, expand=YES)
         self.canvas.draw()
 
@@ -89,6 +112,7 @@ class App():
         filemenu.add_command(label="Open Chromatogram", command=lambda: functions.openFile(self.fig, self.canvas))
         filemenu.add_command(label="Smooth Chromatogram", command=lambda: functions.smoothChrom(self.fig, self.canvas))
         filemenu.add_command(label="Compare Chromatogram", command=lambda: functions.addFile(self.fig, self.canvas))
+        filemenu.add_command(label="Normalize chromatograms", command=lambda: functions.chromNorm(self.fig, self.canvas))
         filemenu.add_command(label="Baseline Correction", command=lambda: functions.baselineCorrection(self.fig, self.canvas))
         filemenu.add_command(label="Chromatogram Calibration", command=lambda: functions.chromCalibration(self.fig, self.canvas))
         filemenu.add_command(label="Save Chromatogram", command=functions.saveChrom)
@@ -96,7 +120,8 @@ class App():
 
         multimenu = Menu(menu, tearoff=0)
         menu.add_cascade(label="Multi File", menu=multimenu)
-        multimenu.add_command(label="Batch Plot", command=lambda: functions.batchPlot(self.fig, self.canvas))
+        multimenu.add_command(label="Raw Batch Plot", command=lambda: functions.batchPlot(self.fig, self.canvas))
+        multimenu.add_command(label="Normalized Batch Plot", command=lambda: functions.batchPlotNorm(self.fig, self.canvas))
 
         advancedmenu = Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced Tools", menu=advancedmenu)

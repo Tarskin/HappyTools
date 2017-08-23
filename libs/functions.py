@@ -176,15 +176,14 @@ def baselineCorrection(fig,canvas):
     p = np.poly1d(func)
 
     # Transform 
-    x = [a for a,b in data[0][1]]
+    time = [a for a,b in data[0][1]]
     newChromIntensity = [b-p(a) for a,b in data[0][1]]
         
     # Uplift
-    foo1, foo2 = zip(*data[0][1])
-    low = bisect.bisect_left(foo1, start)
-    high = bisect.bisect_right(foo1, end)
+    low = bisect.bisect_left(time, start)
+    high = bisect.bisect_right(time, end)
     offset = abs(min(min(newChromIntensity[low:high]),0))
-    newData = zip(foo1,[x+offset for x in newChromIntensity])
+    newData = zip(time,[x+offset for x in newChromIntensity])
 
     # Plot & Write Data to Disk  
     multiData = [(os.path.split(data[0][0])[-1], data[0][1]),(os.path.split(data[0][0])[-1]+" (BC)",newData)]
@@ -241,6 +240,71 @@ def batchPlot(fig,canvas):
     for file in filesGrabbed:
         data.append((str(file),openChrom(file)))
 
+    fig.clear()
+    axes = fig.add_subplot(111)
+    if data:
+        for i in data:
+            x_array, y_array = zip(*i[1])
+            axes.plot(x_array,y_array,label=str(os.path.split(i[0])[-1]))
+        axes.legend()
+    canvas.draw()
+
+def batchPlotNorm(fig,canvas):
+    """Read and plot all chromatograms in a directory.
+
+    This function asks the user to select a directory from which the
+    function will read all the files that are specified in the 
+    CALIBRATION_FILETYPES paramater of the batchFunctions file. The
+    function will then find the lowest and maximum intensities between
+    the start and end variable, normalize all chromatograms and plot
+    them to the canvas.
+
+    Keyword arguments:
+    fig -- matplotlib figure object
+    canvas -- tkinter canvas object
+    """
+    folder_path = tkFileDialog.askdirectory()
+    filesGrabbed = []
+    for files in batchFunctions.CALIBRATION_FILETYPES:
+        for file in glob.glob(str(os.path.join(folder_path,files))):
+            if file not in batchFunctions.EXCLUSION_FILES:
+                if openChrom(file):
+                    filesGrabbed.append(file)
+
+    data = []
+    for file in filesGrabbed:
+        chromData = openChrom(file)
+
+        # Background determination
+        background = []
+        chunks = [chromData[x:x+points] for x in xrange(0, len(chromData), points)]
+        for i in chunks:
+            buff1, buff2 = zip(*i)
+            min_index, min_value = min(enumerate(buff2), key=operator.itemgetter(1))
+            if buff1[0] > start and buff1[-1] < end:
+                background.append((buff1[min_index], buff2[min_index]))
+        time, intensity = zip(*background)
+        newX = np.linspace(min(time), max(time),100)
+        func = np.polyfit(time, intensity, baselineOrder)
+        p = np.poly1d(func)
+
+        # Transform 
+        time = [a for a,b in chromData]
+        newChromIntensity = [b-p(a) for a,b in chromData]
+
+        # Uplift
+        low = bisect.bisect_left(time, start)
+        high = bisect.bisect_right(time, end)
+        offset = abs(min(min(newChromIntensity[low:high]),0))
+        newIntensity = [x+offset for x in newChromIntensity]
+
+        # Normalize
+        correction = max(newIntensity[low:high])
+        normIntensity = [x/correction for x in newIntensity]
+        newData = zip(time,normIntensity)
+        data.append((str(file),newData))
+
+    # Plot
     fig.clear()
     axes = fig.add_subplot(111)
     if data:
@@ -370,6 +434,11 @@ def chromCalibration(fig,canvas):
     multiData = [(os.path.split(data[0][0])[-1], data[0][1]),(os.path.split(data[0][0])[-1]+" (Cal)",calibratedData)]
     plotMultiData(fig,canvas,multiData)
     writeData(calibratedData,os.path.split(data[0][0])[-1]+" (Cal)")
+
+def chromNorm(fig,canvas):
+    """ TODO
+    """
+    return
 
 def fileCleanup():
     """Clean up the temporary files.
