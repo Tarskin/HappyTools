@@ -31,7 +31,7 @@ import functions
 
 # Innate variables
 version = "0.0.2"
-build = "170823a"
+build = "170823b"
 
 # General variables
 output = "summary.results"
@@ -50,10 +50,34 @@ matplotlib.backends.backend_tkagg.NavigationToolbar2TkAgg.dynamic_update = dynam
 # Custom toolbar
 class CustomToolbar(NavigationToolbar2TkAgg):
     def plot_axes(self):
-        # This function currently makes it so that the 'original view' is lost
-        # TODO Fix the above bug
-        self.canvas.figure.axes[0].set_xlim([functions.start,functions.end])
-        self.canvas.draw()
+        def close():
+            try:    
+                self.canvas.figure.axes[0].set_xlim([float(XMinWindow.get()),float(XMaxWindow.get())])
+            except ValueError:
+                pass
+            try:
+                self.canvas.figure.axes[0].set_ylim([float(YMinWindow.get()),float(YMaxWindow.get())])
+            except ValueError:
+                pass
+            self.canvas.draw()
+            top.destroy()
+        self.push_current()        
+        top = Tk.top = Toplevel()
+        top.title("Configure Axes")
+        top.protocol( "WM_DELETE_WINDOW", lambda: close())
+        
+        XLabel = Label(top, text="X-axis", font="bold")
+        XLabel.grid(row=0, column=0, sticky=W)
+        XMinWindow = Entry(top)
+        XMinWindow.grid(row=0, column=1, sticky=W)
+        XMaxWindow = Entry(top)
+        XMaxWindow.grid(row=0, column=2, sticky=W)
+        YLabel = Label(top, text="Y-axis", font="bold")
+        YLabel.grid(row=1, column=0, sticky=W)
+        YMinWindow = Entry(top)
+        YMinWindow.grid(row=1, column=1, sticky=W)
+        YMaxWindow = Entry(top)
+        YMaxWindow.grid(row=1, column=2, sticky=W)
 
     def __init__(self,canvas_,parent_):
         self.toolitems = (
@@ -80,7 +104,6 @@ class App():
         # CANVAS
         self.fig = matplotlib.figure.Figure(figsize=(12, 6))
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
-        #self.toolbar = NavigationToolbar2TkAgg(self.canvas, master)
         self.toolbar = CustomToolbar(self.canvas, master)
         self.canvas.get_tk_widget().pack(fill=BOTH, expand=YES)
         self.canvas.draw()
