@@ -31,7 +31,7 @@ import functions
 
 # Innate variables
 version = "0.0.2"
-build = "170823b"
+build = "170823c"
 
 # General variables
 output = "summary.results"
@@ -122,6 +122,7 @@ class App():
         
         # QUIT
         def close():
+            functions.fileCleanup()
             root.destroy()
             root.quit()
         root.protocol("WM_DELETE_WINDOW", lambda: close())
