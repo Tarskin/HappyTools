@@ -31,7 +31,7 @@ import functions
 
 # Innate variables
 version = "0.0.2"
-build = "170823c"
+build = "171011a"
 
 # General variables
 output = "summary.results"
@@ -65,7 +65,7 @@ class CustomToolbar(NavigationToolbar2TkAgg):
         top = Tk.top = Toplevel()
         top.title("Configure Axes")
         top.protocol( "WM_DELETE_WINDOW", lambda: close())
-        
+
         XLabel = Label(top, text="X-axis", font="bold")
         XLabel.grid(row=0, column=0, sticky=W)
         XMinWindow = Entry(top)
@@ -87,7 +87,7 @@ class CustomToolbar(NavigationToolbar2TkAgg):
             ('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),
             ('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'),
             # TODO Get this poor thing a nice gif
-            ('Axes', 'Zoom in on region of interest (10-60)', 'subplots', 'plot_axes'),
+            ('Axes', 'Define the X- and Y-axis limits', 'subplots', 'plot_axes'),
             ('Subplots', 'Configure subplots', 'subplots', 'configure_subplots'),
             ('Save', 'Save the figure', 'filesave', 'save_figure'),
             )
@@ -136,10 +136,10 @@ class App():
         filemenu.add_command(label="Open Chromatogram", command=lambda: functions.openFile(self.fig, self.canvas))
         filemenu.add_command(label="Smooth Chromatogram", command=lambda: functions.smoothChrom(self.fig, self.canvas))
         filemenu.add_command(label="Compare Chromatogram", command=lambda: functions.addFile(self.fig, self.canvas))
-        filemenu.add_command(label="Normalize chromatograms", command=lambda: functions.chromNorm(self.fig, self.canvas))
         filemenu.add_command(label="Baseline Correction", command=lambda: functions.baselineCorrection(self.fig, self.canvas))
         filemenu.add_command(label="Chromatogram Calibration", command=lambda: functions.chromCalibration(self.fig, self.canvas))
         filemenu.add_command(label="Save Chromatogram", command=functions.saveChrom)
+        filemenu.add_command(label="Overlay Quantitation Windows", command=lambda: functions.overlayQuantitationWindows(self.fig, self.canvas))
         filemenu.add_command(label="Quantify Chromatogram", command=lambda: functions.quantifyChrom(self.fig, self.canvas))
 
         multimenu = Menu(menu, tearoff=0)

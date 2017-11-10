@@ -113,12 +113,16 @@ def batchChromCalibration(data, calFile):
             calibratedData = None
             if HappyTools.logging == True and HappyTools.logLevel >= 1:
                 with open(HappyTools.logFile,'a') as fw:
-                     fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+str(functions.minPeaks)+" were needed\n")
+                     fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+
+                            str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+str(functions.minPeaks)+
+                            " were needed\n")
     except NameError:
         calibratedData = None
         if HappyTools.logging == True and HappyTools.logLevel >= 1:
             with open(HappyTools.logFile,'a') as fw:
-                 fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+str(functions.minPeaks)+" were needed\n")        
+                 fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+
+                        str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+
+                        str(functions.minPeaks)+" were needed\n")        
 
     # Return calibrated data
     return calibratedData
@@ -212,7 +216,7 @@ def batchProcess(calFile, analFile):
 
 def batchQuantifyChrom(data, analFile):
     """Quantify the current chromatogram and write results to disk.
-    
+
     This function will open the analyte file (analFile), read all lines
     and split the line on tabs. The individual segments (name, time and
     time window) are then appended as a tuple to the list peaks.
@@ -261,6 +265,15 @@ def batchQuantifyChrom(data, analFile):
         plt.title(str(data['Name']))
         plt.xlabel("rt [m]")
         plt.ylabel("intensity [au]")
+        # Plot the quantitation windows
+        for i in peaks:
+            low = bisect.bisect_left(time,i[1]-i[2])
+            high = bisect.bisect_right(time,i[1]+i[2])
+            newTime = np.linspace(time[low], time[high], len(time[low:high]))
+            f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
+            newIntensity = f(newTime)
+            ax.fill_between(time[low:high], newTime, newIntensity, alpha=0.5)
+            ax.text(i[1], max(intensity[low:high]), i[0])
         pdf.savefig(fig)
         plt.close(fig)
 
@@ -274,7 +287,7 @@ def batchQuantifyChrom(data, analFile):
         # Get signal-to-noise
         lowBackground = bisect.bisect_left(time,max(i[1]-functions.backgroundWindow,functions.start))
         highBackground = bisect.bisect_right(time,min(i[1]+functions.backgroundWindow,functions.end))
-        backgroundData = intensity[lowBackground:low]+intensity[high:highBackground]
+        backgroundData = intensity[lowBackground:highBackground]
         if functions.backgroundNoiseMethod == "NOBAN":
             NOBAN = functions.noban(backgroundData)
         elif functions.backgroundNoiseMethod == "MT":
@@ -335,7 +348,8 @@ def batchQuantifyChrom(data, analFile):
         except IndexError:
             if HappyTools.logging == True and HappyTools.logLevel > 1:
                 with open(HappyTools.logFile,'a') as fw:
-                    fw.write(str(datetime.now().replace(microsecond=0))+"\tCould not determine a local maxima or minima for analyte "+str(i[0])+" at "+str(i[1])+" minutes\n")
+                    fw.write(str(datetime.now().replace(microsecond=0))+"\tCould not determine a local maxima or minima for analyte "+
+                            str(i[0])+" at "+str(i[1])+" minutes\n")
         # Gaussian fit on main points
         newGaussX = np.linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
         p0 = [np.max(yData), xData[np.argmax(yData)],0.1]
@@ -354,7 +368,12 @@ def batchQuantifyChrom(data, analFile):
                         with open(HappyTools.logFile,'a') as fw:
                             fw.write(str(datetime.now().replace(microsecond=0))+"\t<PLACEHOLDER 1>"+str(low)+" - "+str(high)+"\n")
                     continue
-            residual = gaussArea / totalArea
+
+            # Determine FWHM
+            fwhm = functions.fwhm(coeff)
+            height = functions.gaussFunction(fwhm['center']+fwhm['width'], *coeff)+NOBAN['Background']
+
+            residual = min(gaussArea / totalArea, 1.0)
             if functions.createFigure == "True":
                 if HappyTools.logging == True and HappyTools.logLevel >= 1:
                     with open(HappyTools.logFile,'a') as fw:
@@ -367,27 +386,36 @@ def batchQuantifyChrom(data, analFile):
                 plt.plot((newX[0],newX[-1]),(NOBAN['Background']+NOBAN['Noise'],NOBAN['Background']+NOBAN['Noise']),color='green')
                 plt.plot(newX,newY, color='blue',linestyle='dashed')
                 plt.plot(newGaussX, newGaussY, color='green',linestyle='dashed')
-                plt.plot((time[intensity[low:high].index(max(intensity[low:high]))+low],time[intensity[low:high].index(max(intensity[low:high]))+low]),(NOBAN['Background'],max(intensity[low:high])),color='orange',linestyle='dotted')
-                plt.legend(['Raw Data','Background','Noise','Univariate Spline','Gaussian Fit ('+str(int(residual*100))+'%)','Signal (S/N '+str(round((max(intensity[low:high])-NOBAN['Background'])/NOBAN['Noise'],1))+")"], loc='best')
+                plt.plot((time[intensity[low:high].index(max(intensity[low:high]))+low],time[intensity[low:high].index(max(intensity[low:high]))+low]),
+                        (NOBAN['Background'],max(intensity[low:high])),color='orange',linestyle='dotted')
+                plt.plot((max(fwhm['center']-fwhm['width'],newX[0]),min(fwhm['center']+fwhm['width'],newX[-1])),
+                        (height,height),color='red',linestyle='dashed')
+                plt.legend(['Raw Data','Background','Noise','Univariate Spline','Gaussian Fit ('+str(int(residual*100))+
+                        '%)','Signal (S/N '+str(round((max(intensity[low:high])-NOBAN['Background'])/NOBAN['Noise'],1))+")",
+                        "FWHM:"+"{0:.2f}".format(fwhm['fwhm'])], loc='best')
                 plt.title("Detail view: "+str(i[0]))
                 plt.xlabel("rt [m]")
                 plt.ylabel("intensity [au]")
                 pdf.savefig(fig)
                 plt.close(fig)
-        except:
+        except RuntimeError:
             if HappyTools.logging == True and HappyTools.logLevel > 1:
                 with open(HappyTools.logFile,'a') as fw:
                     fw.write(str(datetime.now().replace(microsecond=0))+"\tUnable to determine residuals for peak: "+str(i[1])+"\n")
             residual = "Nan"
             pass
-        results.append({'Peak':i[0], 'Time':i[1], 'Area':peakArea, 'PeakNoise':peakNoise, 'Residual':residual, 'S/N':signalNoise,'Background':NOBAN['Background'],'Noise':NOBAN['Noise'],'BackgroundArea':backgroundArea})
+        results.append({'Peak':i[0], 'Time':i[1], 'Area':peakArea, 'PeakNoise':peakNoise, 'Residual':residual, 'S/N':signalNoise,
+                'Background':NOBAN['Background'],'Noise':NOBAN['Noise'],'BackgroundArea':backgroundArea, 'fwhm':fwhm['fwhm'],
+                'ActualTime':fwhm['center']})
     if functions.createFigure == "True":
         pdf.close()
     data['Name'] = str(data['Name'].split('.')[0])+".raw"
     with open(data['Name'],'w') as fw:
-        fw.write("Name\tTime\tPeak Area\tS/N\tBackground\tNoise\tGaussian Residual RMS\tPeak Noise\tBackground Area\n")
+        fw.write("Name\tTime\tPeak Area\tS/N\tBackground\tNoise\tGaussian Residual RMS\tPeak Noise\tBackground Area\tPeak Time\tFWHM\n")
         for i in results:
-            fw.write(str(i['Peak'])+"\t"+str(i['Time'])+"\t"+str(i['Area'])+"\t"+str(i['S/N'])+"\t"+str(i['Background'])+"\t"+str(i['Noise'])+"\t"+str(i['Residual'])+"\t"+str(i['PeakNoise'])+"\t"+str(i['BackgroundArea'])+"\n")
+            fw.write(str(i['Peak'])+"\t"+str(i['Time'])+"\t"+str(i['Area'])+"\t"+str(i['S/N'])+"\t"+str(i['Background'])+"\t"+
+                    str(i['Noise'])+"\t"+str(i['Residual'])+"\t"+str(i['PeakNoise'])+"\t"+str(i['BackgroundArea'])+"\t"+
+                    str(i['ActualTime'])+"\t"+str(i['fwhm'])+"\n")
 
 def batchWriteData(data):
     """ TODO
@@ -407,7 +435,9 @@ def combineResults():
             fr.readline()
             for line in fr:
                 chunks = line.rstrip('\n').split('\t')
-                Buffer.append({'Peak':str(chunks[0]),'Time':float(chunks[1]),'Area':float(chunks[2]),'S/N':float(chunks[3]),'Background':float(chunks[4]),'Noise':float(chunks[5]),'Residual':float(chunks[6]),'PeakNoise':float(chunks[7]),'BackgroundArea':float(chunks[8])})
+                Buffer.append({'Peak':str(chunks[0]),'Time':float(chunks[1]),'Area':float(chunks[2]),'S/N':float(chunks[3]),
+                            'Background':float(chunks[4]),'Noise':float(chunks[5]),'Residual':float(chunks[6]),'PeakNoise':float(chunks[7]),
+                            'BackgroundArea':float(chunks[8]),'ActualTime':float(chunks[9]),'fwhm':float(chunks[10])})
             Results.append({'File':str(file),'Data':Buffer})
 
     # Construct the filename for the output
@@ -545,7 +575,7 @@ def combineResults():
                 fw.write("\n")
             fw.write("\n")
 
-        # Residuals
+        # GPQ
         if functions.peakQual.get() == 1:
             fw.write("GPQ (Gaussian Peak Quality)")
             fw.write(header)
@@ -553,5 +583,28 @@ def combineResults():
                 fw.write(i['File'])
                 for j in i['Data']:
                     fw.write("\t"+str(j['Residual']))
+                fw.write("\n")
+            fw.write("\n")
+
+        # FWHM
+        if functions.peakQual.get() == 1:
+            fw.write("FWHM")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                for j in i['Data']:
+                    fw.write("\t"+str(j['fwhm']))
+                fw.write("\n")
+            fw.write("\n")
+
+        # Tr residual
+        if functions.peakQual.get() == 1:
+            fw.write("Retention Time Residual")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                for j in i['Data']:
+                    residualTime = abs(float(j['ActualTime']) - float(j['Time']))
+                    fw.write("\t"+str(residualTime))
                 fw.write("\n")
             fw.write("\n")

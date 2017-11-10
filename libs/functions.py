@@ -4,6 +4,7 @@
 from datetime import datetime
 from matplotlib.pyplot import gca
 from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.interpolate import UnivariateSpline
 from scipy.optimize import curve_fit
 from scipy.signal import argrelextrema
 from scipy.signal import savgol_filter
@@ -232,7 +233,7 @@ def batchPlot(fig,canvas):
     filesGrabbed = []
     for files in batchFunctions.CALIBRATION_FILETYPES:
         for file in glob.glob(str(os.path.join(folder_path,files))):
-            if file not in batchFunctions.EXCLUSION_FILES:
+            if os.path.basename(file) not in batchFunctions.EXCLUSION_FILES:
                 if openChrom(file):
                     filesGrabbed.append(file)
 
@@ -240,9 +241,9 @@ def batchPlot(fig,canvas):
     for file in filesGrabbed:
         data.append((str(file),openChrom(file)))
 
-    fig.clear()
-    axes = fig.add_subplot(111)
     if data:
+        fig.clear()
+        axes = fig.add_subplot(111)
         for i in data:
             x_array, y_array = zip(*i[1])
             axes.plot(x_array,y_array,label=str(os.path.split(i[0])[-1]))
@@ -267,7 +268,7 @@ def batchPlotNorm(fig,canvas):
     filesGrabbed = []
     for files in batchFunctions.CALIBRATION_FILETYPES:
         for file in glob.glob(str(os.path.join(folder_path,files))):
-            if file not in batchFunctions.EXCLUSION_FILES:
+            if os.path.basename(file) not in batchFunctions.EXCLUSION_FILES:
                 if openChrom(file):
                     filesGrabbed.append(file)
 
@@ -305,9 +306,9 @@ def batchPlotNorm(fig,canvas):
         data.append((str(file),newData))
 
     # Plot
-    fig.clear()
-    axes = fig.add_subplot(111)
     if data:
+        fig.clear()
+        axes = fig.add_subplot(111)
         for i in data:
             x_array, y_array = zip(*i[1])
             axes.plot(x_array,y_array,label=str(os.path.split(i[0])[-1]))
@@ -371,9 +372,12 @@ def batchPopup():
     closeButton.grid(row=4, column=1, sticky=E)
 
     # Tooltips
-    createToolTip(calibrationButton,"This button will allow you to select your calibration file, the program expects a tab separated text file where each line consists of a peak ID, peak RT and a RT window.")
-    createToolTip(analyteButton,"This button will allow you to select your analyte file, the program expects a tab separated text file where each line consists of a peak ID, peak RT and a RT window.")
-    createToolTip(outputButton,"This button will open another window in which you can select which outputs you want HappyTools to show in the final summary.")
+    createToolTip(calibrationButton,"This button will allow you to select your calibration file, the program expects a "+
+            "tab separated text file where each line consists of a peak ID, peak RT and a RT window.")
+    createToolTip(analyteButton,"This button will allow you to select your analyte file, the program expects a tab separated "+
+            "text file where each line consists of a peak ID, peak RT and a RT window.")
+    createToolTip(outputButton,"This button will open another window in which you can select which outputs you want "+
+            "HappyTools to show in the final summary.")
 
 def chromCalibration(fig,canvas):
     """Ask for a reference file and calibrate the current chromatogram.
@@ -435,11 +439,6 @@ def chromCalibration(fig,canvas):
     plotMultiData(fig,canvas,multiData)
     writeData(calibratedData,os.path.split(data[0][0])[-1]+" (Cal)")
 
-def chromNorm(fig,canvas):
-    """ TODO
-    """
-    return
-
 def fileCleanup():
     """Clean up the temporary files.
 
@@ -456,7 +455,24 @@ def fileCleanup():
         try:
             os.remove(f)
         except OSError:
-            tkMessageBox.showinfo("File Error", "A temporary file is open in another program. Please exit HappyTools and close all temporary files before running HappyTools.")
+            tkMessageBox.showinfo("File Error", "A temporary file is open in another program. Please exit HappyTools "+
+                    "and close all temporary files before running HappyTools.")
+
+def fwhm(coeff):
+    """Calculate the FWHM
+    
+    This function will calculate the FWHM based on the following formula
+    FWHM = 2*sigma*sqrt(2*ln(2)). The function will return a dictionary
+    with the fwhm ('fwhm'), the Gaussian peak center ('center') and the
+    +/- width, from the peak center ('width').
+    
+    Keyword arguments:
+    coeff -- coefficients as calculated by SciPy curve_fit
+    """
+    fwhm = abs(2*coeff[2]*math.sqrt(2*math.log(2)))
+    width = 0.5*fwhm
+    center = coeff[1]
+    return {'fwhm':fwhm, 'width':width, 'center':center}
 
 def createToolTip(widget, text):
     """Create a tooltip.
@@ -767,6 +783,46 @@ def outputPopup():
     top.lift()
     return
 
+def overlayQuantitationWindows(fig,canvas):
+    """ TODO
+    """
+    # Prompt for peaklist
+    peakList = tkFileDialog.askopenfilename()
+    peaks = []
+    with open(peakList,'r') as fr:
+        for line in fr:
+            line = line.rstrip("\n").split("\t")
+            try:
+                peaks.append((str(line[0]), float(line[1]), float(line[2])))
+            except ValueError:
+                pass
+
+    # Read data currently on canvas
+    data = {'Name':readData()[0][0],'Data':readData()[0][1]}
+    time, intensity = zip(*data['Data'])
+
+    # Plot the original data
+    fig.clear()
+    axes = fig.add_subplot(111)
+    line, = axes.plot(time,intensity,label=data['Name'])
+    handles, labels = axes.get_legend_handles_labels()
+    fig.legend(handles,labels)
+    axes.get_xaxis().get_major_formatter().set_useOffset(False)
+    axes.set_xlabel("Time [m]")
+    axes.set_ylabel("Intensity [au]")
+    canvas.draw()
+
+    # Plot the quantitation windows
+    for i in peaks:
+        low = bisect.bisect_left(time,i[1]-i[2])
+        high = bisect.bisect_right(time,i[1]+i[2])
+        newTime = np.linspace(time[low], time[high],len(time[low:high]))
+        f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
+        newIntensity = f(newTime)
+        axes.fill_between(time[low:high], newTime, newIntensity, alpha=0.5)
+        axes.text(i[1], max(intensity[low:high]), i[0])
+        canvas.draw()
+
 def peakDetection(fig,canvas):
     """Detect all peaks in the currently active chromatogram.
 
@@ -856,7 +912,6 @@ def peakDetection(fig,canvas):
         y_buff = []
         clac = 0.01 * max(newGaussY)
         for bla,ka in enumerate(newGaussY):
-            #if ka > NOBAN['Background']+NOBAN['Noise']:
             if ka > clac:
                 x_buff.append(newGaussX[bla])
                 y_buff.append(ka)
@@ -1136,17 +1191,46 @@ def settingsPopup():
     closeButton.grid(row=11, column=1, sticky=E)
 
     # Tooltips
-    createToolTip(pointsLabel,"The number of data points that is used to determine the baseline. Specifically, this setting specifies how large each segment of the whole chromatogram will be to identify the lowest data point per window, i.e. a setting of 100 means that the chromatogram is split into segments of 100 data points per segment.")
-    createToolTip(startLabel,"This setting tells the program from which time point it is supposed to begin processing, this setting should be set in such a way that it is before the analytes of interest but after any potential big increases or decrease in intensity.")
-    createToolTip(endLabel,"This setting tells the program until which time point it is supposed to begin processing, this setting should be set in such a way that it is after the analytes of interest but before any potential big increases or decrease in intensity.")
-    createToolTip(baselineOrderLabel,"This setting tells the program what sort of function should be used to correct the baseline. A value of 1 refers to a linear function, while a value of 2 refers to a quadratic function. We advise to use a linear function as the need for any higher order function indicates an unexpected event in the chromatography.")
-    createToolTip(backgroundWindowLabel,"This setting tells the program the size of the region that will be examined to determine the background. A value of 1 means that the program will look from 20.0 to 21.0 minutes and 21.4 to 22.4 for an analyte that elutes from 21.0 to 21.4 minutes.")
-    createToolTip(nobanLabel,"This setting specifies the initial estimate for the NOBAN algorithm, specifically a value of 0.25 means that the lowest 25% of all data points will be used as an initial estimate for the background. This value should be changed depending on how many signals there are in the chromatogram, e.g. in a crowded chromatogram this value should be low.")
-    createToolTip(slicepointsLabel,"The number of conscutive data points that will be used to determine the background and noise using the MT method. The MT method will scan all datapoints that fall within the background window (specified above) to find the here specified number of consecutive data points that yield the lowest average intensity, the average of these data points is then used as background while the standard deviation of these data points is used as the noise.")
-    createToolTip(figureLabel,"This setting specifies if HappyTools should create a figure for each integrated peak, showing the raw datapoints, background, noise, S/N and GPQ values. This is a very performance intensive option and it is recommended to only use this on a subset of your samples (e.g. less than 25 samples).")
-    createToolTip(minPeakLabel,"This setting specifies the minimum number of calibrant peaks that have to pass the specified S/N value that must be present in a chromatogram. A chromatogram for which there are not enough calibrant peaks passing the specified criteria will not be calibrated and excluded from further quantitation.")
-    createToolTip(minPeakSNLabel,"This setting specifies the minimum S/N value a calibrant peak must surpass to be included in the calibration. The actual S/N value that is determined by HappyTools depends heavily on which method to determine signal and noise is used, the default method being rather conservative.")
-    createToolTip(peakDetectionLabel, "This setting specifies the minimum intensity, relative to the main peak in a chromatogram, that the peak detection algorithm will try to annotate. For example, a value of 0.01 means that the program will attempt to annotate peaks until the next highest peak is below 1% of the intensity of the main peak in the chromatogram.")
+    createToolTip(pointsLabel,"The number of data points that is used to determine the baseline. Specifically, "+
+            "this setting specifies how large each segment of the whole chromatogram will be to identify the lowest "+
+            "data point per window, i.e. a setting of 100 means that the chromatogram is split into segments of 100 "+
+            "data points per segment.")
+    createToolTip(startLabel,"This setting tells the program from which time point it is supposed to begin "+
+            "processing, this setting should be set in such a way that it is before the analytes of interest but "+
+            "after any potential big increases or decrease in intensity.")
+    createToolTip(endLabel,"This setting tells the program until which time point it is supposed to begin processing, "+
+            "this setting should be set in such a way that it is after the analytes of interest but before any "+
+            "potential big increases or decrease in intensity.")
+    createToolTip(baselineOrderLabel,"This setting tells the program what sort of function should be used to correct "+
+            "the baseline. A value of 1 refers to a linear function, while a value of 2 refers to a quadratic "+
+            "function. We advise to use a linear function as the need for any higher order function indicates an "+
+            "unexpected event in the chromatography.")
+    createToolTip(backgroundWindowLabel,"This setting tells the program the size of the region that will be examined "+
+            "to determine the background. A value of 1 means that the program will look from 20.0 to 21.0 minutes "+
+            "and 21.4 to 22.4 for an analyte that elutes from 21.0 to 21.4 minutes.")
+    createToolTip(nobanLabel,"This setting specifies the initial estimate for the NOBAN algorithm, specifically a "+
+            "value of 0.25 means that the lowest 25% of all data points will be used as an initial estimate for the "+
+            "background. This value should be changed depending on how many signals there are in the chromatogram, "+
+            "e.g. in a crowded chromatogram this value should be low.")
+    createToolTip(slicepointsLabel,"The number of conscutive data points that will be used to determine the "+
+            "background and noise using the MT method. The MT method will scan all datapoints that fall within the "+
+            "background window (specified above) to find the here specified number of consecutive data points that "+
+            "yield the lowest average intensity, the average of these data points is then used as background while "+
+            "the standard deviation of these data points is used as the noise.")
+    createToolTip(figureLabel,"This setting specifies if HappyTools should create a figure for each integrated peak, "+
+            "showing the raw datapoints, background, noise, S/N and GPQ values. This is a very performance intensive "+
+            "option and it is recommended to only use this on a subset of your samples (e.g. less than 25 samples).")
+    createToolTip(minPeakLabel,"This setting specifies the minimum number of calibrant peaks that have to pass the "+
+            "specified S/N value that must be present in a chromatogram. A chromatogram for which there are not "+
+            "enough calibrant peaks passing the specified criteria will not be calibrated and excluded from further "+
+            "quantitation.")
+    createToolTip(minPeakSNLabel,"This setting specifies the minimum S/N value a calibrant peak must surpass to be "+
+            "included in the calibration. The actual S/N value that is determined by HappyTools depends heavily on "+
+            "which method to determine signal and noise is used, the default method being rather conservative.")
+    createToolTip(peakDetectionLabel, "This setting specifies the minimum intensity, relative to the main peak in "+
+            "a chromatogram, that the peak detection algorithm will try to annotate. For example, a value of 0.01 "+
+            "means that the program will attempt to annotate peaks until the next highest peak is below 1% of the "+
+            "intensity of the main peak in the chromatogram.")
 
 def smoothChrom(fig, canvas):
     """ TODO

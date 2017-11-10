@@ -58,3 +58,21 @@
  - Added the peakDetectionMin setting to the settings window, including the possibility
    to save this parameter (thereby ensuring that the user does not have to edit the code
    of HappyTools).
+
+24 August 2017
+ - Added an option to zoom in on a specific region of the chromatogram using a new button
+   in the GUI, that is labelled as "Define the X- and Y-axis limits".
+
+1 September 2017
+ - Added an option to overlay the quantitation windows onto a plotted chromatogram via the
+   File -> Overlay Quantitation Windows button.
+ - The quantitation overlay is added to the overal chromatogram during a batchProcess if the
+   createFigure setting is set to True.
+
+11 November 2017
+ - Implemented a FWHM determination, that is included in the plots of each individual peak
+   of the PDF files.
+ - FWHM values will also be printed to the summary if the Peak Quality Criteria are selected
+   in the Output Options of Batch Process.
+ - Implemented a retention time residual, that is printed to the summary if the Peak Quality
+   Criteria are selected in the Output Options of Batch Process.
