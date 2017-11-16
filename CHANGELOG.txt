@@ -76,3 +76,10 @@
    in the Output Options of Batch Process.
  - Implemented a retention time residual, that is printed to the summary if the Peak Quality
    Criteria are selected in the Output Options of Batch Process.
+
+16 November 2017
+ - Implemented automatic integration window border determination using either sigma or FWHM.
+ - Two new settings have been added to the settings window, namely 'Peak Detection Edge Method'
+   and 'Sigma Value'. The first specifies if the border is the FWHM or based on a user
+   specified Sigma value. The latter specifies what Sigma value should be used, if the first
+   is set to Sigma.

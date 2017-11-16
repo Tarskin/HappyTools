@@ -35,6 +35,8 @@ backgroundWindow = 1
 nobanStart = 0.25
 slicepoints = 5
 peakDetectionMin = 0.05
+peakDetectionEdge = "Sigma"
+peakDetectionEdgeValue = 2.0
 createFigure = "True"
 minPeaks = 4
 minPeakSN = 27
@@ -556,6 +558,12 @@ def getSettings():
             elif chunks[0] == "peakDetectionMin:":
                 global peakDetectionMin
                 peakDetectionMin = float(chunks[1])
+            elif chunks[0] == "peakDetectionEdge:":
+                global peakDetectionEdge
+                peakDetectionEdge = str(chunks[1])
+            elif chunks[0] == "peakDetectionEdgeValue:":
+                global peakDetectionEdgeValue
+                peakDetectionEdgeValue = float(chunks[1])
 
 def infoPopup():
     def close():
@@ -847,22 +855,21 @@ def peakDetection(fig,canvas):
     canvas -- tkinter canvas object
     """
     data = readData()
-    
+
+    # Retrieve subset of data and determine the background
     x_data,y_data = zip(*data[0][1])
     orig_x = x_data
     orig_y = y_data
     low = bisect.bisect_left(x_data,start)
     high = bisect.bisect_right(x_data,end)
     x_data = x_data[low:high]
-    y_data = y_data[low:high] 
+    y_data = y_data[low:high]
     if backgroundNoiseMethod == "NOBAN":
         NOBAN = noban(y_data)
     elif backgroundNoiseMethod == "MT":
         NOBAN = backgroundNoise(y_data)
 
-    functions = []
-    cutoff = peakDetectionMin*(max(y_data)-NOBAN['Background'])
-
+    # Determine the local maxima and minima, using first order derivative
     newX = np.linspace(x_data[0], x_data[-1], 25000*(x_data[-1]-x_data[0]))
     f = InterpolatedUnivariateSpline(x_data, y_data)
     fPrime = f.derivative()
@@ -873,6 +880,14 @@ def peakDetection(fig,canvas):
     breaks = maxm[0].tolist() + minm[0].tolist()
     breaks = sorted(breaks)
 
+    # Determine the maximum full peak within the specified window, for the cut-off
+    maxIntensity = 0
+    for i in range(0, len(breaks)-2):
+        maxIntensity = max(max(newY[breaks[i]:breaks[i+1]]),maxIntensity)
+    cutoff = peakDetectionMin*(maxIntensity - max(NOBAN['Background'],0))
+
+    # Detect peaks
+    functions = []
     counter = 0
     while max(y_data)-NOBAN['Background'] > cutoff:
         counter += 1
@@ -880,72 +895,90 @@ def peakDetection(fig,canvas):
         f = InterpolatedUnivariateSpline(x_data, y_data)
         newY = f(newX)
         maxPoint = 0
+        #try:
+            #if max(newY[0:breaks[0]]) > maxPoint:
+                #maxPoint = max(newY[0:breaks[0]])
+                #xData = newX[0:breaks[0]]
+                #yData = [x - max(NOBAN['Background'],0) for x in newY[0:breaks[0]]]
+            #for index,j in enumerate(breaks):
+                #try:
+                    #if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
+                        #maxPoint = max(newY[breaks[index]:breaks[index+1]])
+                        #xData = newX[breaks[index]:breaks[index+1]]
+                        #yData = [x - max(NOBAN['Background'],0) for x in newY[breaks[index]:breaks[index+1]]]
+                #except IndexError:
+                    #if max(newY[breaks[index]:-1]) > maxPoint:
+                        #maxPoint = max(newY[breaks[index]:-1])
+                        #xData = newX[breaks[index]:-1]
+                        #yData = [x - max(NOBAN['Background'],0) for x in newY[breaks[index]:-1]]
+                    #pass
+        #except IndexError:
+            #pass
         try:
-            if max(newY[0:breaks[0]]) > maxPoint:
-                maxPoint = max(newY[0:breaks[0]])
-                xData = newX[0:breaks[0]]
-                yData = [x - NOBAN['Background'] for x in newY[0:breaks[0]]]
             for index,j in enumerate(breaks):
-                try:
-                    if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
-                        maxPoint = max(newY[breaks[index]:breaks[index+1]])
-                        xData = newX[breaks[index]:breaks[index+1]]
-                        yData = [x - NOBAN['Background'] for x in newY[breaks[index]:breaks[index+1]]]
-                except IndexError:
-                    if max(newY[breaks[index]:-1]) > maxPoint:
-                        maxPoint = max(newY[breaks[index]:-1])
-                        xData = newX[breaks[index]:-1]
-                        yData = [x - NOBAN['Background'] for x in newY[breaks[index]:-1]]
-                    pass
+                if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
+                    maxPoint = max(newY[breaks[index]:breaks[index+1]])
+                    xData = newX[breaks[index]:breaks[index+1]]
+                    yData = [x - max(NOBAN['Background'],0) for x in newY[breaks[index]:breaks[index+1]]]
         except IndexError:
             pass
+
         # Gaussian fit on main points
         newGaussX = np.linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
         p0 = [np.max(yData), xData[np.argmax(yData)],0.1]
         try:
             coeff, var_matrix = curve_fit(gaussFunction, xData, yData, p0)
             newGaussY = gaussFunction(newGaussX, *coeff)
-            newGaussY = [x + backGround for x in newGaussY]
         except:
             pass
-        x_buff = []
-        y_buff = []
-        clac = 0.01 * max(newGaussY)
-        for bla,ka in enumerate(newGaussY):
-            if ka > clac:
-                x_buff.append(newGaussX[bla])
-                y_buff.append(ka)
-        newGaussX = x_buff
-        newGaussY = y_buff
-        functions.append(("Peak: "+str("%.2f" % xData[np.argmax(yData)]),zip(newGaussX,newGaussY)))
-        # Adjust data
-        new_y = []
-        for index,j in enumerate(x_data):
-            new_y.append(y_data[index] - gaussFunction(j,*coeff))
-        if max(new_y)-NOBAN['Background'] == max(y_data)-NOBAN['Background']:
+
+        # Limit the peak to either FWHM or a user specified Sigma value
+        FWHM = fwhm(coeff)
+        if peakDetectionEdge == "FWHM":
+            low = bisect.bisect_left(newGaussX,coeff[1]-FWHM['width'])
+            high = bisect.bisect_right(newGaussX,coeff[1]+FWHM['width'])
+            try:
+                newGaussX = newGaussX[low:high]
+                newGaussY = newGaussY[low:high]
+            except:
+                pass
+        elif peakDetectionEdge == "Sigma":
+            low = bisect.bisect_left(newGaussX,coeff[1]-peakDetectionEdgeValue*coeff[2])
+            high = bisect.bisect_right(newGaussX,coeff[1]+peakDetectionEdgeValue*coeff[2])
+            try:
+                newGaussX = newGaussX[low:high]
+                newGaussY = newGaussY[low:high]
+            except:
+                pass
+
+        functions.append({'Peak':xData[np.argmax(yData)],'Data':zip(newGaussX,newGaussY),'FWHM':FWHM})
+
+        # Subtract the fitted Gaussian from the raw or intermediate data and repeat
+        # the peak detection step.
+        GaussY = gaussFunction(x_data,*coeff)
+        new_y = map(operator.sub, y_data, GaussY)
+        if max(new_y) == max(y_data):
             break
         y_data = new_y
-    functions = sorted(functions, key=lambda tup: tup[0])
+    functions = sorted(functions, key=lambda tup: tup['Peak'])
 
     # Writing to temp folder
     with open('temp/annotation.ref','w') as fw:
         fw.write("Peak\tRT\tWindow\n")
         for index, analyte in enumerate(functions):
-            peak = analyte[0].split()[-1]
-            fw.write(str(index+1)+"\t"+str(peak)+"\t"+"0.2"+"\n")
+            fw.write(str(index+1)+"\t"+str("%.2f" % analyte['Peak'])+"\t"+str("%.2f" % analyte['FWHM']['fwhm'])+"\n")
 
     # Plotting
     fig.clear()
     axes = fig.add_subplot(111)
     axes.plot(orig_x,orig_y, 'b',alpha=0.5)
-    for i in functions:
-        xd = []
-        yd = []
-        for j in i[1]:
-            xd.append(j[0])
-            yd.append(j[1])
-        axes.plot(xd,yd,label=os.path.split(i[0])[-1])
-        axes.fill_between(xd, 0, yd,alpha=0.2)
+    for index,i in enumerate(functions):
+        try:
+            xd,yd = zip(*i['Data'])
+            axes.plot(xd,yd,label=str(index+1)+": "+str("%.2f" % i['Peak']))
+            axes.fill_between(xd, 0, yd,alpha=0.2)
+        except ValueError:
+            pass
     axes.set_xlabel("Time [m]")
     axes.set_ylabel("Intensity [au]")
     handles, labels = axes.get_legend_handles_labels()
@@ -1069,6 +1102,8 @@ def settingsPopup():
 
     figureVariable = StringVar()
     figureVariable.set(createFigure)
+    peakDetectionEdgeVar = StringVar()
+    peakDetectionEdgeVar.set(peakDetectionEdge)
 
     def close():
         """ TODO
@@ -1085,6 +1120,8 @@ def settingsPopup():
         global minPeaks
         global minPeakSN
         global peakDetectionMin
+        global peakDetectionEdge
+        global peakDetectionEdgeValue
         points = int(pointsWindow.get())
         start = float(startWindow.get())
         end = float(endWindow.get())
@@ -1096,6 +1133,10 @@ def settingsPopup():
         minPeaks = int(minPeakWindow.get())
         minPeakSN = int(minPeakSNWindow.get())
         peakDetectionMin = float(peakDetection.get())
+        peakDetectionEdge = str(peakDetectionEdgeVar.get())
+        peakDetectionEdgeValue = float(peakDetectionEdgeValueWindow.get())
+        #peakDetectionEdge = "Sigma"
+        #peakDetectionEdgeValue = 2.0
         top.destroy()
     
     def save():
@@ -1114,6 +1155,8 @@ def settingsPopup():
             fw.write("minPeaks:\t"+str(minPeakWindow.get())+"\n")
             fw.write("minPeakSN:\t"+str(minPeakSNWindow.get())+"\n")
             fw.write("peakDetectionMin:\t"+str(peakDetection.get())+"\n")
+            fw.write("peakDetectionEdge:\t"+str(peakDetectionEdgeVar.get())+"\n")
+            fw.write("peakDetectionEdgeValue:\t"+str(peakDetectionEdgeValueWindow.get())+"\n")
         
     top = Tk.top = Toplevel()
     top.title("HappyTools "+str(HappyTools.version)+" Settings")
@@ -1184,11 +1227,22 @@ def settingsPopup():
     minPeakSNWindow = Entry(top)
     minPeakSNWindow.insert(0, minPeakSN)
     minPeakSNWindow.grid(row=10, column=1, sticky=W)
+    
+    peakDetectionEdgeLabel = Label(top, text="Peak Detection Edge Method", font="bold")
+    peakDetectionEdgeLabel.grid(row=11, column=0, sticky=W)
+    peakDetectionEdgeWindow = OptionMenu(top, peakDetectionEdgeVar, "Sigma", "FWHM")
+    peakDetectionEdgeWindow.grid(row=11, column=1, sticky=W)
+
+    peakDetectionEdgeValueLabel = Label(top, text="Sigma Value", font="bold")
+    peakDetectionEdgeValueLabel.grid(row=12, column=0, sticky=W)
+    peakDetectionEdgeValueWindow = Entry(top)
+    peakDetectionEdgeValueWindow.insert(0, peakDetectionEdgeValue)
+    peakDetectionEdgeValueWindow.grid(row=12, column=1, sticky=W)
 
     saveButton = Button(top, text="Save", command=lambda: save())
-    saveButton.grid(row=11, column=0, sticky=W)
+    saveButton.grid(row=13, column=0, sticky=W)
     closeButton = Button(top, text="Close", command=lambda: close())
-    closeButton.grid(row=11, column=1, sticky=E)
+    closeButton.grid(row=13, column=1, sticky=E)
 
     # Tooltips
     createToolTip(pointsLabel,"The number of data points that is used to determine the baseline. Specifically, "+
@@ -1231,6 +1285,14 @@ def settingsPopup():
             "a chromatogram, that the peak detection algorithm will try to annotate. For example, a value of 0.01 "+
             "means that the program will attempt to annotate peaks until the next highest peak is below 1% of the "+
             "intensity of the main peak in the chromatogram.")
+    createToolTip(peakDetectionEdgeLabel, "This setting specifies if HappyTools will determine the integration window "+
+            "using either the full width at half maximum (FWHM) or a specified sigma value. The Sigma value has to be "+
+            "specified in the field below if Sigma is the selected method.")
+    createToolTip(peakDetectionEdgeValueLabel, "This setting specifies the Sigma value that will be used for "+
+            "determining the border of the integration window. A value of 1.0 means that HappyTools will set the "+
+            "integration window so that 68.3% of the Gaussian peak will be quantified (2 Sigma = 95.5% and 3 sigma "+
+            "= 99.7%). Please note that this value should depend on how complex the chromatogram is, for instance "+
+            "a low sigma will yield better results in a complex chromatogram.") 
 
 def smoothChrom(fig, canvas):
     """ TODO
