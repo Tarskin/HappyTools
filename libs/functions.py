@@ -540,9 +540,9 @@ def getSettings():
             elif chunks[0] == "noise:":
                 global noise
                 noise = str(chunks[1])
-            elif chunks[0] == "nobanStart:":
-                global nobanStart
-                nobanStart = float(chunks[1])
+            #elif chunks[0] == "nobanStart:":
+                #global nobanStart
+                #nobanStart = float(chunks[1])
             elif chunks[0] == "slicepoints:":
                 global slicepoints
                 slicepoints = int(chunks[1])
@@ -895,25 +895,8 @@ def peakDetection(fig,canvas):
         f = InterpolatedUnivariateSpline(x_data, y_data)
         newY = f(newX)
         maxPoint = 0
-        #try:
-            #if max(newY[0:breaks[0]]) > maxPoint:
-                #maxPoint = max(newY[0:breaks[0]])
-                #xData = newX[0:breaks[0]]
-                #yData = [x - max(NOBAN['Background'],0) for x in newY[0:breaks[0]]]
-            #for index,j in enumerate(breaks):
-                #try:
-                    #if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
-                        #maxPoint = max(newY[breaks[index]:breaks[index+1]])
-                        #xData = newX[breaks[index]:breaks[index+1]]
-                        #yData = [x - max(NOBAN['Background'],0) for x in newY[breaks[index]:breaks[index+1]]]
-                #except IndexError:
-                    #if max(newY[breaks[index]:-1]) > maxPoint:
-                        #maxPoint = max(newY[breaks[index]:-1])
-                        #xData = newX[breaks[index]:-1]
-                        #yData = [x - max(NOBAN['Background'],0) for x in newY[breaks[index]:-1]]
-                    #pass
-        #except IndexError:
-            #pass
+        # Ignore the regions newY[0:breaks[0]] and newY[breaks[-1]:-1] because
+        # those do not contain 'full' peaks.
         try:
             for index,j in enumerate(breaks):
                 if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
@@ -962,11 +945,19 @@ def peakDetection(fig,canvas):
         y_data = new_y
     functions = sorted(functions, key=lambda tup: tup['Peak'])
 
+    # iterate over all peaks and remove overlap
+    #for index, i in enumerate(functions):
+        #try:
+            #if i['Peak']+i['
+        #except IndexError:
+            #pass
+
     # Writing to temp folder
     with open('temp/annotation.ref','w') as fw:
         fw.write("Peak\tRT\tWindow\n")
         for index, analyte in enumerate(functions):
-            fw.write(str(index+1)+"\t"+str("%.2f" % analyte['Peak'])+"\t"+str("%.2f" % analyte['FWHM']['fwhm'])+"\n")
+            window = "%.2f" % (float(analyte['Data'][-1][0])-float(analyte['Data'][0][0]))
+            fw.write(str(index+1)+"\t"+str("%.2f" % analyte['Peak'])+"\t"+str(window)+"\n")
 
     # Plotting
     fig.clear()
@@ -1114,7 +1105,7 @@ def settingsPopup():
         global baselineOrder
         global backgroundWindow
         global backgroundNoise
-        global nobanStart
+        #global nobanStart
         global slicepoints
         global createFigure
         global minPeaks
@@ -1127,7 +1118,7 @@ def settingsPopup():
         end = float(endWindow.get())
         baselineOrder = int(baselineOrderWindow.get())
         backgroundWindow = float(backgroundWindowWindow.get())
-        nobanStart = float(nobanWindow.get())
+        #nobanStart = float(nobanWindow.get())
         slicepoints = int(slicepointsWindow.get())
         createFigure = str(figureVariable.get())
         minPeaks = int(minPeakWindow.get())
@@ -1135,8 +1126,6 @@ def settingsPopup():
         peakDetectionMin = float(peakDetection.get())
         peakDetectionEdge = str(peakDetectionEdgeVar.get())
         peakDetectionEdgeValue = float(peakDetectionEdgeValueWindow.get())
-        #peakDetectionEdge = "Sigma"
-        #peakDetectionEdgeValue = 2.0
         top.destroy()
     
     def save():
@@ -1148,7 +1137,7 @@ def settingsPopup():
             fw.write("end:\t"+str(float(endWindow.get()))+"\n")
             fw.write("baselineOrder:\t"+str(int(baselineOrderWindow.get()))+"\n")
             fw.write("backgroundWindow:\t"+str(float(backgroundWindowWindow.get()))+"\n")
-            fw.write("nobanStart:\t"+str(float(nobanWindow.get()))+"\n")
+            #fw.write("nobanStart:\t"+str(float(nobanWindow.get()))+"\n")
             fw.write("noise:\t"+str(noise)+"\n")
             fw.write("slicepoints:\t"+str(slicepoints)+"\n")
             fw.write("createFigure:\t"+str(figureVariable.get())+"\n")
@@ -1157,92 +1146,109 @@ def settingsPopup():
             fw.write("peakDetectionMin:\t"+str(peakDetection.get())+"\n")
             fw.write("peakDetectionEdge:\t"+str(peakDetectionEdgeVar.get())+"\n")
             fw.write("peakDetectionEdgeValue:\t"+str(peakDetectionEdgeValueWindow.get())+"\n")
-        
+
     top = Tk.top = Toplevel()
     top.title("HappyTools "+str(HappyTools.version)+" Settings")
     top.protocol( "WM_DELETE_WINDOW", lambda: close())
+
+    # General Settings
+    generalLabel = Label(top, text="General Settings", font=("Helvetica", 16))
+    generalLabel.grid(row=0, columnspan=2, sticky=W)
     
-    pointsLabel = Label(top, text="Datapoints", font="bold")
-    pointsLabel.grid(row=0, column=0, sticky=W)
-    pointsWindow = Entry(top)
-    pointsWindow.insert(0, points)
-    pointsWindow.grid(row=0, column=1, sticky=W)
-    
-    startLabel = Label(top, text="Start", font="bold")
+    startLabel = Label(top, text="Start Time", font=("Helvetica", 12))
     startLabel.grid(row=1, column=0, sticky=W)
     startWindow = Entry(top)
     startWindow.insert(0, start)
     startWindow.grid(row=1, column=1, sticky=W)
     
-    endLabel = Label(top, text="End", font="bold")
+    endLabel = Label(top, text="End Time", font=("Helvetica", 12))
     endLabel.grid(row=2, column=0, sticky=W)
     endWindow = Entry(top)
     endWindow.insert(0, end)
     endWindow.grid(row=2, column=1, sticky=W)
-
-    baselineOrderLabel = Label(top, text="Baseline Order", font="bold")
-    baselineOrderLabel.grid(row=3, column=0, sticky=W)
-    baselineOrderWindow = Entry(top)
-    baselineOrderWindow.insert(0, baselineOrder)
-    baselineOrderWindow.grid(row=3, column=1, sticky=W)
     
-    backgroundWindowLabel = Label(top, text="Background Window", font="bold")
-    backgroundWindowLabel.grid(row=4, column=0, sticky=W)
-    backgroundWindowWindow = Entry(top)
-    backgroundWindowWindow.insert(0, backgroundWindow)
-    backgroundWindowWindow.grid(row=4, column=1, sticky=W)
+    # Peak Detection Settings
+    peakDetectionLabel = Label(top, text="Peak Detection Settings", font=("Helvetica", 16))
+    peakDetectionLabel.grid(row=3, columnspan=2, sticky=W)
 
-    peakDetectionLabel = Label(top, text="Peak Detection Threshold", font="bold")
-    peakDetectionLabel.grid(row=5, column=0, sticky=W)
+    peakDetectionLabel = Label(top, text="Minimum Intensity", font=("Helvetica", 12))
+    peakDetectionLabel.grid(row=4, column=0, sticky=W)
     peakDetection = Entry(top)
     peakDetection.insert(0, peakDetectionMin)
-    peakDetection.grid(row=5, column=1, sticky=W)
+    peakDetection.grid(row=4, column=1, sticky=W)
 
-    nobanLabel = Label(top, text="NOBAN Start", font="bold")
-    nobanLabel.grid(row=6, column=0, sticky=W)
-    nobanWindow = Entry(top)
-    nobanWindow.insert(0, nobanStart)
-    nobanWindow.grid(row=6, column=1, sticky=W)
-
-    slicepointsLabel = Label(top, text="MT Slice points", font="bold")
-    slicepointsLabel.grid(row=7, column=0, sticky=W)
-    slicepointsWindow = Entry(top)
-    slicepointsWindow.insert(0, slicepoints)
-    slicepointsWindow.grid(row=7, column=1, sticky=W)
-
-    figureLabel = Label(top, text="Create figure for each analyte", font="bold")
-    figureLabel.grid(row=8, column=0, sticky=W)
-    options = ["True", "False"]
-    figureWindow = OptionMenu(top, figureVariable, *options)
-    figureWindow.grid(row=8, column=1, sticky=W)
-
-    minPeakLabel = Label(top, text="Minimum Number of Peaks", font="bold")
-    minPeakLabel.grid(row=9, column=0, sticky=W)
-    minPeakWindow = Entry(top)
-    minPeakWindow.insert(0, minPeaks)
-    minPeakWindow.grid(row=9, column=1, sticky=W)
-
-    minPeakSNLabel = Label(top, text="Minimum S/N for Calibrant Peak", font="bold")
-    minPeakSNLabel.grid(row=10, column=0, sticky=W)
-    minPeakSNWindow = Entry(top)
-    minPeakSNWindow.insert(0, minPeakSN)
-    minPeakSNWindow.grid(row=10, column=1, sticky=W)
-    
-    peakDetectionEdgeLabel = Label(top, text="Peak Detection Edge Method", font="bold")
-    peakDetectionEdgeLabel.grid(row=11, column=0, sticky=W)
+    peakDetectionEdgeLabel = Label(top, text="Edge Method", font=("Helvetica", 12))
+    peakDetectionEdgeLabel.grid(row=5, column=0, sticky=W)
     peakDetectionEdgeWindow = OptionMenu(top, peakDetectionEdgeVar, "Sigma", "FWHM")
-    peakDetectionEdgeWindow.grid(row=11, column=1, sticky=W)
+    peakDetectionEdgeWindow.grid(row=5, column=1, sticky=W)
 
-    peakDetectionEdgeValueLabel = Label(top, text="Sigma Value", font="bold")
-    peakDetectionEdgeValueLabel.grid(row=12, column=0, sticky=W)
+    peakDetectionEdgeValueLabel = Label(top, text="Sigma Value", font=("Helvetica", 12))
+    peakDetectionEdgeValueLabel.grid(row=6, column=0, sticky=W)
     peakDetectionEdgeValueWindow = Entry(top)
     peakDetectionEdgeValueWindow.insert(0, peakDetectionEdgeValue)
-    peakDetectionEdgeValueWindow.grid(row=12, column=1, sticky=W)
+    peakDetectionEdgeValueWindow.grid(row=6, column=1, sticky=W)
 
+    # Calibration Settings
+    calibrationLabel = Label(top, text="Calibration Settings", font=("Helvetica", 16))
+    calibrationLabel.grid(row=7, columnspan=2, sticky=W)
+
+    minPeakLabel = Label(top, text="Minimum Peaks", font=("Helvetica", 12))
+    minPeakLabel.grid(row=8, column=0, sticky=W)
+    minPeakWindow = Entry(top)
+    minPeakWindow.insert(0, minPeaks)
+    minPeakWindow.grid(row=8, column=1, sticky=W)
+
+    minPeakSNLabel = Label(top, text="Minimum S/N", font=("Helvetica", 12))
+    minPeakSNLabel.grid(row=9, column=0, sticky=W)
+    minPeakSNWindow = Entry(top)
+    minPeakSNWindow.insert(0, minPeakSN)
+    minPeakSNWindow.grid(row=9, column=1, sticky=W)
+    
+    # Quantitation Settings
+    quantitationLabel = Label(top, text="Quantitation Settings", font=("Helvetica", 16))
+    quantitationLabel.grid(row=10, columnspan=2, sticky=W)
+    
+    pointsLabel = Label(top, text="Datapoints", font=("Helvetica", 12))
+    pointsLabel.grid(row=11, column=0, sticky=W)
+    pointsWindow = Entry(top)
+    pointsWindow.insert(0, points)
+    pointsWindow.grid(row=11, column=1, sticky=W)
+
+    baselineOrderLabel = Label(top, text="Baseline Order", font=("Helvetica", 12))
+    baselineOrderLabel.grid(row=12, column=0, sticky=W)
+    baselineOrderWindow = Entry(top)
+    baselineOrderWindow.insert(0, baselineOrder)
+    baselineOrderWindow.grid(row=12, column=1, sticky=W)
+    
+    backgroundWindowLabel = Label(top, text="Background Window", font=("Helvetica", 12))
+    backgroundWindowLabel.grid(row=13, column=0, sticky=W)
+    backgroundWindowWindow = Entry(top)
+    backgroundWindowWindow.insert(0, backgroundWindow)
+    backgroundWindowWindow.grid(row=13, column=1, sticky=W)
+
+    #nobanLabel = Label(top, text="NOBAN Start", font=("Helvetica", 12))
+    #nobanLabel.grid(row=14, column=0, sticky=W)
+    #nobanWindow = Entry(top)
+    #nobanWindow.insert(0, nobanStart)
+    #nobanWindow.grid(row=14, column=1, sticky=W)
+
+    slicepointsLabel = Label(top, text="MT Slice points", font=("Helvetica", 12))
+    slicepointsLabel.grid(row=15, column=0, sticky=W)
+    slicepointsWindow = Entry(top)
+    slicepointsWindow.insert(0, slicepoints)
+    slicepointsWindow.grid(row=15, column=1, sticky=W)
+
+    figureLabel = Label(top, text="Create figure for each analyte", font=("Helvetica", 12))
+    figureLabel.grid(row=16, column=0, sticky=W)
+    options = ["True", "False"]
+    figureWindow = OptionMenu(top, figureVariable, *options)
+    figureWindow.grid(row=16, column=1, sticky=W)
+
+    # Close/Save Buttons
     saveButton = Button(top, text="Save", command=lambda: save())
-    saveButton.grid(row=13, column=0, sticky=W)
+    saveButton.grid(row=17, column=0, sticky=W)
     closeButton = Button(top, text="Close", command=lambda: close())
-    closeButton.grid(row=13, column=1, sticky=E)
+    closeButton.grid(row=17, column=1, sticky=E)
 
     # Tooltips
     createToolTip(pointsLabel,"The number of data points that is used to determine the baseline. Specifically, "+
@@ -1262,10 +1268,10 @@ def settingsPopup():
     createToolTip(backgroundWindowLabel,"This setting tells the program the size of the region that will be examined "+
             "to determine the background. A value of 1 means that the program will look from 20.0 to 21.0 minutes "+
             "and 21.4 to 22.4 for an analyte that elutes from 21.0 to 21.4 minutes.")
-    createToolTip(nobanLabel,"This setting specifies the initial estimate for the NOBAN algorithm, specifically a "+
-            "value of 0.25 means that the lowest 25% of all data points will be used as an initial estimate for the "+
-            "background. This value should be changed depending on how many signals there are in the chromatogram, "+
-            "e.g. in a crowded chromatogram this value should be low.")
+    #createToolTip(nobanLabel,"This setting specifies the initial estimate for the NOBAN algorithm, specifically a "+
+            #"value of 0.25 means that the lowest 25% of all data points will be used as an initial estimate for the "+
+            #"background. This value should be changed depending on how many signals there are in the chromatogram, "+
+            #"e.g. in a crowded chromatogram this value should be low.")
     createToolTip(slicepointsLabel,"The number of conscutive data points that will be used to determine the "+
             "background and noise using the MT method. The MT method will scan all datapoints that fall within the "+
             "background window (specified above) to find the here specified number of consecutive data points that "+
