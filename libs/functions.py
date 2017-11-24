@@ -976,8 +976,9 @@ def peakDetection(fig,canvas):
         fw.write("Peak\tRT\tWindow\n")
         for index, analyte in enumerate(functions):
             try:
-                window = "%.2f" % (float(analyte['Data'][-1][0])-float(analyte['Data'][0][0]))
-                fw.write(str(index+1)+"\t"+str("%.2f" % analyte['Peak'])+"\t"+str(window)+"\n")
+                window = 0.5*(float(analyte['Data'][-1][0])-float(analyte['Data'][0][0]))
+                center = float(analyte['Data'][0][0])+0.5*window
+                fw.write(str("%.2f" % analyte['Peak'])+"\t"+str("%.2f" % center)+"\t"+str("%.2f" % window)+"\n")
             except:
                 pass
 

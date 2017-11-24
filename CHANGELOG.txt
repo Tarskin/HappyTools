@@ -88,4 +88,5 @@
  - Fixed a bug that caused a peak to be shifted if there were more than 2 peaks overlapping.
    This was caused by the i['Peak'] value no longer being in the middle of i['Data'] after
    the border was changed. The fix was to always compare to relevant border of i['Data'] to
-   i['Peak'] rather than the two opposite ends of i['Data']
+   i['Peak'] rather than the two opposite ends of i['Data'].
+ - Applied the above mentioned fix on the generated peak list as well.
