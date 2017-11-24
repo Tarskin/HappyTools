@@ -323,33 +323,24 @@ def batchQuantifyChrom(data, analFile):
         minm = argrelextrema(newPrimeY, np.less)
         breaks = maxm[0].tolist() + minm[0].tolist()
         breaks = sorted(breaks)
+
+        # Initialize maxPoint, xData and yData
         maxPoint = 0
-        # Initialize xData and yData
         xData = newX
         yData = [x - NOBAN['Background'] for x in newY]
-        # Isolate subset of xData and yData for 1 peak
+
+        # Subset the data
+        # NOTE: Ignore the regions newY[0:breaks[0]] and newY[breaks[-1]:-1] 
+        # because those do not contain 'full' peaks.
         try:
-            if max(newY[0:breaks[0]]) > maxPoint:
-                maxPoint = max(newY[0:breaks[0]])
-                xData = newX[0:breaks[0]]
-                yData = [x - NOBAN['Background'] for x in newY[0:breaks[0]]]
             for index,j in enumerate(breaks):
-                try:
-                    if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
-                        maxPoint = max(newY[breaks[index]:breaks[index+1]])
-                        xData = newX[breaks[index]:breaks[index+1]]
-                        yData = [x - NOBAN['Background'] for x in newY[breaks[index]:breaks[index+1]]]
-                except:
-                    if max(newY[breaks[index]:-1]) > maxPoint:
-                        maxPoint = max(newY[breaks[index]:-1])
-                        xData = newX[breaks[index]:-1]
-                        yData = [x - NOBAN['Background'] for x in newY[breaks[index]:-1]]
-                    pass
+                if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
+                    maxPoint = max(newY[breaks[index]:breaks[index+1]])
+                    xData = newX[breaks[index]:breaks[index+1]]
+                    yData = [x - max(NOBAN['Background'],0) for x in newY[breaks[index]:breaks[index+1]]]
         except IndexError:
-            if HappyTools.logging == True and HappyTools.logLevel > 1:
-                with open(HappyTools.logFile,'a') as fw:
-                    fw.write(str(datetime.now().replace(microsecond=0))+"\tCould not determine a local maxima or minima for analyte "+
-                            str(i[0])+" at "+str(i[1])+" minutes\n")
+            pass
+
         # Gaussian fit on main points
         newGaussX = np.linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
         p0 = [np.max(yData), xData[np.argmax(yData)],0.1]

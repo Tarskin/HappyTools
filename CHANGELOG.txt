@@ -83,3 +83,9 @@
    and 'Sigma Value'. The first specifies if the border is the FWHM or based on a user
    specified Sigma value. The latter specifies what Sigma value should be used, if the first
    is set to Sigma.
+
+24 November 2017
+ - Fixed a bug that caused a peak to be shifted if there were more than 2 peaks overlapping.
+   This was caused by the i['Peak'] value no longer being in the middle of i['Data'] after
+   the border was changed. The fix was to always compare to relevant border of i['Data'] to
+   i['Peak'] rather than the two opposite ends of i['Data']

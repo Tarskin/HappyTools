@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# You should have received a coyp of the Apache 2.0 license along
+# You should have received a copy of the Apache 2.0 license along
 # with this program; if not, see 
 # http://www.apache.org/licenses/LICENSE-2.0
 
@@ -31,7 +31,6 @@ import functions
 
 # Innate variables
 version = "0.0.2"
-build = "171116a"
 
 # General variables
 output = "summary.results"

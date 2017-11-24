@@ -42,6 +42,7 @@ minPeaks = 4
 minPeakSN = 27
 
 # Advanced variables
+# TODO: Add background determination here
 decimalNumbers = 6
 
 # Output variables
@@ -934,7 +935,9 @@ def peakDetection(fig,canvas):
             except:
                 pass
 
-        functions.append({'Peak':xData[np.argmax(yData)],'Data':zip(newGaussX,newGaussY),'FWHM':FWHM})
+        # Ignore breaks (f'(x) == 0) that did not match any data (reword this)
+        if newGaussX.any():
+            functions.append({'Peak':xData[np.argmax(yData)],'Data':zip(newGaussX,newGaussY),'FWHM':FWHM})
 
         # Subtract the fitted Gaussian from the raw or intermediate data and repeat
         # the peak detection step.
@@ -946,18 +949,37 @@ def peakDetection(fig,canvas):
     functions = sorted(functions, key=lambda tup: tup['Peak'])
 
     # iterate over all peaks and remove overlap
-    #for index, i in enumerate(functions):
-        #try:
-            #if i['Peak']+i['
-        #except IndexError:
-            #pass
+    overlapDetected = False
+    for index, i in enumerate(functions):
+        try:
+            if i['Data'][-1][0] > functions[index+1]['Data'][0][0]:
+                overlapDetected = True
+                overlap = abs(functions[index+1]['Data'][0][0] - i['Data'][-1][0])
+                peak1 = max([x[1] for x in i['Data']])
+                peak2 = max([x[1] for x in functions[index+1]['Data']])
+                peak1fraction = (peak1 / (peak1 + peak2))*overlap
+                peak2fraction = (peak2 / (peak1 + peak2))*overlap
+                low = bisect.bisect_right([x[0] for x in i['Data']],i['Data'][-1][0]-peak2fraction)
+                high = bisect.bisect_left([x[0] for x in functions[index+1]['Data']],functions[index+1]['Data'][0][0]+peak1fraction)
+                i['Data'] = i['Data'][0:low]
+                functions[index+1]['Data'] = functions[index+1]['Data'][high:-1]
+        except IndexError:
+            pass
+    if overlapDetected == True:
+        tkMessageBox.showinfo("Peak Overlap","HappyTools detected overlap between several automatically "+
+        "detected peaks. HappyTools has attempted to automatically re-adjust the borders to capture the "+
+        "largest possible portion of the analytes, based on their signal intensities. However, please feel "+
+        "free to manually re-adjust the signals if desired in the peak list.")
 
     # Writing to temp folder
     with open('temp/annotation.ref','w') as fw:
         fw.write("Peak\tRT\tWindow\n")
         for index, analyte in enumerate(functions):
-            window = "%.2f" % (float(analyte['Data'][-1][0])-float(analyte['Data'][0][0]))
-            fw.write(str(index+1)+"\t"+str("%.2f" % analyte['Peak'])+"\t"+str(window)+"\n")
+            try:
+                window = "%.2f" % (float(analyte['Data'][-1][0])-float(analyte['Data'][0][0]))
+                fw.write(str(index+1)+"\t"+str("%.2f" % analyte['Peak'])+"\t"+str(window)+"\n")
+            except:
+                pass
 
     # Plotting
     fig.clear()
