@@ -31,7 +31,7 @@ import functions
 
 # Innate variables
 version = "0.0.2"
-build = "171124b"
+build = "171204a"
 
 # General variables
 output = "summary.results"

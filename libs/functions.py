@@ -142,6 +142,8 @@ def backgroundNoise(data):
                 currNoise = max(buffer)-min(buffer)
             elif noise == "RMS":
                 currNoise = np.std(buffer)
+    if currNoise == 0:
+        currNoise = 1
     return {'Background': background, 'Noise': currNoise}
 
 def baselineCorrection(fig,canvas):
@@ -650,6 +652,8 @@ def noban(data):
                 break
         except IndexError:
             break
+    if currNoise == 0:
+        currNoise = 1
     return {'Background': currAverage, 'Noise': currNoise}
 
 def openChrom(file):

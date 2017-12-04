@@ -278,12 +278,20 @@ def batchQuantifyChrom(data, analFile):
         plt.close(fig)
 
     for i in peaks:
-        low = bisect.bisect_left(time,i[1]-i[2])
-        high = bisect.bisect_right(time,i[1]+i[2])
+        # Initialize values
         peakArea = 0
         backgroundArea = 0
-        residual = 0
-        signalNoise = "Nan"
+        totalArea = 0
+        gaussArea = 0
+        height = 0
+        signalNoise = "NAN"
+        residual = "NAN"
+        fwhm = {'fwhm':0, 'width':0, 'center':0}
+        
+        # Get time boundaries
+        low = bisect.bisect_left(time,i[1]-i[2])
+        high = bisect.bisect_right(time,i[1]+i[2])
+
         # Get signal-to-noise
         lowBackground = bisect.bisect_left(time,max(i[1]-functions.backgroundWindow,functions.start))
         highBackground = bisect.bisect_right(time,min(i[1]+functions.backgroundWindow,functions.end))
@@ -293,6 +301,7 @@ def batchQuantifyChrom(data, analFile):
         elif functions.backgroundNoiseMethod == "MT":
             NOBAN = functions.backgroundNoise(backgroundData)
         signalNoise = (max(intensity[low:high])-NOBAN['Background'])/NOBAN['Noise']
+
         # Get peak Area
         for index,j in enumerate(intensity[low:high]):
             try:
@@ -330,14 +339,29 @@ def batchQuantifyChrom(data, analFile):
         yData = [x - NOBAN['Background'] for x in newY]
 
         # Subset the data
-        # NOTE: Ignore the regions newY[0:breaks[0]] and newY[breaks[-1]:-1] 
-        # because those do not contain 'full' peaks.
+        # Region from newY[0] to breaks[0]
+        try:
+            if max(newY[0:breaks[0]]) > maxPoint:
+                maxPoint = max(newY[0:breaks[0]])
+                xData = newX[0:breaks[0]]
+                yData = [x - NOBAN['Background'] for x in newY[0:breaks[0]]]
+        except IndexError:
+            pass
+        # Regions between breaks[x] and breaks[x+1]
         try:
             for index,j in enumerate(breaks):
                 if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
                     maxPoint = max(newY[breaks[index]:breaks[index+1]])
                     xData = newX[breaks[index]:breaks[index+1]]
                     yData = [x - max(NOBAN['Background'],0) for x in newY[breaks[index]:breaks[index+1]]]
+        except IndexError:
+            pass
+        # Region from break[-1] to newY[-1]
+        try:
+            if max(newY[breaks[-1]:-1]) > maxPoint:
+                maxPoint = max(newY[breaks[-1]:-1])
+                xData = newX[breaks[-1]:-1]
+                yData = [x - NOBAN['Background'] for x in newY[breaks[-1]:-1]]
         except IndexError:
             pass
 
@@ -348,58 +372,62 @@ def batchQuantifyChrom(data, analFile):
             coeff, var_matrix = curve_fit(functions.gaussFunction, xData, yData, p0)
             newGaussY = functions.gaussFunction(newGaussX, *coeff)
             newGaussY = [x + NOBAN['Background'] for x in newGaussY]
-            totalArea = 0
-            gaussArea = 0
             for index,j in enumerate(intensity[low:high]):
-                try:
-                    totalArea += max(j-NOBAN['Background'],0) * (time[low+index]-time[low+index-1])
-                    gaussArea += max(functions.gaussFunction(time[low+index],*coeff),0) * (time[low+index]-time[low+index-1])
-                except IndexError:
-                    if HappyTools.logging == True and HappyTools.logLevel > 1:
-                        with open(HappyTools.logFile,'a') as fw:
-                            fw.write(str(datetime.now().replace(microsecond=0))+"\t<PLACEHOLDER 1>"+str(low)+" - "+str(high)+"\n")
-                    continue
-
-            # Determine FWHM
+                gaussArea += max(functions.gaussFunction(time[low+index],*coeff),0) * (time[low+index]-time[low+index-1])
             fwhm = functions.fwhm(coeff)
             height = functions.gaussFunction(fwhm['center']+fwhm['width'], *coeff)+NOBAN['Background']
-
-            residual = min(gaussArea / totalArea, 1.0)
-            if functions.createFigure == "True":
-                if HappyTools.logging == True and HappyTools.logLevel >= 1:
-                    with open(HappyTools.logFile,'a') as fw:
-                       fw.write(str(datetime.now().replace(microsecond=0))+"\tCreating figure for analyte: "+str(i[0])+"\n")
-                # Generate plot
-                fig =  plt.figure(figsize=(8, 6))
-                ax = fig.add_subplot(111)
-                plt.plot(time[low:high], intensity[low:high], 'b*')
-                plt.plot((newX[0],newX[-1]),(NOBAN['Background'],NOBAN['Background']),'red')
-                plt.plot((newX[0],newX[-1]),(NOBAN['Background']+NOBAN['Noise'],NOBAN['Background']+NOBAN['Noise']),color='green')
-                plt.plot(newX,newY, color='blue',linestyle='dashed')
-                plt.plot(newGaussX, newGaussY, color='green',linestyle='dashed')
-                plt.plot((time[intensity[low:high].index(max(intensity[low:high]))+low],time[intensity[low:high].index(max(intensity[low:high]))+low]),
-                        (NOBAN['Background'],max(intensity[low:high])),color='orange',linestyle='dotted')
-                plt.plot((max(fwhm['center']-fwhm['width'],newX[0]),min(fwhm['center']+fwhm['width'],newX[-1])),
-                        (height,height),color='red',linestyle='dashed')
-                plt.legend(['Raw Data','Background','Noise','Univariate Spline','Gaussian Fit ('+str(int(residual*100))+
-                        '%)','Signal (S/N '+str(round((max(intensity[low:high])-NOBAN['Background'])/NOBAN['Noise'],1))+")",
-                        "FWHM:"+"{0:.2f}".format(fwhm['fwhm'])], loc='best')
-                plt.title("Detail view: "+str(i[0]))
-                plt.xlabel("rt [m]")
-                plt.ylabel("intensity [au]")
-                pdf.savefig(fig)
-                plt.close(fig)
+        except TypeError:
+            if HappyTools.logging == True and HappyTools.logLevel > 1:
+                with open(HappyTools.logFile,'a') as fw:
+                    fw.write(str(datetime.now().replace(microsecond=0))+"\tNot enough data points to fit a Gaussian to peak: "+str(i[0])+"\n")
         except RuntimeError:
             if HappyTools.logging == True and HappyTools.logLevel > 1:
                 with open(HappyTools.logFile,'a') as fw:
                     fw.write(str(datetime.now().replace(microsecond=0))+"\tUnable to determine residuals for peak: "+str(i[1])+"\n")
-            residual = "Nan"
+
+        # Determine Area
+        for index,j in enumerate(intensity[low:high]):
+            totalArea += max(j-NOBAN['Background'],0) * (time[low+index]-time[low+index-1])
+
+        # Determine Residual
+        try:
+            if gaussArea != 0:
+                residual = min(gaussArea / totalArea, 1.0)
+        except ZeroDivisionError:
             pass
+
+        # Generate plot
+        if functions.createFigure == "True" and residual != "NAN":
+            if HappyTools.logging == True and HappyTools.logLevel >= 1:
+                with open(HappyTools.logFile,'a') as fw:
+                   fw.write(str(datetime.now().replace(microsecond=0))+"\tCreating figure for analyte: "+str(i[0])+"\n")
+            fig =  plt.figure(figsize=(8, 6))
+            ax = fig.add_subplot(111)
+            plt.plot(time[low:high], intensity[low:high], 'b*')
+            plt.plot((newX[0],newX[-1]),(NOBAN['Background'],NOBAN['Background']),'red')
+            plt.plot((newX[0],newX[-1]),(NOBAN['Background']+NOBAN['Noise'],NOBAN['Background']+NOBAN['Noise']),color='green')
+            plt.plot(newX,newY, color='blue',linestyle='dashed')
+            plt.plot(newGaussX, newGaussY, color='green',linestyle='dashed')
+            plt.plot((time[intensity[low:high].index(max(intensity[low:high]))+low],time[intensity[low:high].index(max(intensity[low:high]))+low]),
+                    (NOBAN['Background'],max(intensity[low:high])),color='orange',linestyle='dotted')
+            plt.plot((min(max(fwhm['center']-fwhm['width'],newX[0]),newX[-1]),max(min(fwhm['center']+fwhm['width'],newX[-1]),newX[0])),
+                    (height,height),color='red',linestyle='dashed')
+            plt.legend(['Raw Data','Background','Noise','Univariate Spline','Gaussian Fit ('+str(int(residual*100))+
+                    '%)','Signal (S/N '+str(round((max(intensity[low:high])-NOBAN['Background'])/NOBAN['Noise'],1))+")",
+                    "FWHM:"+"{0:.2f}".format(fwhm['fwhm'])], loc='best')
+            plt.title("Detail view: "+str(i[0]))
+            plt.xlabel("rt [m]")
+            plt.ylabel("intensity [au]")
+            pdf.savefig(fig)
+            plt.close(fig)
+
         results.append({'Peak':i[0], 'Time':i[1], 'Area':peakArea, 'PeakNoise':peakNoise, 'Residual':residual, 'S/N':signalNoise,
                 'Background':NOBAN['Background'],'Noise':NOBAN['Noise'],'BackgroundArea':backgroundArea, 'fwhm':fwhm['fwhm'],
                 'ActualTime':fwhm['center']})
     if functions.createFigure == "True":
         pdf.close()
+
+    # Write results to disk
     data['Name'] = str(data['Name'].split('.')[0])+".raw"
     with open(data['Name'],'w') as fw:
         fw.write("Name\tTime\tPeak Area\tS/N\tBackground\tNoise\tGaussian Residual RMS\tPeak Noise\tBackground Area\tPeak Time\tFWHM\n")

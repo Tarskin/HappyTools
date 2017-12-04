@@ -90,3 +90,10 @@
    the border was changed. The fix was to always compare to relevant border of i['Data'] to
    i['Peak'] rather than the two opposite ends of i['Data'].
  - Applied the above mentioned fix on the generated peak list as well.
+
+4 December 2017
+ - Restructured batchQuantifyChrom function in batchFunctions.py to enable better try and 
+   except usage. This restructuring solved several issues that were plagueing HappyTools.
+ - Fixed potential ZeroDivisionErrors that could occur in the batchQuantifyChrom function.
+ - FitPack errors deriving from trying to fit a function on too little datapoints can no
+   longer occur.
