@@ -27,7 +27,7 @@ import HappyTools
 # Defines
 EXCLUSION_FILES = ["LICENSE.txt","CHANGELOG.txt"]
 CALIBRATION_FILETYPES = ["*.txt","*.arw"]
-INTEGRATION_FILETYPES = ["calibrated*.txt"]
+INTEGRATION_FILETYPES = ["*.txt"]
 
 # Functions
 def batchBaselineCorrection(data):
@@ -65,17 +65,7 @@ def batchChromCalibration(data, calFile):
     """ TODO 
     """
     # Get calibration values
-    try:
-        refPeaks = []
-        with open(calFile.get(),'r') as fr:
-            for line in fr:
-                line = line.rstrip("\n").split("\t")
-                try:
-                    refPeaks.append((str(line[0]), float(line[1]), float(line[2])))
-                except ValueError:
-                    pass
-    except IOError:
-        tkMessageBox.showinfo("File Error","The selected reference file could not be opened.")
+    refPeaks = functions.getPeakList(calFile.get())
 
     # Get observed times
     time, intensity = zip(*data)
@@ -98,17 +88,12 @@ def batchChromCalibration(data, calFile):
     try:
         if len(timePairs) >= functions.minPeaks:
             # Calibration
-            observedTime = []
-            expectedTime = []
-            for i in timePairs:
-                expectedTime.append(float(i[0]))
-                observedTime.append(float(i[1]))
+            expectedTime, observedTime = zip(*timePairs)
             z = np.polyfit(observedTime,expectedTime,2)
             f = np.poly1d(z)
-            calibratedData = []
-            for i in data:
-                newX = format(float(f(i[0])),'0.'+str(functions.decimalNumbers)+'f')
-                calibratedData.append((newX,i[1]))
+            X, Y = zip(*data)
+            newX = [format(float(x),'0.'+str(functions.decimalNumbers)+'f') for x in f(X)]
+            calibratedData = zip(newX,Y)
         else:
             calibratedData = None
             if HappyTools.logging == True and HappyTools.logLevel >= 1:
@@ -236,46 +221,14 @@ def batchQuantifyChrom(data, analFile):
     data -- list of (time,intensity) tuples
     analFile -- unicode string
     """
-    peaks = []
-    with open(analFile.get(),'r') as fr:
-        for line in fr:
-            line = line.rstrip("\n").split("\t")
-            try:
-                peaks.append((str(line[0]), float(line[1]), float(line[2])))
-            except ValueError:
-                if HappyTools.logging == True and HappyTools.logLevel > 1:
-                    with open(HappyTools.logFile,'a') as fw:
-                        fw.write(str(datetime.now().replace(microsecond=0))+"\tIgnoring line: "+str(line)+" from file: "+str(analFile)+"\n")
-                pass
+    peaks = functions.getPeakList(analFile.get())
     time, intensity = zip(*data['Data'])
     results = []
+
     # Plot chromatogram region of interest (check if X[0] and X[-1] can be found before start)
     if functions.createFigure == "True" and bisect.bisect_left(time,functions.start) and bisect.bisect_right(time,functions.end):
         pdf = PdfPages(str(data['Name'].split('.')[0])+".pdf")
-        d = pdf.infodict()
-        d['Title'] = 'PDF Report for: '+str(data['Name'].split('.')[0])
-        d['Author'] = 'HappyTools version: '+str(HappyTools.version)+" build: "+str(HappyTools.build)
-        d['CreationDate'] = datetime.now()
-        low = bisect.bisect_left(time,functions.start)
-        high = bisect.bisect_right(time,functions.end)
-        fig = plt.figure(figsize=(8, 6))
-        ax = fig.add_subplot(111)
-        plt.plot(time[low:high], intensity[low:high], 'b-')
-        plt.legend(['Raw Data'], loc='best')
-        plt.title(str(data['Name']))
-        plt.xlabel("rt [m]")
-        plt.ylabel("intensity [au]")
-        # Plot the quantitation windows
-        for i in peaks:
-            low = bisect.bisect_left(time,i[1]-i[2])
-            high = bisect.bisect_right(time,i[1]+i[2])
-            newTime = np.linspace(time[low], time[high], len(time[low:high]))
-            f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
-            newIntensity = f(newTime)
-            ax.fill_between(time[low:high], newTime, newIntensity, alpha=0.5)
-            ax.text(i[1], max(intensity[low:high]), i[0])
-        pdf.savefig(fig)
-        plt.close(fig)
+        plotOverview(pdf, peaks, data, time, intensity)
 
     for i in peaks:
         # Initialize values
@@ -401,25 +354,9 @@ def batchQuantifyChrom(data, analFile):
             if HappyTools.logging == True and HappyTools.logLevel >= 1:
                 with open(HappyTools.logFile,'a') as fw:
                    fw.write(str(datetime.now().replace(microsecond=0))+"\tCreating figure for analyte: "+str(i[0])+"\n")
-            fig =  plt.figure(figsize=(8, 6))
-            ax = fig.add_subplot(111)
-            plt.plot(time[low:high], intensity[low:high], 'b*')
-            plt.plot((newX[0],newX[-1]),(NOBAN['Background'],NOBAN['Background']),'red')
-            plt.plot((newX[0],newX[-1]),(NOBAN['Background']+NOBAN['Noise'],NOBAN['Background']+NOBAN['Noise']),color='green')
-            plt.plot(newX,newY, color='blue',linestyle='dashed')
-            plt.plot(newGaussX, newGaussY, color='green',linestyle='dashed')
-            plt.plot((time[intensity[low:high].index(max(intensity[low:high]))+low],time[intensity[low:high].index(max(intensity[low:high]))+low]),
-                    (NOBAN['Background'],max(intensity[low:high])),color='orange',linestyle='dotted')
-            plt.plot((min(max(fwhm['center']-fwhm['width'],newX[0]),newX[-1]),max(min(fwhm['center']+fwhm['width'],newX[-1]),newX[0])),
-                    (height,height),color='red',linestyle='dashed')
-            plt.legend(['Raw Data','Background','Noise','Univariate Spline','Gaussian Fit ('+str(int(residual*100))+
-                    '%)','Signal (S/N '+str(round((max(intensity[low:high])-NOBAN['Background'])/NOBAN['Noise'],1))+")",
-                    "FWHM:"+"{0:.2f}".format(fwhm['fwhm'])], loc='best')
-            plt.title("Detail view: "+str(i[0]))
-            plt.xlabel("rt [m]")
-            plt.ylabel("intensity [au]")
-            pdf.savefig(fig)
-            plt.close(fig)
+            details = {'fwhm':fwhm, 'height':height, 'NOBAN':NOBAN, 'newData':zip(newX,newY), 'newGauss':zip(newGaussX,newGaussY), 
+                    'data':zip(time,intensity), 'low':low, 'high':high, 'residual':residual, 'i':i}
+            plotIndividual(pdf, details)
 
         results.append({'Peak':i[0], 'Time':i[1], 'Area':peakArea, 'PeakNoise':peakNoise, 'Residual':residual, 'S/N':signalNoise,
                 'Background':NOBAN['Background'],'Noise':NOBAN['Noise'],'BackgroundArea':backgroundArea, 'fwhm':fwhm['fwhm'],
@@ -442,6 +379,11 @@ def batchWriteData(data):
     with open(data['Name'],'w') as fw:
         for i in data['Data']:
             fw.write(str(i[0])+"\t"+str(i[1])+"\n")
+
+def checkCalibrants():
+    """ TODO
+    """
+    
 
 def combineResults():
     """ TODO
@@ -627,3 +569,66 @@ def combineResults():
                     fw.write("\t"+str(residualTime))
                 fw.write("\n")
             fw.write("\n")
+
+def plotIndividual(pdf, details):
+    """ TODO
+    """
+    # Unpack details
+    low = details['low']
+    high = details['high']
+    fwhm = details['fwhm']
+    NOBAN = details['NOBAN']
+    height = details['height']
+    residual = details['residual']
+    i = details['i']
+    newX, newY = zip(*details['newData'])
+    newGaussX, newGaussY = zip(*details['newGauss'])
+    time, intensity = zip(*details['data'])
+
+    # Plot
+    fig =  plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111)
+    plt.plot(time[low:high], intensity[low:high], 'b*')
+    plt.plot((newX[0],newX[-1]),(NOBAN['Background'],NOBAN['Background']),'red')
+    plt.plot((newX[0],newX[-1]),(NOBAN['Background']+NOBAN['Noise'],NOBAN['Background']+NOBAN['Noise']),color='green')
+    plt.plot(newX,newY, color='blue',linestyle='dashed')
+    plt.plot(newGaussX, newGaussY, color='green',linestyle='dashed')
+    plt.plot((time[intensity[low:high].index(max(intensity[low:high]))+low],time[intensity[low:high].index(max(intensity[low:high]))+low]),
+            (NOBAN['Background'],max(intensity[low:high])),color='orange',linestyle='dotted')
+    plt.plot((min(max(fwhm['center']-fwhm['width'],newX[0]),newX[-1]),max(min(fwhm['center']+fwhm['width'],newX[-1]),newX[0])),
+            (height,height),color='red',linestyle='dashed')
+    plt.legend(['Raw Data','Background','Noise','Univariate Spline','Gaussian Fit ('+str(int(residual*100))+
+            '%)','Signal (S/N '+str(round((max(intensity[low:high])-NOBAN['Background'])/NOBAN['Noise'],1))+")",
+            "FWHM:"+"{0:.2f}".format(fwhm['fwhm'])], loc='best')
+    plt.title("Detail view: "+str(i[0]))
+    plt.xlabel("rt [m]")
+    plt.ylabel("intensity [au]")
+    pdf.savefig(fig)
+    plt.close(fig)
+            
+def plotOverview(pdf, peaks, data, time, intensity):
+    """ TODO
+    """
+    d = pdf.infodict()
+    d['Title'] = 'PDF Report for: '+str(data['Name'].split('.')[0])
+    d['Author'] = 'HappyTools version: '+str(HappyTools.version)+" build: "+str(HappyTools.build)
+    d['CreationDate'] = datetime.now()
+    low = bisect.bisect_left(time,functions.start)
+    high = bisect.bisect_right(time,functions.end)
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111)
+    plt.plot(time[low:high], intensity[low:high], 'b-')
+    plt.legend(['Raw Data'], loc='best')
+    plt.title(str(data['Name']))
+    plt.xlabel("rt [m]")
+    plt.ylabel("intensity [au]")
+    for i in peaks:
+        low = bisect.bisect_left(time,i[1]-i[2])
+        high = bisect.bisect_right(time,i[1]+i[2])
+        newTime = np.linspace(time[low], time[high], len(time[low:high]))
+        f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
+        newIntensity = f(newTime)
+        ax.fill_between(time[low:high], newTime, newIntensity, alpha=0.5)
+        ax.text(i[1], max(intensity[low:high]), i[0])
+    pdf.savefig(fig)
+    plt.close(fig)

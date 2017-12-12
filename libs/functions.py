@@ -235,25 +235,26 @@ def batchPlot(fig,canvas):
     canvas -- tkinter canvas object
     """
     folder_path = tkFileDialog.askdirectory()
-    filesGrabbed = []
-    for files in batchFunctions.CALIBRATION_FILETYPES:
-        for file in glob.glob(str(os.path.join(folder_path,files))):
-            if os.path.basename(file) not in batchFunctions.EXCLUSION_FILES:
-                if openChrom(file):
-                    filesGrabbed.append(file)
+    if folder_path:
+        filesGrabbed = []
+        for files in batchFunctions.CALIBRATION_FILETYPES:
+            for file in glob.glob(str(os.path.join(folder_path,files))):
+                if os.path.basename(file) not in batchFunctions.EXCLUSION_FILES:
+                    if openChrom(file):
+                        filesGrabbed.append(file)
 
-    data = []
-    for file in filesGrabbed:
-        data.append((str(file),openChrom(file)))
+        data = []
+        for file in filesGrabbed:
+            data.append((str(file),openChrom(file)))
 
-    if data:
-        fig.clear()
-        axes = fig.add_subplot(111)
-        for i in data:
-            x_array, y_array = zip(*i[1])
-            axes.plot(x_array,y_array,label=str(os.path.split(i[0])[-1]))
-        axes.legend()
-    canvas.draw()
+        if data:
+            fig.clear()
+            axes = fig.add_subplot(111)
+            for i in data:
+                x_array, y_array = zip(*i[1])
+                axes.plot(x_array,y_array,label=str(os.path.split(i[0])[-1]))
+            axes.legend()
+        canvas.draw()
 
 def batchPlotNorm(fig,canvas):
     """Read and plot all chromatograms in a directory.
@@ -270,55 +271,56 @@ def batchPlotNorm(fig,canvas):
     canvas -- tkinter canvas object
     """
     folder_path = tkFileDialog.askdirectory()
-    filesGrabbed = []
-    for files in batchFunctions.CALIBRATION_FILETYPES:
-        for file in glob.glob(str(os.path.join(folder_path,files))):
-            if os.path.basename(file) not in batchFunctions.EXCLUSION_FILES:
-                if openChrom(file):
-                    filesGrabbed.append(file)
+    if folder_path:
+        filesGrabbed = []
+        for files in batchFunctions.CALIBRATION_FILETYPES:
+            for file in glob.glob(str(os.path.join(folder_path,files))):
+                if os.path.basename(file) not in batchFunctions.EXCLUSION_FILES:
+                    if openChrom(file):
+                        filesGrabbed.append(file)
 
-    data = []
-    for file in filesGrabbed:
-        chromData = openChrom(file)
+        data = []
+        for file in filesGrabbed:
+            chromData = openChrom(file)
 
-        # Background determination
-        background = []
-        chunks = [chromData[x:x+points] for x in xrange(0, len(chromData), points)]
-        for i in chunks:
-            buff1, buff2 = zip(*i)
-            min_index, min_value = min(enumerate(buff2), key=operator.itemgetter(1))
-            if buff1[0] > start and buff1[-1] < end:
-                background.append((buff1[min_index], buff2[min_index]))
-        time, intensity = zip(*background)
-        newX = np.linspace(min(time), max(time),100)
-        func = np.polyfit(time, intensity, baselineOrder)
-        p = np.poly1d(func)
+            # Background determination
+            background = []
+            chunks = [chromData[x:x+points] for x in xrange(0, len(chromData), points)]
+            for i in chunks:
+                buff1, buff2 = zip(*i)
+                min_index, min_value = min(enumerate(buff2), key=operator.itemgetter(1))
+                if buff1[0] > start and buff1[-1] < end:
+                    background.append((buff1[min_index], buff2[min_index]))
+            time, intensity = zip(*background)
+            newX = np.linspace(min(time), max(time),100)
+            func = np.polyfit(time, intensity, baselineOrder)
+            p = np.poly1d(func)
 
-        # Transform 
-        time = [a for a,b in chromData]
-        newChromIntensity = [b-p(a) for a,b in chromData]
+            # Transform 
+            time = [a for a,b in chromData]
+            newChromIntensity = [b-p(a) for a,b in chromData]
 
-        # Uplift
-        low = bisect.bisect_left(time, start)
-        high = bisect.bisect_right(time, end)
-        offset = abs(min(min(newChromIntensity[low:high]),0))
-        newIntensity = [x+offset for x in newChromIntensity]
+            # Uplift
+            low = bisect.bisect_left(time, start)
+            high = bisect.bisect_right(time, end)
+            offset = abs(min(min(newChromIntensity[low:high]),0))
+            newIntensity = [x+offset for x in newChromIntensity]
 
-        # Normalize
-        correction = max(newIntensity[low:high])
-        normIntensity = [x/correction for x in newIntensity]
-        newData = zip(time,normIntensity)
-        data.append((str(file),newData))
+            # Normalize
+            correction = max(newIntensity[low:high])
+            normIntensity = [x/correction for x in newIntensity]
+            newData = zip(time,normIntensity)
+            data.append((str(file),newData))
 
-    # Plot
-    if data:
-        fig.clear()
-        axes = fig.add_subplot(111)
-        for i in data:
-            x_array, y_array = zip(*i[1])
-            axes.plot(x_array,y_array,label=str(os.path.split(i[0])[-1]))
-        axes.legend()
-    canvas.draw()
+        # Plot
+        if data:
+            fig.clear()
+            axes = fig.add_subplot(111)
+            for i in data:
+                x_array, y_array = zip(*i[1])
+                axes.plot(x_array,y_array,label=str(os.path.split(i[0])[-1]))
+            axes.legend()
+        canvas.draw()
 
 def batchPopup():
     """Create a batch processing pop-up.
@@ -498,6 +500,29 @@ def createToolTip(widget, text):
     widget.bind('<Enter>', enter)
     widget.bind('<Leave>', leave)
 
+def determineCalibrants(functions):
+    """ PLACEHOLDER
+    """
+    calibrants = []
+    timeChunks = []
+    timeRange = functions[-1]['Data'][-1][0] - functions[0]['Data'][0][0]
+    timeChunk = timeRange / minPeaks
+    for i in range(0, minPeaks):
+        timeChunks.append((functions[0]['Data'][0][0]+i*float(timeChunk),functions[0]['Data'][0][0]+(i+1)*float(timeChunk)))
+    for i in timeChunks:
+        maxIntensity = 0
+        calBuffer = None
+        for j in functions:
+            X, Y = zip(*j['Data'])
+            peakCenter = X[Y.index(max(Y))]
+            peakIntensity = max(Y)
+            if peakIntensity > maxIntensity and peakCenter > i[0] and peakCenter < i[1]:
+                maxIntensity = peakIntensity
+                calBuffer = j
+        if calBuffer:
+            calibrants.append(calBuffer)  
+    return calibrants
+
 def gaussFunction(x, *p):
     """Define and return a Gaussian function.
 
@@ -510,6 +535,34 @@ def gaussFunction(x, *p):
     """
     A, mu, sigma = p
     return A*np.exp(-(x-mu)**2/(2.*sigma**2))
+
+def getPeakList(fileName):
+    """Read and parse the peak file and return a list of peaks.
+    
+    This function opens the file that is specified in 'fileName', and 
+    reads it on a line per line basis. The function will split each 
+    line on '\t' prior to trying to append the parts to the 'peaks'
+    list. The function will write a message to the logFile if logging
+    is enabled if the previous mentioned try goes to the except clause.
+    
+    Keyword argments:
+    fileName -- string
+    """
+    peaks = []
+    try:
+        with open(fileName,'r') as fr:
+            for line in fr:
+                line = line.rstrip("\n").split("\t")
+                try:
+                    peaks.append((str(line[0]), float(line[1]), float(line[2])))
+                except ValueError:
+                    if HappyTools.logging == True and HappyTools.logLevel > 1:
+                        with open(HappyTools.logFile,'a') as fw:
+                            fw.write(str(datetime.now().replace(microsecond=0))+"\tIgnoring line: "+str(line)+" from file: "+str(fileName)+"\n")
+                    pass
+    except IOError:
+        tkMessageBox.showinfo("File Error","The selected reference file could not be opened.")
+    return peaks
 
 def getSettings():
     """Read the settings file.
@@ -900,14 +953,31 @@ def peakDetection(fig,canvas):
         f = InterpolatedUnivariateSpline(x_data, y_data)
         newY = f(newX)
         maxPoint = 0
-        # Ignore the regions newY[0:breaks[0]] and newY[breaks[-1]:-1] because
-        # those do not contain 'full' peaks.
+
+        # Subset the data
+        # Region from newY[0] to breaks[0]
+        try:
+            if max(newY[0:breaks[0]]) > maxPoint:
+                maxPoint = max(newY[0:breaks[0]])
+                xData = newX[0:breaks[0]]
+                yData = [x - NOBAN['Background'] for x in newY[0:breaks[0]]]
+        except IndexError:
+            pass
+        # Regions between breaks[x] and breaks[x+1]
         try:
             for index,j in enumerate(breaks):
                 if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
                     maxPoint = max(newY[breaks[index]:breaks[index+1]])
                     xData = newX[breaks[index]:breaks[index+1]]
                     yData = [x - max(NOBAN['Background'],0) for x in newY[breaks[index]:breaks[index+1]]]
+        except IndexError:
+            pass
+        # Region from break[-1] to newY[-1]
+        try:
+            if max(newY[breaks[-1]:-1]) > maxPoint:
+                maxPoint = max(newY[breaks[-1]:-1])
+                xData = newX[breaks[-1]:-1]
+                yData = [x - NOBAN['Background'] for x in newY[breaks[-1]:-1]]
         except IndexError:
             pass
 
@@ -931,8 +1001,8 @@ def peakDetection(fig,canvas):
             except:
                 pass
         elif peakDetectionEdge == "Sigma":
-            low = bisect.bisect_left(newGaussX,coeff[1]-peakDetectionEdgeValue*coeff[2])
-            high = bisect.bisect_right(newGaussX,coeff[1]+peakDetectionEdgeValue*coeff[2])
+            low = bisect.bisect_left(newGaussX,coeff[1]-peakDetectionEdgeValue*abs(coeff[2]))
+            high = bisect.bisect_right(newGaussX,coeff[1]+peakDetectionEdgeValue*abs(coeff[2]))
             try:
                 newGaussX = newGaussX[low:high]
                 newGaussY = newGaussY[low:high]
@@ -969,16 +1039,23 @@ def peakDetection(fig,canvas):
                 functions[index+1]['Data'] = functions[index+1]['Data'][high:-1]
         except IndexError:
             pass
-    if overlapDetected == True:
-        tkMessageBox.showinfo("Peak Overlap","HappyTools detected overlap between several automatically "+
-        "detected peaks. HappyTools has attempted to automatically re-adjust the borders to capture the "+
-        "largest possible portion of the analytes, based on their signal intensities. However, please feel "+
-        "free to manually re-adjust the signals if desired in the peak list.")
+
+    # Determine calibrants
+    calibrants = determineCalibrants(functions) 
 
     # Writing to temp folder
     with open('temp/annotation.ref','w') as fw:
         fw.write("Peak\tRT\tWindow\n")
         for index, analyte in enumerate(functions):
+            try:
+                window = 0.5*(float(analyte['Data'][-1][0])-float(analyte['Data'][0][0]))
+                center = float(analyte['Data'][0][0])+0.5*window
+                fw.write(str("%.2f" % analyte['Peak'])+"\t"+str("%.2f" % center)+"\t"+str("%.2f" % window)+"\n")
+            except:
+                pass
+    with open('temp/calibrants.ref','w') as fw:
+        fw.write("Peak\tRT\tWindow\n")
+        for index, analyte in enumerate(calibrants):
             try:
                 window = 0.5*(float(analyte['Data'][-1][0])-float(analyte['Data'][0][0]))
                 center = float(analyte['Data'][0][0])+0.5*window
@@ -997,11 +1074,25 @@ def peakDetection(fig,canvas):
             axes.fill_between(xd, 0, yd,alpha=0.2)
         except ValueError:
             pass
+    for index,i in enumerate(calibrants):
+        try:
+            xd,yd = zip(*i['Data'])
+            axes.annotate('Cal: '+str(index), xy=(xd[yd.index(max(yd))], max(yd)), xytext=(xd[yd.index(max(yd))], max(yd)), 
+            arrowprops=dict(facecolor='black', shrink=0.05))
+        except ValueError:
+            pass
     axes.set_xlabel("Time [m]")
     axes.set_ylabel("Intensity [au]")
     handles, labels = axes.get_legend_handles_labels()
     fig.legend(handles,labels)
     canvas.draw()
+
+    # Warn (if needed)
+    if overlapDetected == True:
+        tkMessageBox.showinfo("Peak Overlap","HappyTools detected overlap between several automatically "+
+        "detected peaks. HappyTools has attempted to automatically re-adjust the borders to capture the "+
+        "largest possible portion of the analytes, based on their signal intensities. However, please feel "+
+        "free to manually re-adjust the signals if desired in the peak list.")
 
 def plotData(data,fig,canvas,file_path):
     """ TODO
@@ -1026,14 +1117,7 @@ def quantifyChrom(fig, canvas):
     This is super prelimenary, should/will produce a lot more values
     """
     peakList = tkFileDialog.askopenfilename()
-    peaks = []
-    with open(peakList,'r') as fr:
-        for line in fr:
-            line = line.rstrip("\n").split("\t")
-            try:
-                peaks.append((str(line[0]), float(line[1]), float(line[2])))
-            except ValueError:
-                pass
+    peaks = getPeakList(peakList)
     data = {'Name':readData()[0][0],'Data':readData()[0][1]}
     time, intensity = zip(*data['Data'])
     results = []
@@ -1096,6 +1180,14 @@ def readData():
                 dataBuffer.append((float(chunks[0]),int(chunks[1])))
         data.append((name, dataBuffer))
     return data
+
+def saveCalibrants(fig, canvas):
+    """ TODO
+        Add correct try/except handling
+    """
+    origin = os.path.join(str(os.getcwd()),"temp","calibrants.ref")
+    target = tkFileDialog.asksaveasfile(mode='w', defaultextension=".ref")
+    shutil.copyfile(origin,target.name)
 
 def saveAnnotation(fig, canvas):
     """ TODO

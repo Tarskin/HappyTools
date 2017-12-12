@@ -97,3 +97,9 @@
  - Fixed potential ZeroDivisionErrors that could occur in the batchQuantifyChrom function.
  - FitPack errors deriving from trying to fit a function on too little datapoints can no
    longer occur.
+
+12 December 2017
+ - Implemented basic calibrant determination to peakDetection function.
+ - Sigma returned by curve_fit & gaussFunction could be negative, leading to some peaks
+   not showing up in peakDetection. This was fixed by always taking the absolute value   
+   of the sigma.
