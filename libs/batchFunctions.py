@@ -27,10 +27,10 @@ import HappyTools
 # Defines
 EXCLUSION_FILES = ["LICENSE.txt","CHANGELOG.txt"]
 CALIBRATION_FILETYPES = ["*.txt","*.arw"]
-INTEGRATION_FILETYPES = ["*.txt"]
+INTEGRATION_FILETYPES = ["calibrated*.txt"]
 
 # Functions
-def batchBaselineCorrection(data):
+def baselineCorrection(data):
     """ TODO
     """
 
@@ -50,7 +50,7 @@ def batchBaselineCorrection(data):
     # Transform
     x = [a for a,b in data]
     newChromIntensity = [b-p(a) for a,b in data]
-    
+
     # Uplift
     foo1, foo2 = zip(*data)
     start = bisect.bisect_left(foo1, functions.start)
@@ -61,53 +61,19 @@ def batchBaselineCorrection(data):
     # Return corrected data
     return newData
 
-def batchChromCalibration(data, calFile):
+
+
+def batchCalibrationControl(data, calFile):
     """ TODO 
     """
     # Get calibration values
     refPeaks = functions.getPeakList(calFile.get())
 
     # Get observed times
-    time, intensity = zip(*data)
-    timePairs = []
-    for i in refPeaks:
-        low = bisect.bisect_left(time, i[1]-i[2])
-        high = bisect.bisect_right(time, i[1]+i[2])
-        lowBackground = bisect.bisect_left(time, max(i[1]-functions.backgroundWindow,functions.start))
-        highBackground = bisect.bisect_right(time, min(i[1]+functions.backgroundWindow,functions.end))
-        if functions.backgroundNoiseMethod == "NOBAN":
-            NOBAN = functions.noban(intensity[lowBackground:highBackground])
-        elif functions.backgroundNoiseMethod == "MT":
-            NOBAN = functions.backgroundNoise(intensity[lowBackground:highBackground])
-        max_value = max(intensity[low:high])
-        max_index = intensity[low:high].index(max_value)
-        if ((max_value - NOBAN['Background'])/NOBAN['Noise']) >= functions.minPeakSN:
-            timePairs.append((i[1],time[low+max_index]))
+    timePairs = determineTimepairs(refPeaks, data)
 
     # Check number calibrants
-    try:
-        if len(timePairs) >= functions.minPeaks:
-            # Calibration
-            expectedTime, observedTime = zip(*timePairs)
-            z = np.polyfit(observedTime,expectedTime,2)
-            f = np.poly1d(z)
-            X, Y = zip(*data)
-            newX = [format(float(x),'0.'+str(functions.decimalNumbers)+'f') for x in f(X)]
-            calibratedData = zip(newX,Y)
-        else:
-            calibratedData = None
-            if HappyTools.logging == True and HappyTools.logLevel >= 1:
-                with open(HappyTools.logFile,'a') as fw:
-                     fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+
-                            str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+str(functions.minPeaks)+
-                            " were needed\n")
-    except NameError:
-        calibratedData = None
-        if HappyTools.logging == True and HappyTools.logLevel >= 1:
-            with open(HappyTools.logFile,'a') as fw:
-                 fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+
-                        str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+
-                        str(functions.minPeaks)+" were needed\n")        
+    calibratedData = performCalibration(timePairs, data)
 
     # Return calibrated data
     return calibratedData
@@ -155,15 +121,17 @@ def batchProcess(calFile, analFile):
                     with open(HappyTools.logFile,'a') as fw:
                         fw.write(str(datetime.now().replace(microsecond=0))+"\tCalibrating file: "+str(file)+"\n")
                 data = {'Data':functions.openChrom(file),'Name':file}
-                data['Data'] = batchBaselineCorrection(data['Data'])
-                if 'blank' in data['Name'].lower() or 'blanc' in data['Name'].lower():
-                    pass
-                else:
-                    data['Data'] = batchChromCalibration(data['Data'], calFile)
+                data['Data'] = baselineCorrection(data['Data'])
+                # This is some custom code to quantify blancs (if desired)
+                #if 'blank' in data['Name'].lower() or 'blanc' in data['Name'].lower():
+                    #pass
+                #else:
+                    #data['Data'] = batchChromCalibration(data['Data'], calFile)
+                data['Data'] = batchCalibrationControl(data['Data'], calFile)
                 if data['Data'] == None:
                     continue
                 data['Name'] = "calibrated_"+str(data['Name'])
-                batchWriteData(data)
+                writeData(data)
             except ValueError:
                 if HappyTools.logging == True and HappyTools.logLevel >= 1:
                     with open(HappyTools.logFile,'a') as fw:
@@ -184,14 +152,14 @@ def batchProcess(calFile, analFile):
                     with open(HappyTools.logFile,'a') as fw:
                         fw.write(str(datetime.now().replace(microsecond=0))+"\tQuantifying file: "+str(file)+"\n")
                 data = {'Data':functions.openChrom(file),'Name':file}
-                batchQuantifyChrom(data, analFile)
+                batchQuantitationControl(data, analFile)
         except ValueError:
             if HappyTools.logging == True and HappyTools.logLevel >= 1:
                 with open(HappyTools.logFile,'a') as fw:
                     fw.write(str(datetime.now().replace(microsecond=0))+"\tIgnoring a file: <UNKNOWN> for quantitation\n")
             pass    
         functions.updateProgressBar(progressbar2, intPerc, 1, 1)
-        
+
         if HappyTools.logging == True and HappyTools.logLevel >= 1:
             with open(HappyTools.logFile,'a') as fw:
                fw.write(str(datetime.now().replace(microsecond=0))+"\tCreating summary file\n")
@@ -199,7 +167,7 @@ def batchProcess(calFile, analFile):
     end = datetime.now()
     tkMessageBox.showinfo("Status Message", "Batch Process finished on "+str(end)+" and took a total time of "+str(end-start))
 
-def batchQuantifyChrom(data, analFile):
+def batchQuantitationControl(data, analFile):
     """Quantify the current chromatogram and write results to disk.
 
     This function will open the analyte file (analFile), read all lines
@@ -240,7 +208,7 @@ def batchQuantifyChrom(data, analFile):
         signalNoise = "NAN"
         residual = "NAN"
         fwhm = {'fwhm':0, 'width':0, 'center':0}
-        
+
         # Get time boundaries
         low = bisect.bisect_left(time,i[1]-i[2])
         high = bisect.bisect_right(time,i[1]+i[2])
@@ -263,17 +231,8 @@ def batchQuantifyChrom(data, analFile):
             except IndexError:
                 continue
         peakNoise = np.std(intensity[low:high])
-        #################################################
-        # Gaussian fit on main points(to get residuals) #
-        #################################################
-        # 1. fit a spline through all data points
-        # 2. get first derivative of spline function
-        # 3. get both data points (left/right) where x' = 0 around the data point with max intensity
-        # 4. fit a gaussian through the data points returned from 3
-        # 4a. Plot the gaussian (stopping at baseline) in the pdf
-        # 5. Calculate area under gaussian curve
-        # 6. Calculate area under raw data points
-        # 7. Calculate percentage of total area explained by gaussian area
+
+        # Get breakpoints (where f'(x) == 0)
         x_data = np.array(time[low:high])
         y_data = np.array(intensity[low:high])
         newX = np.linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
@@ -319,8 +278,10 @@ def batchQuantifyChrom(data, analFile):
             pass
 
         # Gaussian fit on main points
+        peak = xData[yData > np.exp(-0.5)*max(yData)]
+        guess_sigma = 0.5*(max(peak) - min(peak))
         newGaussX = np.linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
-        p0 = [np.max(yData), xData[np.argmax(yData)],0.1]
+        p0 = [np.max(yData), xData[np.argmax(yData)],guess_sigma]
         try:
             coeff, var_matrix = curve_fit(functions.gaussFunction, xData, yData, p0)
             newGaussY = functions.gaussFunction(newGaussX, *coeff)
@@ -372,18 +333,6 @@ def batchQuantifyChrom(data, analFile):
             fw.write(str(i['Peak'])+"\t"+str(i['Time'])+"\t"+str(i['Area'])+"\t"+str(i['S/N'])+"\t"+str(i['Background'])+"\t"+
                     str(i['Noise'])+"\t"+str(i['Residual'])+"\t"+str(i['PeakNoise'])+"\t"+str(i['BackgroundArea'])+"\t"+
                     str(i['ActualTime'])+"\t"+str(i['fwhm'])+"\n")
-
-def batchWriteData(data):
-    """ TODO
-    """
-    with open(data['Name'],'w') as fw:
-        for i in data['Data']:
-            fw.write(str(i[0])+"\t"+str(i[1])+"\n")
-
-def checkCalibrants():
-    """ TODO
-    """
-    
 
 def combineResults():
     """ TODO
@@ -502,7 +451,7 @@ def combineResults():
                     fw.write("\t"+str(j['PeakNoise']))
                 fw.write("\n")
             fw.write("\n")
-        
+
         # Background
         if functions.bckNoise.get() == 1:
             fw.write("Background")
@@ -570,6 +519,53 @@ def combineResults():
                 fw.write("\n")
             fw.write("\n")
 
+def determineTimepairs(refPeaks, data):
+    """ TODO
+    """
+    time, intensity = zip(*data)
+    timePairs = []
+    for i in refPeaks:
+        low = bisect.bisect_left(time, i[1]-i[2])
+        high = bisect.bisect_right(time, i[1]+i[2])
+        lowBackground = bisect.bisect_left(time, max(i[1]-functions.backgroundWindow,functions.start))
+        highBackground = bisect.bisect_right(time, min(i[1]+functions.backgroundWindow,functions.end))
+        if functions.backgroundNoiseMethod == "NOBAN":
+            NOBAN = functions.noban(intensity[lowBackground:highBackground])
+        elif functions.backgroundNoiseMethod == "MT":
+            NOBAN = functions.backgroundNoise(intensity[lowBackground:highBackground])
+        max_value = max(intensity[low:high])
+        max_index = intensity[low:high].index(max_value)
+        if ((max_value - NOBAN['Background'])/NOBAN['Noise']) >= functions.minPeakSN:
+            timePairs.append((i[1],time[low+max_index]))
+    return timePairs
+
+def performCalibration(timePairs, data):
+    """ TODO
+    """
+    time, intensity = zip(*data)
+    try:
+        if len(timePairs) >= functions.minPeaks:
+            expectedTime, observedTime = zip(*timePairs)
+            z = np.polyfit(observedTime,expectedTime,2)
+            f = np.poly1d(z)
+            newX = [format(float(x),'0.'+str(functions.decimalNumbers)+'f') for x in f(time)]
+            calibratedData = zip(newX,intensity)
+        else:
+            calibratedData = None
+            if HappyTools.logging == True and HappyTools.logLevel >= 1:
+                with open(HappyTools.logFile,'a') as fw:
+                     fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+
+                            str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+str(functions.minPeaks)+
+                            " were needed\n")
+    except NameError:
+        calibratedData = None
+        if HappyTools.logging == True and HappyTools.logLevel >= 1:
+            with open(HappyTools.logFile,'a') as fw:
+                 fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+
+                        str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+
+                        str(functions.minPeaks)+" were needed\n")  
+    return calibratedData
+
 def plotIndividual(pdf, details):
     """ TODO
     """
@@ -605,7 +601,7 @@ def plotIndividual(pdf, details):
     plt.ylabel("intensity [au]")
     pdf.savefig(fig)
     plt.close(fig)
-            
+
 def plotOverview(pdf, peaks, data, time, intensity):
     """ TODO
     """
@@ -632,3 +628,10 @@ def plotOverview(pdf, peaks, data, time, intensity):
         ax.text(i[1], max(intensity[low:high]), i[0])
     pdf.savefig(fig)
     plt.close(fig)
+
+def writeData(data):
+    """ TODO
+    """
+    with open(data['Name'],'w') as fw:
+        for i in data['Data']:
+            fw.write(str(i[0])+"\t"+str(i[1])+"\n")

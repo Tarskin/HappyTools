@@ -103,3 +103,15 @@
  - Sigma returned by curve_fit & gaussFunction could be negative, leading to some peaks
    not showing up in peakDetection. This was fixed by always taking the absolute value   
    of the sigma.
+
+15 December 2017
+ - Adjusted the Gaussian fitting code to determine an initial sigma instead of hard coding
+   it to 0.1 as per a suggestion made by `Crazy Ivan` on SO. The change is based on the
+   following assumption: The idea is that within one standard deviation of the mean, the 
+   values of the Gaussian are greater than np.exp(-0.5) times the maximum value. So the 
+   first line locates this "peak" and the second takes half of its width as the guess for 
+   sigma.
+
+31 January 2018
+ - Fixed a bug that could occur during automatic peak detection when the peak value does
+   not match the actual data.

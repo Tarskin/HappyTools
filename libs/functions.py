@@ -466,7 +466,7 @@ def fileCleanup():
                     "and close all temporary files before running HappyTools.")
 
 def fwhm(coeff):
-    """Calculate the FWHM
+    """Calculate the FWHM.
     
     This function will calculate the FWHM based on the following formula
     FWHM = 2*sigma*sqrt(2*ln(2)). The function will return a dictionary
@@ -501,7 +501,18 @@ def createToolTip(widget, text):
     widget.bind('<Leave>', leave)
 
 def determineCalibrants(functions):
-    """ PLACEHOLDER
+    """ Automatically determine suitable calibrant peaks.
+    
+    This function is part of the automated peak detection
+    functionality, where it attempts to determine the most suitable
+    n number of calibrations (n is the user defined setting of minimum
+    number of peaks for calibration). The function splits the time
+    between the first and last detected peaks into n chunks, determines
+    the highest peak in each chunk and classifies these local maxima
+    as potential calibrants.
+    
+    Keyword Arguments:
+    functions -- A list of dicts, containing Peak, Data and FWHM
     """
     calibrants = []
     timeChunks = []
@@ -513,7 +524,10 @@ def determineCalibrants(functions):
         maxIntensity = 0
         calBuffer = None
         for j in functions:
-            X, Y = zip(*j['Data'])
+            try:
+                X, Y = zip(*j['Data'])
+            except:
+                print j
             peakCenter = X[Y.index(max(Y))]
             peakIntensity = max(Y)
             if peakIntensity > maxIntensity and peakCenter > i[0] and peakCenter < i[1]:
@@ -622,7 +636,17 @@ def getSettings():
                 peakDetectionEdgeValue = float(chunks[1])
 
 def infoPopup():
+    """ Generate the about window.
+    
+    This function will generate a new window that lists some information
+    about HappyTools, such as the license and author.
+    
+    Keyword Arguments:
+    none
+    """
     def close():
+        """Close the output pop-up.
+        """
         top.destroy()
 
     top = Tk.top = Toplevel()
@@ -741,7 +765,6 @@ def openChrom(file):
                         chromData.append((float(lineChunks[0]),float(lineChunks[-1])))
                     except UnicodeEncodeError:
                         print "Omitting line: "+str(line)
-                        
         elif 'arw' in file:
             for line in fr:
                 lines = line.split('\r')
@@ -982,8 +1005,10 @@ def peakDetection(fig,canvas):
             pass
 
         # Gaussian fit on main points
+        peak = xData[yData > np.exp(-0.5)*max(yData)]
+        guess_sigma = 0.5*(max(peak) - min(peak))
         newGaussX = np.linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
-        p0 = [np.max(yData), xData[np.argmax(yData)],0.1]
+        p0 = [np.max(yData), xData[np.argmax(yData)],guess_sigma]
         try:
             coeff, var_matrix = curve_fit(gaussFunction, xData, yData, p0)
             newGaussY = gaussFunction(newGaussX, *coeff)
@@ -1011,7 +1036,7 @@ def peakDetection(fig,canvas):
 
         # Ignore breaks (f'(x) == 0) that did not match any data (reword this)
         if newGaussX.any():
-            functions.append({'Peak':xData[np.argmax(yData)],'Data':zip(newGaussX,newGaussY),'FWHM':FWHM})
+            functions.append({'Peak':newGaussX[np.argmax(newGaussY)],'Data':zip(newGaussX,newGaussY),'FWHM':FWHM})
 
         # Subtract the fitted Gaussian from the raw or intermediate data and repeat
         # the peak detection step.
