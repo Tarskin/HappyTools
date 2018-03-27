@@ -507,6 +507,17 @@ def combineResults():
                 fw.write("\n")
             fw.write("\n")
 
+        # Peak Tr
+        if functions.peakQual.get() == 1:
+            fw.write("Peak Retention Time")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                for j in i['Data']:
+                    fw.write("\t"+str(float(j['ActualTime'])))
+                fw.write("\n")
+            fw.write("\n")
+
         # Tr residual
         if functions.peakQual.get() == 1:
             fw.write("Retention Time Residual")
@@ -518,6 +529,8 @@ def combineResults():
                     fw.write("\t"+str(residualTime))
                 fw.write("\n")
             fw.write("\n")
+
+
 
 def determineTimepairs(refPeaks, data):
     """ TODO

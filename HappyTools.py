@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright 2017-2017 Bas C. Jansen
+# Copyright 2017-2018 Bas C. Jansen
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import functions
 
 # Innate variables
 version = "0.0.2"
-build = "180131b"
+build = "180327a"
 
 # General variables
 output = "summary.results"

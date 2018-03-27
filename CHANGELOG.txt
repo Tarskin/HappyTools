@@ -115,3 +115,7 @@
 31 January 2018
  - Fixed a bug that could occur during automatic peak detection when the peak value does
    not match the actual data.
+
+27 March 2018
+ - Added Peak Retention Time to the outputs, if Peak Quality Criteria is selected. This
+   parameter is useful in determining the retention time (GU) CV post-calibration.
