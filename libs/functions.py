@@ -974,7 +974,13 @@ def peakDetection(fig,canvas):
         counter += 1
         print "Fitting peak: "+str(counter)
         f = InterpolatedUnivariateSpline(x_data, y_data)
+        fPrime = f.derivative()
         newY = f(newX)
+        newPrimeY = fPrime(newX)
+        maxm = argrelextrema(newPrimeY, np.greater)
+        minm = argrelextrema(newPrimeY, np.less)
+        breaks = maxm[0].tolist() + minm[0].tolist()
+        breaks = sorted(breaks)
         maxPoint = 0
 
         # Subset the data

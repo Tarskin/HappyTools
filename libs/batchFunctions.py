@@ -156,7 +156,8 @@ def batchProcess(calFile, analFile):
         except ValueError:
             if HappyTools.logging == True and HappyTools.logLevel >= 1:
                 with open(HappyTools.logFile,'a') as fw:
-                    fw.write(str(datetime.now().replace(microsecond=0))+"\tIgnoring a file: <UNKNOWN> for quantitation\n")
+                    fw.write(str(datetime.now().replace(microsecond=0))+"\tIgnoring file: "+str(file)+" for quantitation. " \
+                        "The 'Start' or 'End' parameter do not match the specified analytes.\n")
             pass    
         functions.updateProgressBar(progressbar2, intPerc, 1, 1)
 
@@ -507,17 +508,6 @@ def combineResults():
                 fw.write("\n")
             fw.write("\n")
 
-        # Peak Tr
-        if functions.peakQual.get() == 1:
-            fw.write("Peak Retention Time")
-            fw.write(header)
-            for i in Results:
-                fw.write(i['File'])
-                for j in i['Data']:
-                    fw.write("\t"+str(float(j['ActualTime'])))
-                fw.write("\n")
-            fw.write("\n")
-
         # Tr residual
         if functions.peakQual.get() == 1:
             fw.write("Retention Time Residual")
@@ -530,7 +520,16 @@ def combineResults():
                 fw.write("\n")
             fw.write("\n")
 
-
+        # Peak Tr
+        if functions.peakQual.get() == 1:
+            fw.write("Retention Time Residual")
+            fw.write(header)
+            for i in Results:
+                fw.write(i['File'])
+                for j in i['Data']:
+                    fw.write("\t"+str(float(j['ActualTime'])))
+                fw.write("\n")
+            fw.write("\n")
 
 def determineTimepairs(refPeaks, data):
     """ TODO
