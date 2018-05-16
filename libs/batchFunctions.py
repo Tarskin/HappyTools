@@ -560,8 +560,7 @@ def performCalibration(timePairs, data):
             expectedTime, observedTime = zip(*timePairs)
             z = np.polyfit(observedTime,expectedTime,2)
             f = np.poly1d(z)
-            newX = [format(float(x),'0.'+str(functions.decimalNumbers)+'f') for x in f(time)]
-            calibratedData = zip(newX,intensity)
+            calibratedData = zip(f(time),intensity)
         else:
             calibratedData = None
             if HappyTools.logging == True and HappyTools.logLevel >= 1:
@@ -646,4 +645,4 @@ def writeData(data):
     """
     with open(data['Name'],'w') as fw:
         for i in data['Data']:
-            fw.write(str(i[0])+"\t"+str(i[1])+"\n")
+            fw.write(str(format(i[0],'0.'+str(functions.decimalNumbers)+'f'))+"\t"+str(format(i[1],'0.'+str(functions.decimalNumbers)+'f'))+"\n")

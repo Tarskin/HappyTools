@@ -436,10 +436,7 @@ def chromCalibration(fig,canvas):
         observedTime.append(float(i[1]))
     z = np.polyfit(observedTime,expectedTime,2)
     f = np.poly1d(z)
-    calibratedData = []
-    for i in data[0][1]:
-        newX = format(float(f(i[0])),'0.'+str(decimalNumbers)+'f')
-        calibratedData.append((newX,i[1]))
+    calibratedData = zip(f(time),intensity)
 
     # Plot & Write Data to Disk  
     multiData = [(os.path.split(data[0][0])[-1], data[0][1]),(os.path.split(data[0][0])[-1]+" (Cal)",calibratedData)]
@@ -1208,7 +1205,7 @@ def readData():
                 dataBuffer = []
             else:
                 chunks = line.rstrip().split("\t")
-                dataBuffer.append((float(chunks[0]),int(chunks[1])))
+                dataBuffer.append((float(chunks[0]),float(chunks[1])))
         data.append((name, dataBuffer))
     return data
 
@@ -1235,7 +1232,7 @@ def saveChrom():
     saveFile = tkFileDialog.asksaveasfilename()
     with open(saveFile,'w') as fw:
         for i in data[0][1]:
-            fw.write(str(i[0])+"\t"+str(i[1])+"\n")
+            fw.write(str(format(i[0],'0.'+str(decimalNumbers)+'f'))+"\t"+str(format(i[1],'0.'+str(decimalNumbers)+'f'))+"\n")
 
 def settingsPopup():
     """ TODO: Redesign settings window (it's fugly)
@@ -1476,4 +1473,4 @@ def writeData(data,file_path):
     with open('temp/tracebuffer.txt','w') as fw:     
         fw.write(">>"+str(file_path)+"\n")
         for i in data:
-            fw.write(str(i[0])+"\t"+str(int(i[1]))+"\n")
+            fw.write(str(format(i[0],'0.'+str(decimalNumbers)+'f'))+"\t"+str(format(i[1],'0.'+str(decimalNumbers)+'f'))+"\n")

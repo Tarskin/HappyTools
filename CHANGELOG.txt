@@ -119,3 +119,13 @@
 27 March 2018
  - Added Peak Retention Time to the outputs, if Peak Quality Criteria is selected. This
    parameter is useful in determining the retention time (GU) CV post-calibration.
+
+26 April 2018
+ - Fixed a typo in the summary file (regarding peak retention time and peak residual retention
+   time).
+ - Updated the peak detection loop (determine new local maxima and minima in each cycle of
+   the loop), which improved the peak-detection behaviour around co-eluting peaks.
+
+16 May 2018
+ - Fixed a bug that could cause HappyTools to crash when it decided to try and save/read a
+   number that was stored in scientific notation.
