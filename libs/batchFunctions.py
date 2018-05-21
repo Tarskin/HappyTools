@@ -78,7 +78,7 @@ def batchCalibrationControl(data, calFile):
     # Return calibrated data
     return calibratedData
 
-def batchProcess(calFile, analFile):
+def batchProcess(calFile, analFile, batchFolder):
     """ TODO
     """
     start = datetime.now()
@@ -111,9 +111,9 @@ def batchProcess(calFile, analFile):
     if calFile.get() != "":
         filesGrabbed = []
         for files in CALIBRATION_FILETYPES:
-            for file in glob.glob(files):
+            for file in glob.glob(os.path.join(batchFolder.get(),files)):
                 if file not in EXCLUSION_FILES:
-                    filesGrabbed.append(file)
+                    filesGrabbed.append(os.path.join(batchFolder.get(),file))
         for index,file in enumerate(filesGrabbed):
             functions.updateProgressBar(progressbar, calPerc, index, len(filesGrabbed))
             try:
@@ -130,8 +130,8 @@ def batchProcess(calFile, analFile):
                 data['Data'] = batchCalibrationControl(data['Data'], calFile)
                 if data['Data'] == None:
                     continue
-                data['Name'] = "calibrated_"+str(data['Name'])
-                writeData(data)
+                data['Name'] = os.path.join(batchFolder.get(), "calibrated_"+os.path.basename(data['Name']))
+                writeData(batchFolder, data)
             except ValueError:
                 if HappyTools.logging == True and HappyTools.logLevel >= 1:
                     with open(HappyTools.logFile,'a') as fw:
@@ -143,16 +143,16 @@ def batchProcess(calFile, analFile):
         try:
             filesGrabbed = []
             for files in INTEGRATION_FILETYPES:
-                for file in glob.glob(files):
+                for file in glob.glob(os.path.join(batchFolder.get(),files)):
                     if file not in EXCLUSION_FILES:
-                        filesGrabbed.append(file)
+                        filesGrabbed.append(os.path.join(batchFolder.get(),file))
             for index,file in enumerate(filesGrabbed):
                 functions.updateProgressBar(progressbar2, intPerc, index, len(filesGrabbed))
                 if HappyTools.logging == True and HappyTools.logLevel >= 1:
                     with open(HappyTools.logFile,'a') as fw:
                         fw.write(str(datetime.now().replace(microsecond=0))+"\tQuantifying file: "+str(file)+"\n")
                 data = {'Data':functions.openChrom(file),'Name':file}
-                batchQuantitationControl(data, analFile)
+                batchQuantitationControl(data, analFile, batchFolder)
         except ValueError:
             if HappyTools.logging == True and HappyTools.logLevel >= 1:
                 with open(HappyTools.logFile,'a') as fw:
@@ -164,11 +164,11 @@ def batchProcess(calFile, analFile):
         if HappyTools.logging == True and HappyTools.logLevel >= 1:
             with open(HappyTools.logFile,'a') as fw:
                fw.write(str(datetime.now().replace(microsecond=0))+"\tCreating summary file\n")
-        combineResults()
+        combineResults(batchFolder)
     end = datetime.now()
     tkMessageBox.showinfo("Status Message", "Batch Process finished on "+str(end)+" and took a total time of "+str(end-start))
 
-def batchQuantitationControl(data, analFile):
+def batchQuantitationControl(data, analFile, batchFolder):
     """Quantify the current chromatogram and write results to disk.
 
     This function will open the analyte file (analFile), read all lines
@@ -196,7 +196,7 @@ def batchQuantitationControl(data, analFile):
 
     # Plot chromatogram region of interest (check if X[0] and X[-1] can be found before start)
     if functions.createFigure == "True" and bisect.bisect_left(time,functions.start) and bisect.bisect_right(time,functions.end):
-        pdf = PdfPages(str(data['Name'].split('.')[0])+".pdf")
+        pdf = PdfPages(os.path.join(batchFolder.get(),os.path.splitext(os.path.basename(data['Name']))[0]+".pdf"))
         plotOverview(pdf, peaks, data, time, intensity)
 
     for i in peaks:
@@ -335,12 +335,12 @@ def batchQuantitationControl(data, analFile):
                     str(i['Noise'])+"\t"+str(i['Residual'])+"\t"+str(i['PeakNoise'])+"\t"+str(i['BackgroundArea'])+"\t"+
                     str(i['ActualTime'])+"\t"+str(i['fwhm'])+"\n")
 
-def combineResults():
+def combineResults(batchFolder):
     """ TODO
     """
     # Read the raw files and construct a data structure
     Results = []
-    for file in glob.glob("*.raw"):
+    for file in glob.glob(os.path.join(batchFolder.get(),"*.raw")):
         Buffer = []
         with open(file,'r') as fr:
             fr.readline()
@@ -349,7 +349,7 @@ def combineResults():
                 Buffer.append({'Peak':str(chunks[0]),'Time':float(chunks[1]),'Area':float(chunks[2]),'S/N':float(chunks[3]),
                             'Background':float(chunks[4]),'Noise':float(chunks[5]),'Residual':float(chunks[6]),'PeakNoise':float(chunks[7]),
                             'BackgroundArea':float(chunks[8]),'ActualTime':float(chunks[9]),'fwhm':float(chunks[10])})
-            Results.append({'File':str(file),'Data':Buffer})
+            Results.append({'File':str(os.path.basename(file)),'Data':Buffer})
 
     # Construct the filename for the output
     utc_datetime = datetime.utcnow()
@@ -368,7 +368,7 @@ def combineResults():
         break
 
     # Write results, settings and version information
-    with open(filename,'w') as fw:
+    with open(os.path.join(batchFolder.get(),filename),'w') as fw:
         # Metadata
         fw.write("HappyTools Settings\n")
         fw.write("Version:\t"+str(HappyTools.version)+"\n")
@@ -608,8 +608,8 @@ def plotIndividual(pdf, details):
             '%)','Signal (S/N '+str(round((max(intensity[low:high])-NOBAN['Background'])/NOBAN['Noise'],1))+")",
             "FWHM:"+"{0:.2f}".format(fwhm['fwhm'])], loc='best')
     plt.title("Detail view: "+str(i[0]))
-    plt.xlabel("rt [m]")
-    plt.ylabel("intensity [au]")
+    plt.xlabel("Retention Time [m]")
+    plt.ylabel("Intensity [au]")
     pdf.savefig(fig)
     plt.close(fig)
 
@@ -617,7 +617,7 @@ def plotOverview(pdf, peaks, data, time, intensity):
     """ TODO
     """
     d = pdf.infodict()
-    d['Title'] = 'PDF Report for: '+str(data['Name'].split('.')[0])
+    d['Title'] = 'PDF Report for: '+str(os.path.splitext(os.path.basename(data['Name']))[0])
     d['Author'] = 'HappyTools version: '+str(HappyTools.version)+" build: "+str(HappyTools.build)
     d['CreationDate'] = datetime.now()
     low = bisect.bisect_left(time,functions.start)
@@ -626,23 +626,23 @@ def plotOverview(pdf, peaks, data, time, intensity):
     ax = fig.add_subplot(111)
     plt.plot(time[low:high], intensity[low:high], 'b-')
     plt.legend(['Raw Data'], loc='best')
-    plt.title(str(data['Name']))
-    plt.xlabel("rt [m]")
-    plt.ylabel("intensity [au]")
+    plt.title(str(os.path.splitext(os.path.basename(data['Name']))[0]))
+    plt.xlabel("Retention Time [m]")
+    plt.ylabel("Intensity [au]")
     for i in peaks:
         low = bisect.bisect_left(time,i[1]-i[2])
         high = bisect.bisect_right(time,i[1]+i[2])
         newTime = np.linspace(time[low], time[high], len(time[low:high]))
         f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
         newIntensity = f(newTime)
-        ax.fill_between(time[low:high], newTime, newIntensity, alpha=0.5)
+        ax.fill_between(time[low:high], 0, newIntensity, alpha=0.5)
         ax.text(i[1], max(intensity[low:high]), i[0])
     pdf.savefig(fig)
     plt.close(fig)
 
-def writeData(data):
+def writeData(batchFolder, data):
     """ TODO
     """
-    with open(data['Name'],'w') as fw:
+    with open(os.path.join(batchFolder.get(),data['Name']),'w') as fw:
         for i in data['Data']:
             fw.write(str(format(i[0],'0.'+str(functions.decimalNumbers)+'f'))+"\t"+str(format(i[1],'0.'+str(functions.decimalNumbers)+'f'))+"\n")

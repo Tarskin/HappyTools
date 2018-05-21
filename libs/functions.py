@@ -336,47 +336,59 @@ def batchPopup():
 
     calFile = StringVar()
     analFile = StringVar()
+    batchFolder = StringVar()
 
     def close():
         """Close the batch processing pop-up.
         """
         top.destroy()
 
-    def calibrationFile():
+    def setCalibrationFile():
         """Ask for the calibration file.
         """
         calFile.set(tkFileDialog.askopenfilename(title="Calibration File"))
 
-    def analyteFile():
+    def setAnalyteFile():
         """Ask for the analyte file.
         """
         analFile.set(tkFileDialog.askopenfilename(title="Analyte File"))
 
+    def setBatchFolder():
+        """Ask for the batch folder.
+        """
+        batchFolder.set(tkFileDialog.askdirectory(title="Batch Folder"))
+
     def run():
         """Start the batch process.
         """
-        batchFunctions.batchProcess(calFile, analFile)
+        batchFunctions.batchProcess(calFile, analFile, batchFolder)
 
     top = Tk.top = Toplevel()
     top.title("HappyTools "+str(HappyTools.version)+" Batch Process")
     top.protocol("WM_DELETE_WINDOW", lambda: close())
-    calibrationButton = Button(top, text="Calibration File", width=20, command=lambda: calibrationFile())
+
+    calibrationButton = Button(top, text="Calibration File", width=20, command=lambda: setCalibrationFile())
     calibrationButton.grid(row=1, column=0, sticky=W)
     calibrationLabel = Label(top, textvariable=calFile, width=20)
     calibrationLabel.grid(row=1, column=1)
 
-    analyteButton = Button(top, text="Analyte File", width=20, command=lambda: analyteFile())
+    analyteButton = Button(top, text="Analyte File", width=20, command=lambda: setAnalyteFile())
     analyteButton.grid(row=2, column=0, sticky=W)
     analyteLabel = Label(top, textvariable=analFile, width=20)
     analyteLabel.grid(row=2, column=1)
 
+    batchButton = Button(top, text="Batch Directory", width=20, command=lambda: setBatchFolder())
+    batchButton.grid(row=3, column=0, sticky=W)
+    batchLabel = Label(top, textvariable=batchFolder, width=20)
+    batchLabel.grid(row=3, column=1, sticky=W)
+    
     outputButton = Button(top, text="Output Options", command=lambda: outputPopup())
-    outputButton.grid(row=3, column=0, columnspan=2, sticky=E+W)
+    outputButton.grid(row=4, column=0, columnspan=2, sticky=E+W)
 
     runButton = Button(top, text="Run", width=20, command=lambda: run())
-    runButton.grid(row=4, column=0, sticky=W)
+    runButton.grid(row=5, column=0, sticky=W)
     closeButton = Button(top, text="Close", width=20, command=lambda: close())
-    closeButton.grid(row=4, column=1, sticky=E)
+    closeButton.grid(row=5, column=1, sticky=E)
 
     # Tooltips
     createToolTip(calibrationButton,"This button will allow you to select your calibration file, the program expects a "+
@@ -477,6 +489,21 @@ def fwhm(coeff):
     width = 0.5*fwhm
     center = coeff[1]
     return {'fwhm':fwhm, 'width':width, 'center':center}
+
+def checkAccess(all_directories):
+    """Check disk access
+    
+    This function will check if HappyTools has read/write access to
+    all the folders belonging to HappyTools.
+    
+    Keyword arguments:
+    None
+    """
+    access = True
+    for directory in all_directories:
+        if not os.access(directory, os.W_OK):
+            access = False
+    return access
 
 def createToolTip(widget, text):
     """Create a tooltip.
@@ -905,7 +932,7 @@ def overlayQuantitationWindows(fig,canvas):
         newTime = np.linspace(time[low], time[high],len(time[low:high]))
         f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
         newIntensity = f(newTime)
-        axes.fill_between(time[low:high], newTime, newIntensity, alpha=0.5)
+        axes.fill_between(time[low:high], 0, newIntensity, alpha=0.5)
         axes.text(i[1], max(intensity[low:high]), i[0])
         canvas.draw()
 

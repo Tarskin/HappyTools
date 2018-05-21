@@ -129,3 +129,10 @@
 16 May 2018
  - Fixed a bug that could cause HappyTools to crash when it decided to try and save/read a
    number that was stored in scientific notation.
+
+21 May 2018
+ - Fixed a bug in the PlotOverview that would fill the wrong area (above curve instead of
+   below curve) when processing low intensity data.
+ - Implemented a button in the batchProcess that allows the user to select where the data is
+   that will be processed by HappyTools.
+ - Implemented a function that checks if HappyTools has the required disk access rights.
