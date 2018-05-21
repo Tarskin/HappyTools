@@ -21,6 +21,7 @@ from Tkinter import *
 import glob
 import matplotlib
 import os
+import tkMessageBox
 
 # Custom libraries
 sys.path.append('libs')
@@ -31,7 +32,8 @@ import functions
 
 # Innate variables
 version = "0.0.2"
-build = "180516a"
+build = "180521a"
+directories = [os.path.join(os.getcwd(),"libs"),os.path.join(os.getcwd(),"temp"),os.path.join(os.getcwd(),"plugins"),os.path.join(os.getcwd(),"ui")]
 
 # General variables
 output = "summary.results"
@@ -97,6 +99,11 @@ class CustomToolbar(NavigationToolbar2TkAgg):
 class App():
 
     def __init__(self, master):
+        # ACCESS CHECK
+        if not functions.checkAccess(directories):
+            tkMessageBox.showinfo("Access Error", "HappyTools does not have sufficient disk access rights. Please close "+
+                    "HappyTools and check if the current user has read/write access to all folders in the Happytools "+
+                    "folder.")
         # SETTINGS
         if os.path.isfile(settings):
             functions.getSettings()
