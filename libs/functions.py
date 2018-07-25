@@ -1,10 +1,13 @@
 #! /usr/bin/env python
 
-# General imports
+###################
+# General imports #
+###################
 from datetime import datetime
 from matplotlib.pyplot import gca
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import PchipInterpolator, Akima1DInterpolator
 from scipy.optimize import curve_fit
 from scipy.signal import argrelextrema
 from scipy.signal import savgol_filter
@@ -21,12 +24,16 @@ import sys
 import tkFileDialog
 import tkMessageBox
 
-# Custom libraries
+####################
+# Custom libraries #
+####################
 sys.path.append('..')
 import batchFunctions
 import HappyTools
 
-# General variables
+##################### 
+# General variables #
+#####################
 points = 100
 start = 10
 end = 60
@@ -41,11 +48,40 @@ createFigure = "True"
 minPeaks = 4
 minPeakSN = 27
 
-# Advanced variables
-# TODO: Add background determination here
+######################
+# Advanced variables #
+######################
+# decimalNumbers specifies the number of decimal numbers to be used
+# in the files created by HappyTools
 decimalNumbers = 6
+# min_improvement specifies the minimum improvement in RMS that a 
+# calibration function must yield, to accept the more complex 
+# calibration function as an acceptable function.
+min_improvement = 0.05
+# use_interpolation specifies if calibration is allowed to use
+# interpolation methods as well, which will always return an RMS of 0
+# but tend to be less smooth than regular functions. However, the
+# allowed interpolation functions are guaranteed to be monotone.
+use_interpolation = False
+# noise specifies the method that is used to determine the noise,
+# acceptable values are 'RMS' for root-mean-square which is based on
+# the standard deviation of a signal (much like radio noise) or 'MM'
+# for the difference between the maximum and mimum, much like classical
+# chromatography
+noise = "RMS"
+# backgroundNoiseMethod specifies the how the region is determined
+# from which both the background and noise values are extracted. The
+# options included 'MT' for the MassyTools method (5 sequential lowest
+# datapoints near the peak of interest) or 'NOBAN' for the normal
+# distrubtion based background and noise determined first described
+# in the LaCyTools paper (assumption that background and noise are
+# normally distributed and any datapoint that is not in the normal
+# distribution is a signal
+backgroundNoiseMethod = "MT"
 
-# Output variables
+####################
+# Output variables #
+####################
 root = Tk()
 root.withdraw()
 outputWindow = IntVar()
@@ -55,13 +91,19 @@ bckSub = IntVar()
 bckNoise = IntVar()
 peakQual = IntVar()
 
-# Advanced variables
-noise = "RMS"                     # Accepts: RMS, MM
-backgroundNoiseMethod = "MT"      # Accepts: NOBAN, MT
-
 ###########
 # Classes #
 ###########
+class powerLawCall:
+    def __init__(self,x,a,b,c):
+        self.a = a
+        self.b = b
+        self.c = c
+        self.f = lambda x: a*x**b+c
+    def __call__(self,x):
+        return self.f(x)
+    def describe(self):
+        return str(self.a)+"*X^"+str(self.b)+"+"+str(self.c)
 
 ################################################################################################
 # Tooltip code - Taken from http://www.voidspace.org.uk/python/weblog/arch_d7_2006_07_01.shtml #
@@ -221,6 +263,16 @@ def plotMultiData(fig,canvas,data):
     handles, labels = axes.get_legend_handles_labels()
     fig.legend(handles,labels)
     canvas.draw()
+
+def powerLaw(x,a,b,c):
+    """ TODO
+    """
+    penalty = 0
+    if b > 2.:
+        penalty = abs(b-1.)*10000
+    if b < 0.:
+        penalty = abs(2.-b)*10000
+    return a*x**b + c + penalty
 
 def batchPlot(fig,canvas):
     """Read and plot all chromatograms in a directory.
@@ -446,8 +498,9 @@ def chromCalibration(fig,canvas):
     for i in timePairs:
         expectedTime.append(float(i[0]))
         observedTime.append(float(i[1]))
-    z = np.polyfit(observedTime,expectedTime,2)
-    f = np.poly1d(z)
+    #z = np.polyfit(observedTime,expectedTime,2)
+    #f = np.poly1d(z)
+    f = ultraPerformanceCalibration(observedTime,expectedTime, time[0], time[-1])
     calibratedData = zip(f(time),intensity)
 
     # Plot & Write Data to Disk  
@@ -1486,6 +1539,86 @@ def smoothChrom(fig, canvas):
     multiData = [(os.path.split(data[0][0])[-1], data[0][1]),(os.path.split(data[0][0])[-1]+" (Smoothed)",newData)]
     plotMultiData(fig,canvas,multiData)
     writeData(newData,os.path.split(data[0][0])[-1]+" (Smoothed)")
+
+def ultraPerformanceCalibration(measured, expected, minimum, maximum):
+    """ This function tries various calibration methods, starting with 
+    polynomials, followed by a power law function and lastly tries two
+    interpolation methods (Pchip and Akima1D). The latter methods should
+    always return an RMS of 0, which is why the function will only use
+    those if they give a significant improvement in RMS (defined in
+    min_improvement) and if the user has selected to use interpolation
+    methods as well (defined in use_interpolation).
+    
+    INPUT1: List of measured data points
+    INPUT2: List of expected data points
+    OUTPUT: Function object
+    """
+    RMS = sys.maxint
+    func = None
+
+    # Polynomials between 1 and len(expected)
+    for i in range(1,len(expected)):
+        z = np.polyfit(measured, expected, i)
+        f = np.poly1d(z)
+        
+        # Check if the fitted polynomial is monotone
+        X_range = np.linspace(minimum, maximum, 10000)
+        dx = np.diff(f(X_range))
+        if not np.all(dx > 0):
+            break
+
+        # Calculate RMS
+        RMS_buffer = []
+        for index, j in enumerate(measured):
+            RMS_buffer.append((f(j) - expected[index])**2)
+        RMS_buffer = np.mean(RMS_buffer)
+        RMS_buffer = math.sqrt(RMS_buffer)
+        if RMS_buffer < RMS - min_improvement*RMS:
+            RMS = RMS_buffer
+            func = f
+
+
+    # Power Law
+    z = curve_fit(powerLaw, measured, expected)
+
+    # Check if the fitted power law function is monotone
+    X_range = np.linspace(minimum, maximum, 10000)
+    dx = np.diff(powerLaw(X_range, *z[0]))
+    if np.all(dx > 0):
+        # Calculate RMS
+        RMS_buffer = []
+        for index, i in enumerate(measured):
+            RMS_buffer.append((powerLaw(i,*z[0])-expected[index])**2)
+        RMS_buffer = np.mean(RMS_buffer)
+        RMS_buffer = math.sqrt(RMS_buffer)
+        if RMS_buffer < RMS - min_improvement*RMS:
+            RMS = RMS_buffer
+            func = powerLawCall(0,*z[0])
+
+    if use_interpolation == True:
+        # Monotonic Piecewise Cubic Hermite Interpolating Polynomial
+        RMS_buffer = []
+        f = PchipInterpolator(measured, expected)
+        for index, j in enumerate(measured):
+            RMS_buffer.append((f(j)-expected[index])**2)
+        RMS_buffer = np.mean(RMS_buffer)
+        RMS_buffer = math.sqrt(RMS_buffer)
+        if RMS_buffer < RMS - min_improvement*RMS:
+            RMS = RMS_buffer
+            func = f
+
+        # Akima 1D Interpolator
+        RMS_buffer = []
+        f = Akima1DInterpolator(measured, expected)
+        for index, j in enumerate(measured):
+            RMS_buffer.append((f(j)-expected[index])**2)
+        RMS_buffer = np.mean(RMS_buffer)
+        RMS_buffer = math.sqrt(RMS_buffer)
+        if RMS_buffer < RMS - min_improvement*RMS:
+            RMS = RMS_buffer
+            func = f
+
+    return func
 
 def updateProgressBar(bar, variable, index, length):
     """ TODO

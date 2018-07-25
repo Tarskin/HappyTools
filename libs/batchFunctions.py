@@ -4,6 +4,7 @@
 from datetime import datetime
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.interpolate import PchipInterpolator, Akima1DInterpolator
 from scipy.optimize import curve_fit
 from scipy.signal import argrelextrema
 from Tkinter import StringVar, Toplevel, Label
@@ -127,7 +128,10 @@ def batchProcess(calFile, analFile, batchFolder):
                     #pass
                 #else:
                     #data['Data'] = batchChromCalibration(data['Data'], calFile)
-                data['Data'] = batchCalibrationControl(data['Data'], calFile)
+                # Must be a better way of doing this
+                foo = batchCalibrationControl(data['Data'], calFile)
+                data['Data'] = foo['Data']
+                data['Function'] = foo['Function']
                 if data['Data'] == None:
                     continue
                 data['Name'] = os.path.join(batchFolder.get(), "calibrated_"+os.path.basename(data['Name']))
@@ -327,7 +331,7 @@ def batchQuantitationControl(data, analFile, batchFolder):
         pdf.close()
 
     # Write results to disk
-    data['Name'] = str(data['Name'].split('.')[0])+".raw"
+    data['Name'] = os.path.splitext(os.path.basename(data['Name']))[0]+".raw"
     with open(data['Name'],'w') as fw:
         fw.write("Name\tTime\tPeak Area\tS/N\tBackground\tNoise\tGaussian Residual RMS\tPeak Noise\tBackground Area\tPeak Time\tFWHM\n")
         for i in results:
@@ -349,7 +353,9 @@ def combineResults(batchFolder):
                 Buffer.append({'Peak':str(chunks[0]),'Time':float(chunks[1]),'Area':float(chunks[2]),'S/N':float(chunks[3]),
                             'Background':float(chunks[4]),'Noise':float(chunks[5]),'Residual':float(chunks[6]),'PeakNoise':float(chunks[7]),
                             'BackgroundArea':float(chunks[8]),'ActualTime':float(chunks[9]),'fwhm':float(chunks[10])})
-            Results.append({'File':str(os.path.basename(file)),'Data':Buffer})
+        with open(os.path.splitext(os.path.basename(file))[0]+".cal") as fr:
+            formula = fr.readline()
+        Results.append({'File':str(os.path.splitext(os.path.basename(file))[0]), 'Calibration':str(formula), 'Data':Buffer})
 
     # Construct the filename for the output
     utc_datetime = datetime.utcnow()
@@ -514,6 +520,8 @@ def combineResults(batchFolder):
             fw.write(header)
             for i in Results:
                 fw.write(i['File'])
+                if i['Calibration']:
+                    fw.write(" ["+str(i['Calibration'])+"]")
                 for j in i['Data']:
                     residualTime = abs(float(j['ActualTime']) - float(j['Time']))
                     fw.write("\t"+str(residualTime))
@@ -522,7 +530,7 @@ def combineResults(batchFolder):
 
         # Peak Tr
         if functions.peakQual.get() == 1:
-            fw.write("Retention Time Residual")
+            fw.write("Retention Time")
             fw.write(header)
             for i in Results:
                 fw.write(i['File'])
@@ -558,8 +566,9 @@ def performCalibration(timePairs, data):
     try:
         if len(timePairs) >= functions.minPeaks:
             expectedTime, observedTime = zip(*timePairs)
-            z = np.polyfit(observedTime,expectedTime,2)
-            f = np.poly1d(z)
+            #z = np.polyfit(observedTime,expectedTime,2)
+            #f = np.poly1d(z)
+            f = functions.ultraPerformanceCalibration(observedTime,expectedTime,time[0], time[-1])
             calibratedData = zip(f(time),intensity)
         else:
             calibratedData = None
@@ -575,7 +584,7 @@ def performCalibration(timePairs, data):
                  fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+
                         str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+
                         str(functions.minPeaks)+" were needed\n")  
-    return calibratedData
+    return {"Data":calibratedData, "Function":f}
 
 def plotIndividual(pdf, details):
     """ TODO
@@ -643,6 +652,23 @@ def plotOverview(pdf, peaks, data, time, intensity):
 def writeData(batchFolder, data):
     """ TODO
     """
+    with open(os.path.join(batchFolder.get(),os.path.splitext(data['Name'])[0]+'.cal'),'w') as fw:
+        if isinstance(data['Function'],functions.powerLawCall):
+            formula = data['Function'].describe()
+        elif isinstance(data['Function'],np.lib.polynomial.poly1d):
+            formula = ""
+            for index,i in enumerate(data['Function']):
+                if index < len(data['Function']):
+                    formula += "{0:.2e}".format(i)+"x^"+str(len(data['Function'])-index)+" + "
+                else:
+                    formula += "{0:.2e}".format(i)
+        elif isinstance(data['Function'],Akima1DInterpolator):
+            formula = "Akima 1D Interpolation"
+        elif isinstance(data['Function'],PchipInterpolator):
+            formula = "Monotonic Piecewise Cubic Hermite Interpolating Polynomial"
+        else:
+            formula = "Unknown"
+        fw.write(formula)
     with open(os.path.join(batchFolder.get(),data['Name']),'w') as fw:
         for i in data['Data']:
             fw.write(str(format(i[0],'0.'+str(functions.decimalNumbers)+'f'))+"\t"+str(format(i[1],'0.'+str(functions.decimalNumbers)+'f'))+"\n")

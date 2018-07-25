@@ -136,3 +136,11 @@
  - Implemented a button in the batchProcess that allows the user to select where the data is
    that will be processed by HappyTools.
  - Implemented a function that checks if HappyTools has the required disk access rights.
+
+25 July 2018
+ - Implemented an initial version of ultraPerformanceCalibration that will attempt to use
+   a polynomial of order 2 to n (where n is number of calibrants-1). Subsequently, the
+   function tests if the function results in a monotone calibrated dataset and uses the
+   function that yields the best RMS that produces monotone data for calibration.
+   NOTE: The Interpolation option of UPC currently does not result in monotone data, but
+         only ensures that the data between the first and last calibrant is monotone.
