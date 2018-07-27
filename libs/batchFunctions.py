@@ -566,9 +566,11 @@ def performCalibration(timePairs, data):
     try:
         if len(timePairs) >= functions.minPeaks:
             expectedTime, observedTime = zip(*timePairs)
-            #z = np.polyfit(observedTime,expectedTime,2)
-            #f = np.poly1d(z)
-            f = functions.ultraPerformanceCalibration(observedTime,expectedTime,time[0], time[-1])
+            if functions.useUPC == False:
+                z = np.polyfit(observedTime,expectedTime,2)
+                f = np.poly1d(z)
+            elif functions.useUPC == True:
+                f = functions.ultraPerformanceCalibration(observedTime,expectedTime,time[0], time[-1])
             calibratedData = zip(f(time),intensity)
         else:
             calibratedData = None

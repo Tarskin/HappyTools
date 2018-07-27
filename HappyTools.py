@@ -32,7 +32,7 @@ import functions
 
 # Innate variables
 version = "0.0.2"
-build = "180725a"
+build = "180727a"
 directories = [os.path.join(os.getcwd(),"libs"),os.path.join(os.getcwd(),"temp"),os.path.join(os.getcwd(),"plugins"),os.path.join(os.getcwd(),"ui")]
 
 # General variables

@@ -47,6 +47,7 @@ peakDetectionEdgeValue = 2.0
 createFigure = "True"
 minPeaks = 4
 minPeakSN = 27
+useUPC = "False"
 
 ######################
 # Advanced variables #
@@ -498,9 +499,11 @@ def chromCalibration(fig,canvas):
     for i in timePairs:
         expectedTime.append(float(i[0]))
         observedTime.append(float(i[1]))
-    #z = np.polyfit(observedTime,expectedTime,2)
-    #f = np.poly1d(z)
-    f = ultraPerformanceCalibration(observedTime,expectedTime, time[0], time[-1])
+    if useUPC == False:
+        z = np.polyfit(observedTime,expectedTime,2)
+        f = np.poly1d(z)
+    elif useUPC == True:
+        f = ultraPerformanceCalibration(observedTime,expectedTime, time[0], time[-1])
     calibratedData = zip(f(time),intensity)
 
     # Plot & Write Data to Disk  
@@ -1322,6 +1325,9 @@ def settingsPopup():
     figureVariable.set(createFigure)
     peakDetectionEdgeVar = StringVar()
     peakDetectionEdgeVar.set(peakDetectionEdge)
+    ultraPerformanceCalibrationVar = StringVar()
+    ultraPerformanceCalibrationVar.set(useUPC)
+    options = ["True", "False"]
 
     def close():
         """ TODO
@@ -1340,6 +1346,7 @@ def settingsPopup():
         global peakDetectionMin
         global peakDetectionEdge
         global peakDetectionEdgeValue
+        global useUPC
         points = int(pointsWindow.get())
         start = float(startWindow.get())
         end = float(endWindow.get())
@@ -1353,6 +1360,7 @@ def settingsPopup():
         peakDetectionMin = float(peakDetection.get())
         peakDetectionEdge = str(peakDetectionEdgeVar.get())
         peakDetectionEdgeValue = float(peakDetectionEdgeValueWindow.get())
+        useUPC = str(ultraPerformanceCalibrationVar.get())
         top.destroy()
     
     def save():
@@ -1373,6 +1381,7 @@ def settingsPopup():
             fw.write("peakDetectionMin:\t"+str(peakDetection.get())+"\n")
             fw.write("peakDetectionEdge:\t"+str(peakDetectionEdgeVar.get())+"\n")
             fw.write("peakDetectionEdgeValue:\t"+str(peakDetectionEdgeValueWindow.get())+"\n")
+            fw.write("useUPC:\t"+str(ultraPerformanceCalibrationVar.get())+"\n")
 
     top = Tk.top = Toplevel()
     top.title("HappyTools "+str(HappyTools.version)+" Settings")
@@ -1431,27 +1440,32 @@ def settingsPopup():
     minPeakSNWindow.insert(0, minPeakSN)
     minPeakSNWindow.grid(row=9, column=1, sticky=W)
     
+    ultraPerformanceCalibrationLabel = Label(top, text="UltraPerformanceCalibration", font=("Helvetica", 12))
+    ultraPerformanceCalibrationLabel.grid(row=10, column=0, sticky=W)
+    ultraPerformanceCalibrationWindow = OptionMenu(top, ultraPerformanceCalibrationVar, *options)
+    ultraPerformanceCalibrationWindow.grid(row=10, column=1, sticky=W)
+    
     # Quantitation Settings
     quantitationLabel = Label(top, text="Quantitation Settings", font=("Helvetica", 16))
-    quantitationLabel.grid(row=10, columnspan=2, sticky=W)
+    quantitationLabel.grid(row=11, columnspan=2, sticky=W)
     
     pointsLabel = Label(top, text="Datapoints", font=("Helvetica", 12))
-    pointsLabel.grid(row=11, column=0, sticky=W)
+    pointsLabel.grid(row=12, column=0, sticky=W)
     pointsWindow = Entry(top)
     pointsWindow.insert(0, points)
-    pointsWindow.grid(row=11, column=1, sticky=W)
+    pointsWindow.grid(row=12, column=1, sticky=W)
 
     baselineOrderLabel = Label(top, text="Baseline Order", font=("Helvetica", 12))
-    baselineOrderLabel.grid(row=12, column=0, sticky=W)
+    baselineOrderLabel.grid(row=13, column=0, sticky=W)
     baselineOrderWindow = Entry(top)
     baselineOrderWindow.insert(0, baselineOrder)
-    baselineOrderWindow.grid(row=12, column=1, sticky=W)
+    baselineOrderWindow.grid(row=13, column=1, sticky=W)
     
     backgroundWindowLabel = Label(top, text="Background Window", font=("Helvetica", 12))
-    backgroundWindowLabel.grid(row=13, column=0, sticky=W)
+    backgroundWindowLabel.grid(row=14, column=0, sticky=W)
     backgroundWindowWindow = Entry(top)
     backgroundWindowWindow.insert(0, backgroundWindow)
-    backgroundWindowWindow.grid(row=13, column=1, sticky=W)
+    backgroundWindowWindow.grid(row=14, column=1, sticky=W)
 
     #nobanLabel = Label(top, text="NOBAN Start", font=("Helvetica", 12))
     #nobanLabel.grid(row=14, column=0, sticky=W)
@@ -1467,7 +1481,7 @@ def settingsPopup():
 
     figureLabel = Label(top, text="Create figure for each analyte", font=("Helvetica", 12))
     figureLabel.grid(row=16, column=0, sticky=W)
-    options = ["True", "False"]
+    #options = ["True", "False"]
     figureWindow = OptionMenu(top, figureVariable, *options)
     figureWindow.grid(row=16, column=1, sticky=W)
 
@@ -1526,6 +1540,11 @@ def settingsPopup():
             "integration window so that 68.3% of the Gaussian peak will be quantified (2 Sigma = 95.5% and 3 sigma "+
             "= 99.7%). Please note that this value should depend on how complex the chromatogram is, for instance "+
             "a low sigma will yield better results in a complex chromatogram.") 
+    createToolTip(ultraPerformanceCalibrationLabel, "This setting specifies if HappyTools will use the standard "+
+            "calibration method using a second degree polynomial (False) or if HappyTools is allowed to use the "+
+            "experimental ultraPerformanceCalibration (True) that attempts to identify the optimal function for "+
+            "calibration based on the residual time error of the calibrants.\n\nNOTE: The ultraPerformanceCalibration "+
+            "is not ready to be used in a production environment yet!") 
 
 def smoothChrom(fig, canvas):
     """ TODO
