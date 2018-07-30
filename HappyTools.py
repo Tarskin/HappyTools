@@ -27,13 +27,21 @@ import tkMessageBox
 sys.path.append('libs')
 if glob.glob(os.path.join(".","plugins","*.py")):
     sys.path.append('plugins')
-
 import functions
+
+# Gui elements
+sys.path.append('gui')
+import CustomToolbar
 
 # Innate variables
 version = "0.0.2"
-build = "180730a"
-directories = [os.path.join(os.getcwd(),"libs"),os.path.join(os.getcwd(),"temp"),os.path.join(os.getcwd(),"plugins"),os.path.join(os.getcwd(),"ui")]
+build = "180730b"
+directories = [
+    os.path.join(os.getcwd(),"libs"),
+    os.path.join(os.getcwd(),"temp"),
+    os.path.join(os.getcwd(),"plugins"),
+    os.path.join(os.getcwd(),"ui")
+]
 
 # General variables
 output = "summary.results"
@@ -48,52 +56,6 @@ logLevel = 2
 def dynamic_update(foo):
     pass
 matplotlib.backends.backend_tkagg.NavigationToolbar2TkAgg.dynamic_update = dynamic_update
-
-# Custom toolbar
-class CustomToolbar(NavigationToolbar2TkAgg):
-    def plot_axes(self):
-        def close():
-            try:    
-                self.canvas.figure.axes[0].set_xlim([float(XMinWindow.get()),float(XMaxWindow.get())])
-            except ValueError:
-                pass
-            try:
-                self.canvas.figure.axes[0].set_ylim([float(YMinWindow.get()),float(YMaxWindow.get())])
-            except ValueError:
-                pass
-            self.canvas.draw()
-            top.destroy()
-        self.push_current()        
-        top = Tk.top = Toplevel()
-        top.title("Configure Axes")
-        top.protocol( "WM_DELETE_WINDOW", lambda: close())
-
-        XLabel = Label(top, text="X-axis", font="bold")
-        XLabel.grid(row=0, column=0, sticky=W)
-        XMinWindow = Entry(top)
-        XMinWindow.grid(row=0, column=1, sticky=W)
-        XMaxWindow = Entry(top)
-        XMaxWindow.grid(row=0, column=2, sticky=W)
-        YLabel = Label(top, text="Y-axis", font="bold")
-        YLabel.grid(row=1, column=0, sticky=W)
-        YMinWindow = Entry(top)
-        YMinWindow.grid(row=1, column=1, sticky=W)
-        YMaxWindow = Entry(top)
-        YMaxWindow.grid(row=1, column=2, sticky=W)
-
-    def __init__(self,canvas_,parent_):
-        self.toolitems = (
-            ('Home', 'Reset original view', 'home', 'home'),
-            ('Back', 'Back to previous view', 'back', 'back'),
-            ('Forward', 'Forward to next view', 'forward', 'forward'),
-            ('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),
-            ('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'),
-            # TODO Get this poor thing a nice gif
-            ('Axes', 'Define the X- and Y-axis limits', 'subplots', 'plot_axes'),
-            ('Subplots', 'Configure subplots', 'subplots', 'configure_subplots'),
-            ('Save', 'Save the figure', 'filesave', 'save_figure'),
-            )
-        NavigationToolbar2TkAgg.__init__(self,canvas_,parent_)
 
 # Applicatiom
 class App():
@@ -111,18 +73,20 @@ class App():
         # CANVAS
         self.fig = matplotlib.figure.Figure(figsize=(12, 6))
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
-        self.toolbar = CustomToolbar(self.canvas, master)
+        self.toolbar = CustomToolbar.CustomToolbar(self.canvas, master)
         self.canvas.get_tk_widget().pack(fill=BOTH, expand=YES)
         self.canvas.draw()
 
         # FRAME
         frame = Frame(master)
         master.title("HappyTools "+str(version))
-        if os.path.isfile(os.path.join(".","ui","Icon.ico")):
-            master.iconbitmap(default=os.path.join(".","ui","Icon.ico"))
-        if os.path.isfile(os.path.join(".","ui","UI.png")):
+        iconbitmap = os.path.join(os.getcwd(),"gui","assets","Icon.ico")
+        backgroundimage = os.path.join(os.getcwd(),"gui","assets","UI.png")
+        if os.path.isfile(iconbitmap):
+            master.iconbitmap(default=iconbitmap)
+        if os.path.isfile(backgroundimage):
             background_image = self.fig.add_subplot(111)
-            image = matplotlib.image.imread(os.path.join(".","ui","UI.png"))
+            image = matplotlib.image.imread(backgroundimage)
             background_image.axis('off')
             self.fig.set_tight_layout(True)
             background_image.imshow(image)
