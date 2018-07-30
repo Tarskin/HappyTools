@@ -331,7 +331,7 @@ def batchQuantitationControl(data, analFile, batchFolder):
         pdf.close()
 
     # Write results to disk
-    data['Name'] = os.path.splitext(os.path.basename(data['Name']))[0]+".raw"
+    data['Name'] = os.path.join(batchFolder.get(),os.path.splitext(os.path.basename(data['Name']))[0]+".raw")
     with open(data['Name'],'w') as fw:
         fw.write("Name\tTime\tPeak Area\tS/N\tBackground\tNoise\tGaussian Residual RMS\tPeak Noise\tBackground Area\tPeak Time\tFWHM\n")
         for i in results:
@@ -353,7 +353,7 @@ def combineResults(batchFolder):
                 Buffer.append({'Peak':str(chunks[0]),'Time':float(chunks[1]),'Area':float(chunks[2]),'S/N':float(chunks[3]),
                             'Background':float(chunks[4]),'Noise':float(chunks[5]),'Residual':float(chunks[6]),'PeakNoise':float(chunks[7]),
                             'BackgroundArea':float(chunks[8]),'ActualTime':float(chunks[9]),'fwhm':float(chunks[10])})
-        with open(os.path.splitext(os.path.basename(file))[0]+".cal") as fr:
+        with open(os.path.join(batchFolder.get(),os.path.splitext(os.path.basename(file))[0]+".cal")) as fr:
             formula = fr.readline()
         Results.append({'File':str(os.path.splitext(os.path.basename(file))[0]), 'Calibration':str(formula), 'Data':Buffer})
 
@@ -566,10 +566,10 @@ def performCalibration(timePairs, data):
     try:
         if len(timePairs) >= functions.minPeaks:
             expectedTime, observedTime = zip(*timePairs)
-            if functions.useUPC == False:
+            if functions.useUPC == "False":
                 z = np.polyfit(observedTime,expectedTime,2)
                 f = np.poly1d(z)
-            elif functions.useUPC == True:
+            elif functions.useUPC == "True":
                 f = functions.ultraPerformanceCalibration(observedTime,expectedTime,time[0], time[-1])
             calibratedData = zip(f(time),intensity)
         else:
