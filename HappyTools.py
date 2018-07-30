@@ -20,9 +20,11 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 try:
     # Python 2
     import Tkinter as tk
+    import tkFileDialog as filedialog
 except ImportError:
     # Python 3
     import tkinter as tk
+    import tk.filedialog as filedialog
 import glob
 import matplotlib
 import os
@@ -40,9 +42,12 @@ sys.path.append('gui')
 import CustomToolbar
 import AboutWindow
 
+sys.path.append('bin')
+import Chromatogram
+
 # Innate variables
 version = "0.0.2"
-build = "180730c"
+build = "180730d"
 directories = [
     os.path.join(os.getcwd(),"libs"),
     os.path.join(os.getcwd(),"temp"),
@@ -116,7 +121,7 @@ class HappyToolsGui(object):
 
         filemenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="File", menu=filemenu)
-        filemenu.add_command(label="Open Chromatogram", command=lambda: functions.openFile(self.fig, self.canvas))
+        filemenu.add_command(label="Open Chromatogram", command=self.open_chromatogram_window)
         filemenu.add_command(label="Smooth Chromatogram", command=lambda: functions.smoothChrom(self.fig, self.canvas))
         filemenu.add_command(label="Compare Chromatogram", command=lambda: functions.addFile(self.fig, self.canvas))
         filemenu.add_command(label="Baseline Correction", command=lambda: functions.baselineCorrection(self.fig, self.canvas))
@@ -156,6 +161,12 @@ class HappyToolsGui(object):
 
     def open_about_window(self):
         AboutWindow.AboutWindow(tk.Toplevel())
+
+    def open_chromatogram_window(self):
+        file = filedialog.askopenfilename(title="Open Chromatogram File")
+        if file:
+            data = Chromatogram.Chromatogram(file)
+            data.plotData(data.data, self.fig, self.canvas)
 
 # Call the main app
 if __name__ == "__main__":
