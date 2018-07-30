@@ -607,7 +607,7 @@ def determineCalibrants(functions):
             try:
                 X, Y = zip(*j['Data'])
             except:
-                print j
+                print(j)
             peakCenter = X[Y.index(max(Y))]
             peakIntensity = max(Y)
             if peakIntensity > maxIntensity and peakCenter > i[0] and peakCenter < i[1]:
@@ -715,33 +715,6 @@ def getSettings():
                 global peakDetectionEdgeValue
                 peakDetectionEdgeValue = float(chunks[1])
 
-def infoPopup():
-    """ Generate the about window.
-    
-    This function will generate a new window that lists some information
-    about HappyTools, such as the license and author.
-    
-    Keyword Arguments:
-    none
-    """
-    def close():
-        """Close the output pop-up.
-        """
-        top.destroy()
-
-    top = Tk.top = Toplevel()
-    top.protocol("WM_DELETE_WINDOW", lambda: close())
-    top.title("HappyTools "+str(HappyTools.version)+" About")
-    information = ("HappyTools Version "+str(HappyTools.version)+" build "+str(HappyTools.build) +
-                   " by Bas Cornelis Jansen, bas.c.jansen@gmail.com\n\n" +
-                   "This software is released under the Apache 2.0 License." +
-                   " Full details regarding this license can be found at" +
-                   "the following URL:\n\n" +
-                   "http://www.apache.org/licenses/LICENSE-2.0")
-    about = Label(top, text=information, justify=LEFT, wraplength=250)
-    about.pack()
-    top.lift()
-
 def makeFunc(module):
     """This function returns a lambda function for the plugins."""
     return lambda: module.start()
@@ -844,7 +817,7 @@ def openChrom(file):
                     try:
                         chromData.append((float(lineChunks[0]),float(lineChunks[-1])))
                     except UnicodeEncodeError:
-                        print "Omitting line: "+str(line)
+                        print("Omitting line: "+str(line))
         elif 'arw' in file:
             for line in fr:
                 lines = line.split('\r')
@@ -859,7 +832,7 @@ def openChrom(file):
                 except IndexError:
                     pass
         else:
-            print "Incorrect inputfile format, please upload a raw data 'txt' or 'arw' file."
+            print("Incorrect inputfile format, please upload a raw data 'txt' or 'arw' file.")
     return chromData
 
 def openFile(fig,canvas):
@@ -1052,7 +1025,7 @@ def peakDetection(fig,canvas):
     counter = 0
     while max(y_data)-NOBAN['Background'] > cutoff:
         counter += 1
-        print "Fitting peak: "+str(counter)
+        print("Fitting peak: "+str(counter))
         f = InterpolatedUnivariateSpline(x_data, y_data)
         fPrime = f.derivative()
         newY = f(newX)

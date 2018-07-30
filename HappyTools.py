@@ -17,10 +17,16 @@
 
 # General imports
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-from Tkinter import *
+try:
+    # Python 2
+    import Tkinter as tk
+except ImportError:
+    # Python 3
+    import tkinter as tk
 import glob
 import matplotlib
 import os
+import sys
 import tkMessageBox
 
 # Custom libraries
@@ -32,15 +38,16 @@ import functions
 # Gui elements
 sys.path.append('gui')
 import CustomToolbar
+import AboutWindow
 
 # Innate variables
 version = "0.0.2"
-build = "180730b"
+build = "180730c"
 directories = [
     os.path.join(os.getcwd(),"libs"),
     os.path.join(os.getcwd(),"temp"),
     os.path.join(os.getcwd(),"plugins"),
-    os.path.join(os.getcwd(),"ui")
+    os.path.join(os.getcwd(),"gui")
 ]
 
 # General variables
@@ -58,7 +65,12 @@ def dynamic_update(foo):
 matplotlib.backends.backend_tkagg.NavigationToolbar2TkAgg.dynamic_update = dynamic_update
 
 # Applicatiom
-class App():
+class HappyToolsGui(object):
+    @classmethod
+    def run(cls):
+        root = tk.Tk()
+        app = HappyToolsGui(root)
+        root.mainloop()
 
     def __init__(self, master):
         # ACCESS CHECK
@@ -74,11 +86,11 @@ class App():
         self.fig = matplotlib.figure.Figure(figsize=(12, 6))
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
         self.toolbar = CustomToolbar.CustomToolbar(self.canvas, master)
-        self.canvas.get_tk_widget().pack(fill=BOTH, expand=YES)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=tk.YES)
         self.canvas.draw()
 
         # FRAME
-        frame = Frame(master)
+        frame = tk.Frame(master)
         master.title("HappyTools "+str(version))
         iconbitmap = os.path.join(os.getcwd(),"gui","assets","Icon.ico")
         backgroundimage = os.path.join(os.getcwd(),"gui","assets","UI.png")
@@ -94,15 +106,15 @@ class App():
         # QUIT
         def close():
             functions.fileCleanup()
-            root.destroy()
-            root.quit()
-        root.protocol("WM_DELETE_WINDOW", lambda: close())
+            master.destroy()
+            master.quit()
+        master.protocol("WM_DELETE_WINDOW", lambda: close())
 
         # MENU
-        menu = Menu(master)
+        menu = tk.Menu(master)
         master.config(menu=menu)
 
-        filemenu = Menu(menu, tearoff=0)
+        filemenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="File", menu=filemenu)
         filemenu.add_command(label="Open Chromatogram", command=lambda: functions.openFile(self.fig, self.canvas))
         filemenu.add_command(label="Smooth Chromatogram", command=lambda: functions.smoothChrom(self.fig, self.canvas))
@@ -113,12 +125,12 @@ class App():
         filemenu.add_command(label="Overlay Quantitation Windows", command=lambda: functions.overlayQuantitationWindows(self.fig, self.canvas))
         filemenu.add_command(label="Quantify Chromatogram", command=lambda: functions.quantifyChrom(self.fig, self.canvas))
 
-        multimenu = Menu(menu, tearoff=0)
+        multimenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Multi File", menu=multimenu)
         multimenu.add_command(label="Raw Batch Plot", command=lambda: functions.batchPlot(self.fig, self.canvas))
         multimenu.add_command(label="Normalized Batch Plot", command=lambda: functions.batchPlotNorm(self.fig, self.canvas))
 
-        advancedmenu = Menu(menu, tearoff=0)
+        advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced Tools", menu=advancedmenu)
         advancedmenu.add_command(label="Peak Detection", command=lambda: functions.peakDetection(self.fig, self.canvas))
         advancedmenu.add_command(label="Save Calibrants", command=lambda: functions.saveCalibrants(self.fig, self.canvas))
@@ -128,11 +140,11 @@ class App():
 
         menu.add_command(label="Settings", command=functions.settingsPopup)
 
-        menu.add_command(label="About HappyTools", command=lambda: functions.infoPopup())
+        menu.add_command(label="About HappyTools", command= self.open_about_window)
 
         if glob.glob(os.path.join(".","plugins","*.py")):
             import importlib
-            pluginsmenu = Menu(menu,tearoff=0)
+            pluginsmenu = tk.Menu(menu,tearoff=0)
             menu.add_cascade(label="Plugins", menu=pluginsmenu)
             for file in glob.glob(os.path.join(".","plugins","*.py")):
                 moduleName = os.path.split(file)[-1].split(".")[0]
@@ -142,8 +154,9 @@ class App():
         # CLEANUP
         functions.fileCleanup()
 
+    def open_about_window(self):
+        AboutWindow.AboutWindow(tk.Toplevel())
+
 # Call the main app
 if __name__ == "__main__":
-    root = Tk()
-    app = App(root)
-    root.mainloop()
+    HappyToolsGui.run()
