@@ -1,4 +1,6 @@
+from scipy.signal import savgol_filter
 import os
+
 import Trace
 
 class Chromatogram(object):
@@ -32,7 +34,7 @@ class Chromatogram(object):
         fig.legend(handles, labels)
         canvas.draw()
 
-    def plotData(self, data,fig,canvas):
+    def plotData(self, data, fig,canvas):
         """ TODO
         """
         x_array = []
@@ -49,3 +51,16 @@ class Chromatogram(object):
         axes.set_xlabel("Time [m]")
         axes.set_ylabel("Intensity [au]")
         canvas.draw()
+
+    def smoothChrom(self, data, fig, canvas):
+        """ TODO
+        """
+        #print type(data), data[0], data[-1]
+        time, intensity = zip(*data.data)
+        new = savgol_filter(intensity,21,3)
+        newData = zip(time,new)
+
+        # Plot & Write Data to Disk  
+        multiData = [(os.path.split(data.filename)[-1], data.data),(os.path.split(data.filename)[-1]+" (Smoothed)",newData)]
+        self.plot_multi_data(fig, canvas, multiData)
+        #writeData(newData,os.path.split(data[0][0])[-1]+" (Smoothed)")

@@ -47,7 +47,7 @@ import Chromatogram
 
 # Innate variables
 version = "0.0.2"
-build = "180730d"
+build = "180806a"
 directories = [
     os.path.join(os.getcwd(),"libs"),
     os.path.join(os.getcwd(),"temp"),
@@ -122,7 +122,8 @@ class HappyToolsGui(object):
         filemenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="File", menu=filemenu)
         filemenu.add_command(label="Open Chromatogram", command=self.open_chromatogram_window)
-        filemenu.add_command(label="Smooth Chromatogram", command=lambda: functions.smoothChrom(self.fig, self.canvas))
+        #filemenu.add_command(label="Smooth Chromatogram", command=lambda: functions.smoothChrom(self.fig, self.canvas))
+        filemenu.add_command(label="Smooth Chromatogram", command=self.smooth_chrom)
         filemenu.add_command(label="Compare Chromatogram", command=lambda: functions.addFile(self.fig, self.canvas))
         filemenu.add_command(label="Baseline Correction", command=lambda: functions.baselineCorrection(self.fig, self.canvas))
         filemenu.add_command(label="Chromatogram Calibration", command=lambda: functions.chromCalibration(self.fig, self.canvas))
@@ -167,6 +168,11 @@ class HappyToolsGui(object):
         if file:
             data = Chromatogram.Chromatogram(file)
             data.plotData(data.data, self.fig, self.canvas)
+        self.data = data
+
+    def smooth_chrom(self):
+        print self.data.filename
+        self.data.smoothChrom(self.data, self.fig, self.canvas)
 
 # Call the main app
 if __name__ == "__main__":
