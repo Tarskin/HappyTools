@@ -1,4 +1,9 @@
-import tkinter as tk
+try:
+    # Python 2
+    import Tkinter as tk
+except ImportError:
+    # Python 3
+    import tkinter as tk
 
 class AboutWindow(object):
     # TODO: Get the version and build from HappyTools.py in here

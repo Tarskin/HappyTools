@@ -49,7 +49,7 @@ import Trace
 
 # Innate variables
 version = "0.0.2"
-build = "180807a"
+build = "180807b"
 directories = [
     os.path.join(os.getcwd(),"libs"),
     os.path.join(os.getcwd(),"temp"),
@@ -124,14 +124,17 @@ class HappyToolsGui(object):
         filemenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="File", menu=filemenu)
         filemenu.add_command(label="Open Chromatogram", command=self.open_chromatogram_window)
-        filemenu.add_command(label="Smooth Chromatogram", command=self.smooth_chrom)
+        filemenu.add_command(label="Smooth Chromatogram", command=self.smooth_chromatogram)
         filemenu.add_command(label="Baseline Correction", command=self.baseline_correction)
-        filemenu.add_command(label="Normalize chromatogram", command=self.normalize_chrom)
-        filemenu.add_command(label="Chromatogram Calibration", command=lambda: functions.chromCalibration(self.fig, self.canvas))
-        filemenu.add_command(label="Save Chromatogram", command=functions.saveChrom)
-        filemenu.add_command(label="Overlay Quantitation Windows", command=lambda: functions.overlayQuantitationWindows(self.fig, self.canvas))
-        filemenu.add_command(label="Quantify Chromatogram", command=lambda: functions.quantifyChrom(self.fig, self.canvas))
+        filemenu.add_command(label="Normalize chromatogram", command=self.normalize_chromatogram)
+        filemenu.add_command(label="Save Chromatogram", command=self.save_chromatogram)
+        #filemenu.add_command(label="Overlay Quantitation Windows", command=lambda: functions.overlayQuantitationWindows(self.fig, self.canvas))
 
+        processmenu = tk.Menu(menu, tearoff=0)
+        menu.add_cascade(label="Process", menu=processmenu)
+        processmenu.add_command(label="Calibrate Chromatogram", command=self.foo)
+        processmenu.add_command(label="Quantify Chromatogram", command=self.foo)
+        
         advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced Tools", menu=advancedmenu)
         advancedmenu.add_command(label="Peak Detection", command=lambda: functions.peakDetection(self.fig, self.canvas))
@@ -166,20 +169,39 @@ class HappyToolsGui(object):
             for file in files:
                 foo = Chromatogram.Chromatogram(file)
                 data.append(foo)
-        self.data = data
-        self.data[0].plot_data(data, self.fig, self.canvas)
+            self.data = data
+            self.data[0].plot_data(data, self.fig, self.canvas)
 
-    def normalize_chrom(self):
-        self.data = Trace.Trace().norm_chrom(self.data)
-        self.data[0].plot_data(self.data, self.fig, self.canvas)
+    def normalize_chromatogram(self):
+        try:
+            self.data = Trace.Trace().norm_chrom(self.data)
+            self.data[0].plot_data(self.data, self.fig, self.canvas)
+        except AttributeError:
+            pass
 
-    def smooth_chrom(self):
-        self.data = Trace.Trace().smooth_chrom(self.data)
-        self.data[0].plot_data(self.data, self.fig, self.canvas)
+    def smooth_chromatogram(self):
+        try:
+            self.data = Trace.Trace().smooth_chrom(self.data)
+            self.data[0].plot_data(self.data, self.fig, self.canvas)
+        except AttributeError:
+            pass
+
+    def save_chromatogram(self):
+        try:
+            for data in self.data:
+                Trace.Trace().save_chrom(data)
+        except AttributeError:
+            pass
 
     def baseline_correction(self):
-        self.data = Trace.Trace().baseline_correction(self.data)
-        self.data[0].plot_data(self.data, self.fig, self.canvas)
+        try:
+            self.data = Trace.Trace().baseline_correction(self.data)
+            self.data[0].plot_data(self.data, self.fig, self.canvas)
+        except AttributeError:
+            pass
+
+    def foo(self):
+        pass
 
 # Call the main app
 if __name__ == "__main__":

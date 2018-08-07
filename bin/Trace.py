@@ -10,6 +10,7 @@ class Trace(object):
     start = 10
     end = 60
     baseline_order = 1
+    decimalNumbers = 6
     
     def open_chrom(self, file):
         """Read a chromatogram and return the data.
@@ -130,4 +131,11 @@ class Trace(object):
         
         # Return
         return data
+
+    def save_chrom(self, data):
+        """ TODO
+        """
+        with open(data.filename,'w') as fw:
+            for i in data.data:
+                fw.write(str(format(i[0],'0.'+str(self.decimalNumbers)+'f'))+"\t"+str(format(i[1],'0.'+str(self.decimalNumbers)+'f'))+"\n")
 
