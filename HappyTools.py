@@ -49,7 +49,7 @@ import Trace
 
 # Innate variables
 version = "0.0.2"
-build = "180807b"
+build = "180807c"
 directories = [
     os.path.join(os.getcwd(),"libs"),
     os.path.join(os.getcwd(),"temp"),
@@ -136,16 +136,22 @@ class HappyToolsGui(object):
         processmenu.add_command(label="Quantify Chromatogram", command=self.foo)
         
         advancedmenu = tk.Menu(menu, tearoff=0)
-        menu.add_cascade(label="Advanced Tools", menu=advancedmenu)
+        menu.add_cascade(label="Advanced", menu=advancedmenu)
         advancedmenu.add_command(label="Peak Detection", command=lambda: functions.peakDetection(self.fig, self.canvas))
         advancedmenu.add_command(label="Save Calibrants", command=lambda: functions.saveCalibrants(self.fig, self.canvas))
         advancedmenu.add_command(label="Save Annotation", command=lambda: functions.saveAnnotation(self.fig, self.canvas))
 
-        menu.add_command(label="Batch Process", command=functions.batchPopup)
+        batchmenu = tk.Menu(menu, tearoff=0)
+        menu.add_cascade(label="Batch", menu=batchmenu)
+        batchmenu.add_command(label="Batch Process", command=functions.batchPopup)
 
-        menu.add_command(label="Settings", command=functions.settingsPopup)
+        settingsmenu = tk.Menu(menu, tearoff=0)
+        menu.add_cascade(label="Settings", menu=settingsmenu)
+        settingsmenu.add_command(label="Settings", command=functions.settingsPopup)
 
-        menu.add_command(label="About HappyTools", command= self.open_about_window)
+        aboutmenu = tk.Menu(menu, tearoff=0)
+        menu.add_cascade(label="About", menu=aboutmenu)
+        aboutmenu.add_command(label="About HappyTools", command= self.open_about_window)
 
         if glob.glob(os.path.join(".","plugins","*.py")):
             import importlib
