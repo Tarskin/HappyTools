@@ -42,12 +42,14 @@ sys.path.append('gui')
 import CustomToolbar
 import AboutWindow
 
+# Class imports
 sys.path.append('bin')
 import Chromatogram
+import Trace
 
 # Innate variables
 version = "0.0.2"
-build = "180806a"
+build = "180807a"
 directories = [
     os.path.join(os.getcwd(),"libs"),
     os.path.join(os.getcwd(),"temp"),
@@ -122,19 +124,13 @@ class HappyToolsGui(object):
         filemenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="File", menu=filemenu)
         filemenu.add_command(label="Open Chromatogram", command=self.open_chromatogram_window)
-        #filemenu.add_command(label="Smooth Chromatogram", command=lambda: functions.smoothChrom(self.fig, self.canvas))
         filemenu.add_command(label="Smooth Chromatogram", command=self.smooth_chrom)
-        filemenu.add_command(label="Compare Chromatogram", command=lambda: functions.addFile(self.fig, self.canvas))
-        filemenu.add_command(label="Baseline Correction", command=lambda: functions.baselineCorrection(self.fig, self.canvas))
+        filemenu.add_command(label="Baseline Correction", command=self.baseline_correction)
+        filemenu.add_command(label="Normalize chromatogram", command=self.normalize_chrom)
         filemenu.add_command(label="Chromatogram Calibration", command=lambda: functions.chromCalibration(self.fig, self.canvas))
         filemenu.add_command(label="Save Chromatogram", command=functions.saveChrom)
         filemenu.add_command(label="Overlay Quantitation Windows", command=lambda: functions.overlayQuantitationWindows(self.fig, self.canvas))
         filemenu.add_command(label="Quantify Chromatogram", command=lambda: functions.quantifyChrom(self.fig, self.canvas))
-
-        multimenu = tk.Menu(menu, tearoff=0)
-        menu.add_cascade(label="Multi File", menu=multimenu)
-        multimenu.add_command(label="Raw Batch Plot", command=lambda: functions.batchPlot(self.fig, self.canvas))
-        multimenu.add_command(label="Normalized Batch Plot", command=lambda: functions.batchPlotNorm(self.fig, self.canvas))
 
         advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced Tools", menu=advancedmenu)
@@ -164,15 +160,26 @@ class HappyToolsGui(object):
         AboutWindow.AboutWindow(tk.Toplevel())
 
     def open_chromatogram_window(self):
-        file = filedialog.askopenfilename(title="Open Chromatogram File")
-        if file:
-            data = Chromatogram.Chromatogram(file)
-            data.plotData(data.data, self.fig, self.canvas)
+        files = filedialog.askopenfilenames(title="Open Chromatogram File(s)")
+        data = []
+        if files:
+            for file in files:
+                foo = Chromatogram.Chromatogram(file)
+                data.append(foo)
         self.data = data
+        self.data[0].plot_data(data, self.fig, self.canvas)
+
+    def normalize_chrom(self):
+        self.data = Trace.Trace().norm_chrom(self.data)
+        self.data[0].plot_data(self.data, self.fig, self.canvas)
 
     def smooth_chrom(self):
-        print self.data.filename
-        self.data.smoothChrom(self.data, self.fig, self.canvas)
+        self.data = Trace.Trace().smooth_chrom(self.data)
+        self.data[0].plot_data(self.data, self.fig, self.canvas)
+
+    def baseline_correction(self):
+        self.data = Trace.Trace().baseline_correction(self.data)
+        self.data[0].plot_data(self.data, self.fig, self.canvas)
 
 # Call the main app
 if __name__ == "__main__":

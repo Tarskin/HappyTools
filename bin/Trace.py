@@ -1,8 +1,17 @@
+from bisect import bisect_left, bisect_right
+from scipy.signal import savgol_filter
 import re
+import operator
 import numpy as np
 
 class Trace(object):
-    def openChrom(self, file):
+    # Declare (test) - These should be taken from settings
+    points = 100
+    start = 10
+    end = 60
+    baseline_order = 1
+    
+    def open_chrom(self, file):
         """Read a chromatogram and return the data.
 
         This function opens a chromatogram (txt or arw), interprets the
@@ -13,25 +22,25 @@ class Trace(object):
         file -- unicode string
         """
         with open(file,'r') as fr:
-            chromData = []
+            chrom_data = []
             if 'txt' in file:
                 for line in fr:
                     if line[0].isdigit() == True:
-                        lineChunks = line.strip().split()
+                        line_chunks = line.strip().split()
                         # Number based regex splitting to get rid of thousand seperators
-                        timeSep = re.sub(r'-?\d', '', lineChunks[0], flags=re.U)
-                        for sep in timeSep[:-1]:
-                            lineChunks[0] = lineChunks[0].replace(sep, '')
-                        if timeSep:
-                            lineChunks[0] = lineChunks[0].replace(timeSep[-1], '.')
-                        intSep = re.sub(r'-?\d', '', lineChunks[-1], flags=re.U)
-                        for sep in intSep[:-1]:
-                            lineChunks[-1] = lineChunks[-1].replace(sep[-1], '')
-                        if intSep:
-                            lineChunks[-1] = lineChunks[-1].replace(intSep[-1], '.')
+                        time_sep = re.sub(r'-?\d', '', line_chunks[0], flags=re.U)
+                        for sep in time_sep[:-1]:
+                            line_chunks[0] = line_chunks[0].replace(sep, '')
+                        if time_sep:
+                            line_chunks[0] = line_chunks[0].replace(time_sep[-1], '.')
+                        int_sep = re.sub(r'-?\d', '', line_chunks[-1], flags=re.U)
+                        for sep in int_sep[:-1]:
+                            line_chunks[-1] = line_chunks[-1].replace(sep[-1], '')
+                        if int_sep:
+                            line_chunks[-1] = line_chunks[-1].replace(int_sep[-1], '.')
                         # End of regex based splitting
                         try:
-                            chromData.append((float(lineChunks[0]),float(lineChunks[-1])))
+                            chrom_data.append((float(line_chunks[0]),float(line_chunks[-1])))
                         except UnicodeEncodeError:
                             print("Omitting line: "+str(line))
             elif 'arw' in file:
@@ -42,11 +51,83 @@ class Trace(object):
                         if line[0][0].isdigit() == False:
                             pass
                         else:
-                            chunks = line.rstrip()
-                            chunks = chunks.split()
-                            chromData.append((float(chunks[0]),float(chunks[1])))
+                            line_chunks = line.rstrip()
+                            line_chunks = line_chunks.split()
+                            chrom_data.append((float(line_chunks[0]),float(line_chunks[1])))
                     except IndexError:
                         pass
             else:
                 print("Incorrect inputfile format, please upload a raw data 'txt' or 'arw' file.")
-        return chromData
+        return chrom_data
+
+    def baseline_correction(self, data):
+        """Perform baseline correction and return the corrected data.
+
+        This function determines the baseline of a chromatogram between
+        two timepoints, specified with the start and end parameter. The
+        chromatogram is split into segments of a length specified in the
+        points parameter. The lowest intensity of each segment is used to
+        determine a function of the order specified in the baseline_order
+        using the numpy.polyfit function. The original chromatogram is then
+        transformed by subtracting the function from the original data. The
+        resulting chromatogram might have negative intensities between the
+        start and end timepoints, the minimum intensity within that region
+        is used to uplift the entire chromatogram. The transformed and
+        uplifted chromatogram is returned to the calling function.
+
+        Keyword arguments:
+        data -- 
+        """
+
+        for i in data:
+            # Background determination
+            background = []
+            chunks = [i.data[x:x+self.points] for x in xrange(0, len(i.data), self.points)]
+            for j in chunks:
+                buff1, buff2 = zip(*j)
+                min_index, min_value = min(enumerate(buff2), key=operator.itemgetter(1))
+                if buff1[0] > self.start and buff1[-1] < self.end:
+                    background.append((buff1[min_index], buff2[min_index]))
+            time, intensity = zip(*background)
+            newX = np.linspace(min(time), max(time),100)
+            func = np.polyfit(time, intensity, self.baseline_order)
+            p = np.poly1d(func)
+
+            # Transform 
+            time = [a for a,b in i.data]
+            new_chrom_intensity = [b-p(a) for a,b in i.data]
+                
+            # Uplift
+            low = bisect_left(time, self.start)
+            high = bisect_right(time, self.end)
+            offset = abs(min(min(new_chrom_intensity[low:high]),0))
+            i.data = zip(time,[x+offset for x in new_chrom_intensity])
+
+        # Return
+        return data
+
+    def smooth_chrom(self, data):
+        """ TODO
+        """
+        # Apply Savitzky-Golay filter
+        for i in data:
+            time, intensity = zip(*i.data)
+            new = savgol_filter(intensity,21,3)
+            i.data = zip(time,new)
+
+        # Return
+        return data
+
+    def norm_chrom(self, data):
+        """ TODO
+        """
+        # Normalize to maximum intensity
+        for i in data:
+            time, intensity = zip(*i.data)
+            maximum = max(intensity[bisect_left(time, self.start):bisect_right(time, self.end)])
+            normalized_intensity = [b/maximum for a,b, in i.data]
+            i.data = zip(time, normalized_intensity)
+        
+        # Return
+        return data
+
