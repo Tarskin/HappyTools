@@ -63,8 +63,7 @@ class batchWindow(object):
             Functions().batch_process(self.cal_file, self.anal_file, self.batch_folder)
 
         top = tk.top = tk.Toplevel()
-        #top.title("HappyTools "+str(settings.version)+" Batch Process")
-        top.title("HappyTools Batch Process")
+        top.title("Batch Process")
         top.protocol("WM_DELETE_WINDOW", lambda: close())
 
         calibrationButton = tk.Button(top, text="Calibration File", width=20, command=lambda: set_calibration_file())
@@ -140,7 +139,7 @@ class batchWindow(object):
 
         top = tk.Toplevel()
         top.protocol("WM_DELETE_WINDOW", lambda: close())
-        top.title("HappyTools "+str(version.version)+" Output Options")
+        top.title("Output Options")
         selAll = tk.Button(top, text="Select All", command=lambda: select_all())
         selAll.grid(row=0, column=0, sticky=tk.W)
         none = tk.Button(top, text="Select None", command=lambda: select_none())
