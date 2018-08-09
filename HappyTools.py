@@ -32,39 +32,29 @@ import sys
 import tkMessageBox
 
 # Custom libraries
-sys.path.append('libs')
-if glob.glob(os.path.join(".","plugins","*.py")):
-    sys.path.append('plugins')
-import functions
+import HappyTools.plugins as plugins
+import HappyTools.libs.functions as functions
+from HappyTools.util.Functions import Functions
 
 # Gui elements
-sys.path.append('gui')
-import CustomToolbar
-import AboutWindow
+from HappyTools.gui.CustomToolbar import CustomToolbar
+from HappyTools.gui.AboutWindow import AboutWindow
+from HappyTools.gui.BatchWindow import batchWindow
+import HappyTools.gui.Settings as settings
+import HappyTools.gui.Version as version
+import HappyTools.gui.Debug as debug
 
 # Class imports
-sys.path.append('bin')
-import Chromatogram
-import Trace
+from HappyTools.bin.Chromatogram import Chromatogram
+from HappyTools.bin.Trace import Trace
 
-# Innate variables
-version = "0.0.2"
-build = "180807c"
+# Directories
 directories = [
-    os.path.join(os.getcwd(),"libs"),
-    os.path.join(os.getcwd(),"temp"),
-    os.path.join(os.getcwd(),"plugins"),
-    os.path.join(os.getcwd(),"gui")
+    os.path.join(os.getcwd(),"HappyTools","plugins"),
+    os.path.join(os.getcwd(),"HappyTools","gui"),
+    os.path.join(os.getcwd(),"HappyTools","bin"),
+    os.path.join(os.getcwd(),"HappyTools","util")
 ]
-
-# General variables
-output = "summary.results"
-settings = "HappyTools.ini"
-
-# Debug variables
-logFile = "HappyTools.log"
-logging = True
-logLevel = 2
 
 # Function overwrites
 def dynamic_update(foo):
@@ -86,21 +76,21 @@ class HappyToolsGui(object):
                     "HappyTools and check if the current user has read/write access to all folders in the Happytools "+
                     "folder.")
         # SETTINGS
-        if os.path.isfile(settings):
-            functions.getSettings()
+        #if os.path.isfile(settings):
+        #    functions.getSettings()
 
         # CANVAS
         self.fig = matplotlib.figure.Figure(figsize=(12, 6))
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
-        self.toolbar = CustomToolbar.CustomToolbar(self.canvas, master)
+        self.toolbar = CustomToolbar(self.canvas, master)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=tk.YES)
         self.canvas.draw()
 
         # FRAME
         frame = tk.Frame(master)
-        master.title("HappyTools "+str(version))
-        iconbitmap = os.path.join(os.getcwd(),"gui","assets","Icon.ico")
-        backgroundimage = os.path.join(os.getcwd(),"gui","assets","UI.png")
+        master.title("HappyTools "+str(version.version)+" (Build "+str(version.build)+")")
+        iconbitmap = os.path.join(os.getcwd(),"HappyTools","gui","assets","Icon.ico")
+        backgroundimage = os.path.join(os.getcwd(),"HappyTools","gui","assets","UI.png")
         if os.path.isfile(iconbitmap):
             master.iconbitmap(default=iconbitmap)
         if os.path.isfile(backgroundimage):
@@ -112,7 +102,6 @@ class HappyToolsGui(object):
         
         # QUIT
         def close():
-            functions.fileCleanup()
             master.destroy()
             master.quit()
         master.protocol("WM_DELETE_WINDOW", lambda: close())
@@ -128,66 +117,75 @@ class HappyToolsGui(object):
         filemenu.add_command(label="Baseline Correction", command=self.baseline_correction)
         filemenu.add_command(label="Normalize chromatogram", command=self.normalize_chromatogram)
         filemenu.add_command(label="Save Chromatogram", command=self.save_chromatogram)
-        #filemenu.add_command(label="Overlay Quantitation Windows", command=lambda: functions.overlayQuantitationWindows(self.fig, self.canvas))
 
         processmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Process", menu=processmenu)
-        processmenu.add_command(label="Calibrate Chromatogram", command=self.foo)
+        processmenu.add_command(label="Calibrate Chromatogram", command=self.calibrate_chromatogram)
         processmenu.add_command(label="Quantify Chromatogram", command=self.foo)
         
         advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced", menu=advancedmenu)
-        advancedmenu.add_command(label="Peak Detection", command=lambda: functions.peakDetection(self.fig, self.canvas))
-        advancedmenu.add_command(label="Save Calibrants", command=lambda: functions.saveCalibrants(self.fig, self.canvas))
-        advancedmenu.add_command(label="Save Annotation", command=lambda: functions.saveAnnotation(self.fig, self.canvas))
+        advancedmenu.add_command(label="Peak Detection", command=self.foo)
+        advancedmenu.add_command(label="Save Calibrants", command=self.foo)
+        advancedmenu.add_command(label="Save Annotation", command=self.foo)
 
         batchmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Batch", menu=batchmenu)
-        batchmenu.add_command(label="Batch Process", command=functions.batchPopup)
+        batchmenu.add_command(label="Batch Process", command=self.open_batch_window)
 
         settingsmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Settings", menu=settingsmenu)
-        settingsmenu.add_command(label="Settings", command=functions.settingsPopup)
+        settingsmenu.add_command(label="Settings", command=self.foo)
 
         aboutmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="About", menu=aboutmenu)
         aboutmenu.add_command(label="About HappyTools", command= self.open_about_window)
 
-        if glob.glob(os.path.join(".","plugins","*.py")):
-            import importlib
-            pluginsmenu = tk.Menu(menu,tearoff=0)
-            menu.add_cascade(label="Plugins", menu=pluginsmenu)
-            for file in glob.glob(os.path.join(".","plugins","*.py")):
-                moduleName = os.path.split(file)[-1].split(".")[0]
-                module = importlib.import_module(moduleName)
-                pluginsmenu.add_command(label=moduleName, command=functions.makeFunc(module))
-
-        # CLEANUP
-        functions.fileCleanup()
+        #if glob.glob(os.path.join(".","plugins","*.py")):
+            #import importlib
+            #pluginsmenu = tk.Menu(menu,tearoff=0)
+            #menu.add_cascade(label="Plugins", menu=pluginsmenu)
+            #for file in glob.glob(os.path.join(".","plugins","*.py")):
+                #moduleName = os.path.split(file)[-1].split(".")[0]
+                #module = importlib.import_module(moduleName)
+                #pluginsmenu.add_command(label=moduleName, command=functions.makeFunc(module))
 
     def open_about_window(self):
-        AboutWindow.AboutWindow(tk.Toplevel())
+        AboutWindow(tk.Toplevel())
 
     def open_chromatogram_window(self):
         files = filedialog.askopenfilenames(title="Open Chromatogram File(s)")
         data = []
         if files:
             for file in files:
-                foo = Chromatogram.Chromatogram(file)
+                foo = Chromatogram(file)
                 data.append(foo)
             self.data = data
             self.data[0].plot_data(data, self.fig, self.canvas)
 
+    def calibrate_chromatogram(self):
+        cal_file = tk.StringVar()
+        cal_file = filedialog.askopenfilename(title="Select Calibration File")
+        calibrants = Functions().read_peak_list(cal_file)
+        for data in self.data:
+            time_pairs = Functions().find_peak(calibrants, data)
+            function = Functions().determine_calibration_function(time_pairs)
+            data = Functions().apply_calibration_function(function, data)
+        self.data[0].plot_data(self.data, self.fig, self.canvas)
+
+    def open_batch_window(self):
+        batchWindow(self)
+
     def normalize_chromatogram(self):
         try:
-            self.data = Trace.Trace().norm_chrom(self.data)
+            self.data = Trace().norm_chrom(self.data)
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
 
     def smooth_chromatogram(self):
         try:
-            self.data = Trace.Trace().smooth_chrom(self.data)
+            self.data = Trace().smooth_chrom(self.data)
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
@@ -195,19 +193,19 @@ class HappyToolsGui(object):
     def save_chromatogram(self):
         try:
             for data in self.data:
-                Trace.Trace().save_chrom(data)
+                Trace().save_chrom(data)
         except AttributeError:
             pass
 
     def baseline_correction(self):
         try:
-            self.data = Trace.Trace().baseline_correction(self.data)
+            self.data = Trace().baseline_correction(self.data)
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
 
     def foo(self):
-        pass
+        raise NotImplementedError("This feature is not implemented in the refactor yet.")
 
 # Call the main app
 if __name__ == "__main__":

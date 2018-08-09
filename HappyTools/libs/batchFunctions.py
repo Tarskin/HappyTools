@@ -20,10 +20,12 @@ import tkMessageBox
 
 # Test imports
 import matplotlib.pyplot as plt
+
 # Custom libraries
-sys.path.append('..')
-import functions
-import HappyTools
+#import HappyTools.util.Functions as functions
+import HappyTools.gui.Version as version
+import HappyTools.gui.Settings as settings
+import HappyTools.gui.Debug as debug
 
 # Defines
 EXCLUSION_FILES = ["LICENSE.txt","CHANGELOG.txt"]
@@ -118,8 +120,8 @@ def batchProcess(calFile, analFile, batchFolder):
         for index,file in enumerate(filesGrabbed):
             functions.updateProgressBar(progressbar, calPerc, index, len(filesGrabbed))
             try:
-                if HappyTools.logging == True and HappyTools.logLevel >= 1:
-                    with open(HappyTools.logFile,'a') as fw:
+                if debug.logging == True and debug.logLevel >= 1:
+                    with open(debug.logFile,'a') as fw:
                         fw.write(str(datetime.now().replace(microsecond=0))+"\tCalibrating file: "+str(file)+"\n")
                 data = {'Data':functions.openChrom(file),'Name':file}
                 data['Data'] = baselineCorrection(data['Data'])
@@ -137,8 +139,8 @@ def batchProcess(calFile, analFile, batchFolder):
                 data['Name'] = os.path.join(batchFolder.get(), "calibrated_"+os.path.basename(data['Name']))
                 writeData(batchFolder, data)
             except ValueError:
-                if HappyTools.logging == True and HappyTools.logLevel >= 1:
-                    with open(HappyTools.logFile,'a') as fw:
+                if debug.logging == True and debug.logLevel >= 1:
+                    with open(debug.logFile,'a') as fw:
                         fw.write(str(datetime.now().replace(microsecond=0))+"\tIgnoring file: "+str(file)+" for calibration\n")
                 pass
     functions.updateProgressBar(progressbar, calPerc, 1, 1)
@@ -152,21 +154,21 @@ def batchProcess(calFile, analFile, batchFolder):
                         filesGrabbed.append(os.path.join(batchFolder.get(),file))
             for index,file in enumerate(filesGrabbed):
                 functions.updateProgressBar(progressbar2, intPerc, index, len(filesGrabbed))
-                if HappyTools.logging == True and HappyTools.logLevel >= 1:
-                    with open(HappyTools.logFile,'a') as fw:
+                if debug.logging == True and debug.logLevel >= 1:
+                    with open(debug.logFile,'a') as fw:
                         fw.write(str(datetime.now().replace(microsecond=0))+"\tQuantifying file: "+str(file)+"\n")
                 data = {'Data':functions.openChrom(file),'Name':file}
                 batchQuantitationControl(data, analFile, batchFolder)
         except ValueError:
-            if HappyTools.logging == True and HappyTools.logLevel >= 1:
-                with open(HappyTools.logFile,'a') as fw:
+            if debug.logging == True and debug.logLevel >= 1:
+                with open(debug.logFile,'a') as fw:
                     fw.write(str(datetime.now().replace(microsecond=0))+"\tIgnoring file: "+str(file)+" for quantitation. " \
                         "The 'Start' or 'End' parameter do not match the specified analytes.\n")
             pass    
         functions.updateProgressBar(progressbar2, intPerc, 1, 1)
 
-        if HappyTools.logging == True and HappyTools.logLevel >= 1:
-            with open(HappyTools.logFile,'a') as fw:
+        if debug.logging == True and debug.logLevel >= 1:
+            with open(debug.logFile,'a') as fw:
                fw.write(str(datetime.now().replace(microsecond=0))+"\tCreating summary file\n")
         combineResults(batchFolder)
     end = datetime.now()
@@ -296,12 +298,12 @@ def batchQuantitationControl(data, analFile, batchFolder):
             fwhm = functions.fwhm(coeff)
             height = functions.gaussFunction(fwhm['center']+fwhm['width'], *coeff)+NOBAN['Background']
         except TypeError:
-            if HappyTools.logging == True and HappyTools.logLevel > 1:
-                with open(HappyTools.logFile,'a') as fw:
+            if debug.logging == True and debug.logLevel > 1:
+                with open(debug.logFile,'a') as fw:
                     fw.write(str(datetime.now().replace(microsecond=0))+"\tNot enough data points to fit a Gaussian to peak: "+str(i[0])+"\n")
         except RuntimeError:
-            if HappyTools.logging == True and HappyTools.logLevel > 1:
-                with open(HappyTools.logFile,'a') as fw:
+            if debug.logging == True and debug.logLevel > 1:
+                with open(debug.logFile,'a') as fw:
                     fw.write(str(datetime.now().replace(microsecond=0))+"\tUnable to determine residuals for peak: "+str(i[1])+"\n")
 
         # Determine Area
@@ -317,8 +319,8 @@ def batchQuantitationControl(data, analFile, batchFolder):
 
         # Generate plot
         if functions.createFigure == "True" and residual != "NAN":
-            if HappyTools.logging == True and HappyTools.logLevel >= 1:
-                with open(HappyTools.logFile,'a') as fw:
+            if debug.logging == True and debug.logLevel >= 1:
+                with open(debug.logFile,'a') as fw:
                    fw.write(str(datetime.now().replace(microsecond=0))+"\tCreating figure for analyte: "+str(i[0])+"\n")
             details = {'fwhm':fwhm, 'height':height, 'NOBAN':NOBAN, 'newData':zip(newX,newY), 'newGauss':zip(newGaussX,newGaussY), 
                     'data':zip(time,intensity), 'low':low, 'high':high, 'residual':residual, 'i':i}
@@ -360,7 +362,7 @@ def combineResults(batchFolder):
     # Construct the filename for the output
     utc_datetime = datetime.utcnow()
     s = utc_datetime.strftime("%Y-%m-%d-%H%MZ")
-    filename = s + "_" + HappyTools.output
+    filename = s + "_" + settings.output
 
     # Construct header
     header = ""
@@ -377,18 +379,18 @@ def combineResults(batchFolder):
     with open(os.path.join(batchFolder.get(),filename),'w') as fw:
         # Metadata
         fw.write("HappyTools Settings\n")
-        fw.write("Version:\t"+str(HappyTools.version)+"\n")
-        fw.write("Build:\t"+str(HappyTools.build)+"\n")
-        fw.write("Start Time:\t"+str(functions.start)+"\n")
-        fw.write("End Time:\t"+str(functions.end)+"\n")
-        fw.write("Baseline Order:\t"+str(functions.baselineOrder)+"\n")
-        fw.write("Background Window:\t"+str(functions.backgroundWindow)+"\n")
-        fw.write("Background and noise method:\t"+str(functions.backgroundNoiseMethod)+"\n")
-        if functions.backgroundNoiseMethod == "MT":
-            fw.write("MT Slice Points:\t"+str(functions.slicepoints)+"\n")
-        elif functions.backgroundNoiseMethod == "NOBAN":
-            fw.write("NOBAN Initial Estimate:\t"+str(functions.nobanStart)+"\n")
-        fw.write("Noise:\t"+str(functions.noise)+"\n")
+        fw.write("Version:\t"+str(version.version)+"\n")
+        fw.write("Build:\t"+str(version.build)+"\n")
+        fw.write("Start Time:\t"+str(settings.start)+"\n")
+        fw.write("End Time:\t"+str(settings.end)+"\n")
+        fw.write("Baseline Order:\t"+str(settings.baselineOrder)+"\n")
+        fw.write("Background Window:\t"+str(settings.backgroundWindow)+"\n")
+        fw.write("Background and noise method:\t"+str(settings.backgroundNoiseMethod)+"\n")
+        if settings.backgroundNoiseMethod == "MT":
+            fw.write("MT Slice Points:\t"+str(settings.slicepoints)+"\n")
+        elif settings.backgroundNoiseMethod == "NOBAN":
+            fw.write("NOBAN Initial Estimate:\t"+str(settings.nobanStart)+"\n")
+        fw.write("Noise:\t"+str(settings.noise)+"\n")
         fw.write("\n")
 
         # Area (non background subtracted)
@@ -574,15 +576,15 @@ def performCalibration(timePairs, data):
             calibratedData = zip(f(time),intensity)
         else:
             calibratedData = None
-            if HappyTools.logging == True and HappyTools.logLevel >= 1:
-                with open(HappyTools.logFile,'a') as fw:
+            if debug.logging == True and debug.logLevel >= 1:
+                with open(debug.logFile,'a') as fw:
                      fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+
                             str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+str(functions.minPeaks)+
                             " were needed\n")
     except NameError:
         calibratedData = None
-        if HappyTools.logging == True and HappyTools.logLevel >= 1:
-            with open(HappyTools.logFile,'a') as fw:
+        if debug.logging == True and debug.logLevel >= 1:
+            with open(debug.logFile,'a') as fw:
                  fw.write(str(datetime.now().replace(microsecond=0))+"\tFile not calibrated due to lack of features, "+
                         str(len(timePairs))+" passed the minimum S/N ("+str(functions.minPeakSN)+") while "+
                         str(functions.minPeaks)+" were needed\n")  
@@ -629,7 +631,7 @@ def plotOverview(pdf, peaks, data, time, intensity):
     """
     d = pdf.infodict()
     d['Title'] = 'PDF Report for: '+str(os.path.splitext(os.path.basename(data['Name']))[0])
-    d['Author'] = 'HappyTools version: '+str(HappyTools.version)+" build: "+str(HappyTools.build)
+    d['Author'] = 'HappyTools version: '+str(version.version)+" build: "+str(version.build)
     d['CreationDate'] = datetime.now()
     low = bisect.bisect_left(time,functions.start)
     high = bisect.bisect_right(time,functions.end)
