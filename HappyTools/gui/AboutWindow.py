@@ -4,13 +4,14 @@ try:
 except ImportError:
     # Python 3
     import tkinter as tk
+import HappyTools.gui.Version as version
 
 class AboutWindow(object):
     # TODO: Get the version and build from HappyTools.py in here
-    INFORMATION = ("HappyTools Version <WIP Object Orientation Refactoring>" +
-                   " by Bas Cornelis Jansen, bas.c.jansen@gmail.com\n\n" +
-                   "This software is released under the Apache 2.0 License." +
-                   " Full details regarding this license can be found at" +
+    INFORMATION = ("HappyTools Version "+str(version.version)+" (build "+str(version.build)+") " +
+                   "by Bas Cornelis Jansen (bas.c.jansen@gmail.com).\n\n" +
+                   "This software is released under the Apache 2.0 License. " +
+                   "Full details regarding this license can be found at " +
                    "the following URL:\n\n" +
                    "http://www.apache.org/licenses/LICENSE-2.0")
 
