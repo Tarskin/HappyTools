@@ -1,68 +1,168 @@
-from HappyTools.bin.Chromatogram import Chromatogram
-import HappyTools.gui.Settings as settings
 import HappyTools.gui.ProgressBar as progressbar
+from HappyTools.bin.Chromatogram import Chromatogram
 from numpy import std, mean, polyfit, poly1d
 from bisect import bisect_left, bisect_right
-import glob
-import os
-import sys
+from os import path
+from glob import glob
+from sys import maxint
 
 class Functions(object):
 
-    def batch_process(self, cal_file, anal_file, batch_folder):
-        if batch_folder.get():
+    def apply_calibration_function(self, master, data):
+        """ TODO
+        """
+        time, intensity = zip(*data.data)
+        data.data = zip(master.function(time), intensity)
+        return data
+
+    def background_noise(self, master, data):
+        """Return the background and noise.
+
+        This function determines the average and the standard deviation or
+        the maximum difference of all segments of data, where each segment
+        has the length specified in the slicepoints parameter.
+
+        Keyword arguments:
+        data -- list of intensities
+        """
+        background = maxint
+        currNoise = 0
+        for index,i in enumerate(data[:-master.settings.slicepoints]):
+            buffer = data[index:index+master.settings.slicepoints]
+            if mean(buffer) < background:
+                background = mean(buffer)
+                if master.settings.noise == "MM":
+                    currNoise = max(buffer)-min(buffer)
+                elif master.settings.noise == "RMS":
+                    currNoise = std(buffer)
+        if currNoise == 0:
+            currNoise = 1
+        return {'Background': background, 'Noise': currNoise}
+
+    def batch_process(self, master):
+        if master.batch_folder.get():
+
+            self.settings = master.settings
             bar = progressbar.ProgressBar(self)
 
-            if cal_file.get():
-                calibrants = self.read_peak_list(cal_file.get())
-                files = self.get_calibration_files(batch_folder)
+            if master.cal_file.get():
+
+                self.cal_file = master.cal_file
+                self.batch_folder = master.batch_folder
+
+                self.calibrants = self.read_peak_list(self.cal_file.get())
+                files = self.get_calibration_files(master)
                 for index, file in enumerate(files):
                     data = Chromatogram(file)
-                    self.calibrate_chrom(calibrants, data, batch_folder)
+                    self.calibrate_chrom(self, data)
                     bar.update_progress_bar(bar.progressbar, bar.calibration_percentage, index, len(files))
+
             bar.update_progress_bar(bar.progressbar, bar.calibration_percentage, 1, 1)
 
-            if anal_file.get():
-                analytes = self.read_peak_list(anal.file.get())
-                files = self.get_quantitation_files(batch_folder)
+            if master.anal_file.get():
+
+                analytes = self.read_peak_list(master.anal_file.get())
+                files = self.get_quantitation_files(master.batch_folder)
+
                 for index, file in enumerate(files):
                     data = Chromatogram(file)
                     bar.update_progress_bar(bar.progressbar2, bar.quantitation_percentage, index, len(files))
+
                 bar.update_progress_bar(bar.progressbar2, bar.quantitation_percentage, 1, 1)
 
-    def get_calibration_files(self, batch_folder):
-        """ TODO
-        """
-        calibration_files = []
-        for files in settings.calibration_filetypes:
-            for file in glob.glob(os.path.join(batch_folder.get(),files)):
-                if file not in settings.exclusion_files:
-                    calibration_files.append(os.path.join(batch_folder.get(),file))
-        return calibration_files
-
-    def get_quantitation_files(self, batch_folder):
-        """ TODO
-        """
-        quantitation_files = []
-        for files in settings.quantiation_filetypes:
-            for file in glob.glob(os.path.join(batch_folder.get(),files)):
-                if file not in settings.exclusion_files:
-                    quantitation_files.append(os.path.join(batch_folder.get(),file))
-        return quantitation_files
-
-    def calibrate_chrom(self, calibrants, data, batch_folder):
+    def calibrate_chrom(self, master, data):
         # TODO: Decide if baseline correction should be built in, or if
         # this is something that we expect the user to do manually and
         # check in the GUI.
+        
+        # I broke it!
+        
         #data = Trace().baseline_correction(data)
-        time_pairs = self.find_peak(calibrants, data)
-        if len(time_pairs) >= settings.min_peaks:
-            f = self.determine_calibration_function(time_pairs)
-            data = self.apply_calibration_function(f, data)
-            data.filename = os.path.join(batch_folder.get(), "calibrated_"+os.path.basename(data.filename))
+        self.time_pairs = self.find_peak(master, data)
+        if len(self.time_pairs) >= master.settings.min_peaks:
+            self.function = self.determine_calibration_function(self)
+            data = self.apply_calibration_function(self, data)
+            data.filename = path.join(master.batch_folder.get(), "calibrated_"+path.basename(data.filename))
         else:
-            data.filename = os.path.join(batch_folder.get(), "uncalibrated_"+os.path.basename(data.filename))
-        self.write_data(data)
+            data.filename = path.join(master.batch_folder.get(), "uncalibrated_"+path.basename(data.filename))
+        self.write_data(master, data)
+
+    def determine_calibration_function(self, master):
+        """ TODO
+        """
+        expected, observed = zip(*master.time_pairs)
+        if master.settings.use_UPC == "False":
+            z = polyfit(observed, expected, 2)
+            function = poly1d(z)
+        elif master.settings.use_UPC == "True":
+            raise NotImplementedError("Ultra performance calibration has not been implemented in the refactoring yet.")
+        return function
+
+    def find_peak(self, master, data):
+        """ TODO
+        """
+        # TODO: Migrate rest of code to use commented version
+
+        time_pairs = []
+        #signal_noise = []
+
+        time, intensity = zip(*data.data)
+    
+        for i in master.calibrants:
+
+            low = bisect_left(time, i[1]-i[2])
+            high = bisect_right(time, i[1]+i[2])
+
+            low_background = bisect_left(time, max(i[1]-master.settings.background_window, master.settings.start))
+            high_background = bisect_right(time, min(i[1]+master.settings.background_window, master.settings.end))
+
+            if master.settings.background_noise_method == "NOBAN":
+                NOBAN = self.noban(master, intensity[low_background:high_background])
+            elif master.settings.background_noise_method == "MT":
+                NOBAN = self.background_noise(master, intensity[low_background:high_background])
+
+            max_value = max(intensity[low:high])
+            max_index = intensity[low:high].index(max_value)
+
+            if ((max_value - NOBAN['Background'])/NOBAN['Noise']) >= master.settings.min_peak_SN:
+                time_pairs.append((i[1],time[low+max_index]))
+
+            #time_pairs.append((i[1],time[low+max_index]))
+            #signal_noise.append((max_value - NOBAN['Background'])/NOBAN['Noise'])
+        
+        return time_pairs
+        
+        #return {'time_pars': time_pairs, 'signal_noise': signal_noise}
+
+    def get_calibration_files(self, master):
+        """ TODO
+        """
+        calibration_files = []
+        for files in master.settings.calibration_filetypes:
+            for file in glob(path.join(master.batch_folder.get(),files)):
+                if file not in master.settings.exclusion_files:
+                    calibration_files.append(path.join(master.batch_folder.get(),file))
+        return calibration_files
+
+    def get_quantitation_files(self, master):
+        """ TODO
+        """
+        quantitation_files = []
+        for files in master.settings.quantiation_filetypes:
+            for file in glob(path.join(master.batch_folder.get(),files)):
+                if file not in master.settings.exclusion_files:
+                    quantitation_files.append(path.join(master.batch_folder.get(),file))
+        return quantitation_files
+
+    def log(self, message):
+        """ TODO
+        """
+        if debug.logging == True and debug.logLevel >= 1:
+            with open(debug.logFile,'a') as fw:
+                fw.write(str(datetime.now().replace(microsecond=0))+str(message)+"\n")
+
+    def noban(self, master):
+        raise NotImplementedError("This feature is not implemented in the refactor yet.")
 
     def quantify_chrom(self, master):
         pass
@@ -94,97 +194,12 @@ class Functions(object):
             tkMessageBox.showinfo("File Error","The selected reference file could not be opened.")
         return peaks
 
-    def find_peak(self, reference, data):
-        """ TODO
-        """
-        # TODO: Migrate rest of code to use commented version
-
-        time_pairs = []
-        #signal_noise = []
-
-        time, intensity = zip(*data.data)
-    
-        for i in reference:
-
-            low = bisect_left(time, i[1]-i[2])
-            high = bisect_right(time, i[1]+i[2])
-
-            low_background = bisect_left(time, max(i[1]-settings.background_window, settings.start))
-            high_background = bisect_right(time, min(i[1]+settings.background_window, settings.end))
-
-            if settings.background_noise_method == "NOBAN":
-                NOBAN = self.noban(intensity[low_background:high_background])
-            elif settings.background_noise_method == "MT":
-                NOBAN = self.background_noise(intensity[low_background:high_background])
-
-            max_value = max(intensity[low:high])
-            max_index = intensity[low:high].index(max_value)
-
-            if ((max_value - NOBAN['Background'])/NOBAN['Noise']) >= settings.min_peak_SN:
-                time_pairs.append((i[1],time[low+max_index]))
-
-            #time_pairs.append((i[1],time[low+max_index]))
-            #signal_noise.append((max_value - NOBAN['Background'])/NOBAN['Noise'])
-        
-        return time_pairs
-        
-        #return {'time_pars': time_pairs, 'signal_noise': signal_noise}
-
-    def background_noise(self, data):
-        """Return the background and noise.
-
-        This function determines the average and the standard deviation or
-        the maximum difference of all segments of data, where each segment
-        has the length specified in the slicepoints parameter.
-
-        Keyword arguments:
-        data -- list of intensities
-        """
-        background = sys.maxint
-        currNoise = 0
-        for index,i in enumerate(data[:-settings.slicepoints]):
-            buffer = data[index:index+settings.slicepoints]
-            if mean(buffer) < background:
-                background = mean(buffer)
-                if settings.noise == "MM":
-                    currNoise = max(buffer)-min(buffer)
-                elif settings.noise == "RMS":
-                    currNoise = std(buffer)
-        if currNoise == 0:
-            currNoise = 1
-        return {'Background': background, 'Noise': currNoise}
-
-    def determine_calibration_function(self, time_pairs):
-        """ TODO
-        """
-        expected, observed = zip(*time_pairs)
-        if settings.use_UPC == "False":
-            z = polyfit(observed, expected, 2)
-            function = poly1d(z)
-        elif settings.use_UPC == "True":
-            raise NotImplementedError("Ultra performance calibration has not been implemented in the refactoring yet.")
-        return function
-
-    def apply_calibration_function(self, function, data):
-        """ TODO
-        """
-        time, intensity = zip(*data.data)
-        data.data = zip(function(time), intensity)
-        return data
-
-    def write_data(self, data):
+    def write_data(self, master, data):
         """ TODO
         """
         try:
             with open(data.filename,'w') as fw:
                 for data_point in data.data:
-                    fw.write(str(format(data_point[0],'0.'+str(settings.decimal_numbers)+'f'))+"\t"+str(format(data_point[1],'0.'+str(settings.decimal_numbers)+'f'))+"\n")
+                    fw.write(str(format(data_point[0],'0.'+str(master.settings.decimal_numbers)+'f'))+"\t"+str(format(data_point[1],'0.'+str(master.settings.decimal_numbers)+'f'))+"\n")
         except IOError:
-            self.log("File: "+str(os.path.basename(data.filename))+" could not be opened.")
-
-    def log(self, message):
-        """ TODO
-        """
-        if debug.logging == True and debug.logLevel >= 1:
-            with open(debug.logFile,'a') as fw:
-                fw.write(str(datetime.now().replace(microsecond=0))+str(message)+"\n")
+            self.log("File: "+str(path.basename(data.filename))+" could not be opened.")

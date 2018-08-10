@@ -25,6 +25,7 @@ class batchWindow(object):
         none
         """
         self.master = master
+        self.settings = master.settings
 
         self.output_window = tk.IntVar()
         self.abs_int = tk.IntVar()
@@ -60,7 +61,7 @@ class batchWindow(object):
         def run():
             """Start the batch process.
             """
-            Functions().batch_process(self.cal_file, self.anal_file, self.batch_folder)
+            Functions().batch_process(self)
 
         top = tk.top = tk.Toplevel()
         top.title("Batch Process")

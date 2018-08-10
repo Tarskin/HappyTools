@@ -5,12 +5,6 @@ import operator
 import numpy as np
 
 class Trace(object):
-    # Declare (test) - These should be taken from settings
-    points = 100
-    start = 10
-    end = 60
-    baseline_order = 1
-    decimalNumbers = 6
     
     def open_chrom(self, file):
         """Read a chromatogram and return the data.
@@ -61,7 +55,7 @@ class Trace(object):
                 print("Incorrect inputfile format, please upload a raw data 'txt' or 'arw' file.")
         return chrom_data
 
-    def baseline_correction(self, data):
+    def baseline_correction(self, master):
         """Perform baseline correction and return the corrected data.
 
         This function determines the baseline of a chromatogram between
@@ -80,18 +74,18 @@ class Trace(object):
         data -- 
         """
 
-        for i in data:
+        for i in master.data:
             # Background determination
             background = []
-            chunks = [i.data[x:x+self.points] for x in xrange(0, len(i.data), self.points)]
+            chunks = [i.data[x:x+master.settings.points] for x in xrange(0, len(i.data), master.settings.points)]
             for j in chunks:
                 buff1, buff2 = zip(*j)
                 min_index, min_value = min(enumerate(buff2), key=operator.itemgetter(1))
-                if buff1[0] > self.start and buff1[-1] < self.end:
+                if buff1[0] > master.settings.start and buff1[-1] < master.settings.end:
                     background.append((buff1[min_index], buff2[min_index]))
             time, intensity = zip(*background)
             newX = np.linspace(min(time), max(time),100)
-            func = np.polyfit(time, intensity, self.baseline_order)
+            func = np.polyfit(time, intensity, master.settings.baseline_order)
             p = np.poly1d(func)
 
             # Transform 
@@ -99,43 +93,44 @@ class Trace(object):
             new_chrom_intensity = [b-p(a) for a,b in i.data]
                 
             # Uplift
-            low = bisect_left(time, self.start)
-            high = bisect_right(time, self.end)
+            low = bisect_left(time, master.settings.start)
+            high = bisect_right(time, master.settings.end)
             offset = abs(min(min(new_chrom_intensity[low:high]),0))
             i.data = zip(time,[x+offset for x in new_chrom_intensity])
 
         # Return
-        return data
+        return master.data
 
-    def smooth_chrom(self, data):
+    def smooth_chrom(self, master):
         """ TODO
         """
         # Apply Savitzky-Golay filter
-        for i in data:
+        for i in master.data:
             time, intensity = zip(*i.data)
             new = savgol_filter(intensity,21,3)
             i.data = zip(time,new)
 
         # Return
-        return data
+        return master.data
 
-    def norm_chrom(self, data):
+    def norm_chrom(self, master):
         """ TODO
         """
         # Normalize to maximum intensity
-        for i in data:
+        for i in master.data:
             time, intensity = zip(*i.data)
-            maximum = max(intensity[bisect_left(time, self.start):bisect_right(time, self.end)])
+            maximum = max(intensity[bisect_left(time, master.settings.start):bisect_right(time, master.settings.end)])
             normalized_intensity = [b/maximum for a,b, in i.data]
             i.data = zip(time, normalized_intensity)
         
         # Return
-        return data
+        return master.data
 
-    def save_chrom(self, data):
+    def save_chrom(self, master):
         """ TODO
         """
-        with open(data.filename,'w') as fw:
-            for i in data.data:
-                fw.write(str(format(i[0],'0.'+str(self.decimalNumbers)+'f'))+"\t"+str(format(i[1],'0.'+str(self.decimalNumbers)+'f'))+"\n")
+        for i in master.data:
+            with open(i.filename,'w') as fw:
+                for j in i.data:
+                    w.write(str(format(j[0],'0.'+str(master.settings.decimalNumbers)+'f'))+"\t"+str(format(j[1],'0.'+str(master.settings.decimalNumbers)+'f'))+"\n")
 

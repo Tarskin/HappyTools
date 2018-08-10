@@ -25,11 +25,10 @@ except ImportError:
     # Python 3
     import tkinter as tk
     import tk.filedialog as filedialog
-import glob
-import matplotlib
-import os
-import sys
 import tkMessageBox
+from glob import glob
+from matplotlib import image, figure
+from os import path, getcwd
 
 # Custom libraries
 import HappyTools.plugins as plugins
@@ -40,7 +39,7 @@ from HappyTools.util.Functions import Functions
 from HappyTools.gui.CustomToolbar import CustomToolbar
 from HappyTools.gui.AboutWindow import AboutWindow
 from HappyTools.gui.BatchWindow import batchWindow
-import HappyTools.gui.Settings as settings
+from HappyTools.gui.Settings import Settings
 import HappyTools.gui.Version as version
 import HappyTools.gui.Debug as debug
 
@@ -50,16 +49,16 @@ from HappyTools.bin.Trace import Trace
 
 # Directories
 directories = [
-    os.path.join(os.getcwd(),"HappyTools","plugins"),
-    os.path.join(os.getcwd(),"HappyTools","gui"),
-    os.path.join(os.getcwd(),"HappyTools","bin"),
-    os.path.join(os.getcwd(),"HappyTools","util")
+    path.join(getcwd(),"HappyTools","plugins"),
+    path.join(getcwd(),"HappyTools","gui"),
+    path.join(getcwd(),"HappyTools","bin"),
+    path.join(getcwd(),"HappyTools","util")
 ]
 
 # Function overwrites
 def dynamic_update(foo):
     pass
-matplotlib.backends.backend_tkagg.NavigationToolbar2TkAgg.dynamic_update = dynamic_update
+NavigationToolbar2TkAgg.dynamic_update = dynamic_update
 
 # Applicatiom
 class HappyToolsGui(object):
@@ -76,11 +75,12 @@ class HappyToolsGui(object):
                     "HappyTools and check if the current user has read/write access to all folders in the Happytools "+
                     "folder.")
         # SETTINGS
-        #if os.path.isfile(settings):
-        #    functions.getSettings()
+        self.settings = Settings(self)
+        if path.isfile(path.join(getcwd(), self.settings.settings)):
+            self.settings.read_settings(self.settings)
 
         # CANVAS
-        self.fig = matplotlib.figure.Figure(figsize=(12, 6))
+        self.fig = figure.Figure(figsize=(12, 6))
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
         self.toolbar = CustomToolbar(self.canvas, master)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=tk.YES)
@@ -89,16 +89,16 @@ class HappyToolsGui(object):
         # FRAME
         frame = tk.Frame(master)
         master.title("HappyTools "+str(version.version)+" (Build "+str(version.build)+")")
-        iconbitmap = os.path.join(os.getcwd(),"HappyTools","gui","assets","Icon.ico")
-        backgroundimage = os.path.join(os.getcwd(),"HappyTools","gui","assets","UI.png")
-        if os.path.isfile(iconbitmap):
+        iconbitmap = path.join(getcwd(),"HappyTools","gui","assets","Icon.ico")
+        backgroundimage = path.join(getcwd(),"HappyTools","gui","assets","UI.png")
+        if path.isfile(iconbitmap):
             master.iconbitmap(default=iconbitmap)
-        if os.path.isfile(backgroundimage):
+        if path.isfile(backgroundimage):
             background_image = self.fig.add_subplot(111)
-            image = matplotlib.image.imread(backgroundimage)
+            img = image.imread(backgroundimage)
             background_image.axis('off')
             self.fig.set_tight_layout(True)
-            background_image.imshow(image)
+            background_image.imshow(img)
         
         # QUIT
         def close():
@@ -135,18 +135,18 @@ class HappyToolsGui(object):
 
         settingsmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Settings", menu=settingsmenu)
-        settingsmenu.add_command(label="Settings", command=self.foo)
+        settingsmenu.add_command(label="Settings", command=self.open_settings_window)
 
         aboutmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="About", menu=aboutmenu)
         aboutmenu.add_command(label="About HappyTools", command= self.open_about_window)
 
-        #if glob.glob(os.path.join(".","plugins","*.py")):
+        #if glob(path.join(".","plugins","*.py")):
             #import importlib
             #pluginsmenu = tk.Menu(menu,tearoff=0)
             #menu.add_cascade(label="Plugins", menu=pluginsmenu)
-            #for file in glob.glob(os.path.join(".","plugins","*.py")):
-                #moduleName = os.path.split(file)[-1].split(".")[0]
+            #for file in glob(path.join(".","plugins","*.py")):
+                #moduleName = path.split(file)[-1].split(".")[0]
                 #module = importlib.import_module(moduleName)
                 #pluginsmenu.add_command(label=moduleName, command=functions.makeFunc(module))
 
@@ -163,14 +163,17 @@ class HappyToolsGui(object):
             self.data = data
             self.data[0].plot_data(data, self.fig, self.canvas)
 
+    def open_settings_window(self):
+        self.settings.settings_popup(self.settings)
+
     def calibrate_chromatogram(self):
-        cal_file = tk.StringVar()
-        cal_file = filedialog.askopenfilename(title="Select Calibration File")
-        calibrants = Functions().read_peak_list(cal_file)
+        self.cal_file = tk.StringVar()
+        self.cal_file = filedialog.askopenfilename(title="Select Calibration File")
+        self.reference = Functions().read_peak_list(self.cal_file)
         for data in self.data:
-            time_pairs = Functions().find_peak(calibrants, data)
-            function = Functions().determine_calibration_function(time_pairs)
-            data = Functions().apply_calibration_function(function, data)
+            self.time_pairs = Functions().find_peak(self, data)
+            self.function = Functions().determine_calibration_function(self)
+            data = Functions().apply_calibration_function(self, data)
         self.data[0].plot_data(self.data, self.fig, self.canvas)
 
     def open_batch_window(self):
@@ -178,14 +181,14 @@ class HappyToolsGui(object):
 
     def normalize_chromatogram(self):
         try:
-            self.data = Trace().norm_chrom(self.data)
+            self.data = Trace().norm_chrom(self)
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
 
     def smooth_chromatogram(self):
         try:
-            self.data = Trace().smooth_chrom(self.data)
+            self.data = Trace().smooth_chrom(self)
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
@@ -193,13 +196,13 @@ class HappyToolsGui(object):
     def save_chromatogram(self):
         try:
             for data in self.data:
-                Trace().save_chrom(data)
+                Trace().save_chrom(self)
         except AttributeError:
             pass
 
     def baseline_correction(self):
         try:
-            self.data = Trace().baseline_correction(self.data)
+            self.data = Trace().baseline_correction(self)
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
