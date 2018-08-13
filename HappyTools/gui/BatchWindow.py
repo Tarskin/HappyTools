@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+#from __future__ import absolute_import
 from HappyTools.util.Functions import Functions
 
 import HappyTools.gui.Settings as settings

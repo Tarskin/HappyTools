@@ -1,8 +1,9 @@
 import HappyTools.gui.ProgressBar as progressbar
 import HappyTools.gui.Version as version
 import HappyTools.gui.Debug as debug
-from HappyTools.gui.Settings import Settings
+from HappyTools.util.Pdf import Pdf
 from HappyTools.bin.Chromatogram import Chromatogram
+
 from datetime import datetime
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
@@ -11,7 +12,7 @@ from numpy import std, mean, polyfit, poly1d, linspace, argmax, greater, less, a
 from numpy import max as numpy_max
 from numpy import exp # only till gauss function gets moved to math
 from bisect import bisect_left, bisect_right
-from os import path
+from os import path, W_OK, access
 from glob import glob
 from sys import maxint
 import math
@@ -24,30 +25,6 @@ class Functions(object):
         time, intensity = zip(*data.data)
         data.data = zip(master.function(time), intensity)
         return data
-
-    def background_noise(self, master, data):
-        """Return the background and noise.
-
-        This function determines the average and the standard deviation or
-        the maximum difference of all segments of data, where each segment
-        has the length specified in the slicepoints parameter.
-
-        Keyword arguments:
-        data -- list of intensities
-        """
-        background = maxint
-        currNoise = 0
-        for index,i in enumerate(data[:-master.settings.slicepoints]):
-            buffer = data[index:index+master.settings.slicepoints]
-            if mean(buffer) < background:
-                background = mean(buffer)
-                if master.settings.noise == "MM":
-                    currNoise = max(buffer)-min(buffer)
-                elif master.settings.noise == "RMS":
-                    currNoise = std(buffer)
-        if currNoise == 0:
-            currNoise = 1
-        return {'Background': background, 'Noise': currNoise}
 
     def batch_process(self, master):
         if master.batch_folder.get():
@@ -80,9 +57,41 @@ class Functions(object):
 
                 bar.update_progress_bar(bar.progressbar2, bar.quantitation_percentage, 1, 1)
 
-    def determine_breakpoints(self, master, data):
+    def determine_background_area(self, master):
+        background_area = 0
+        time, intensity = zip(*master.data.data)
+        for index,j in enumerate(intensity[master.low:master.high]):
+            try:
+                background_area += max(master.NOBAN['Background'],0) * (time[master.low+index]-time[master.low+index-1])
+            except IndexError:
+                continue
+        return background_area
 
-        time, intensity = zip(*data)
+    def determine_background_and_noise(self, master):
+        data = master.data.data
+
+        if master.settings.background_noise_method == "NOBAN":
+            raise NotImplementedError("This feature is not implemented in the refactor yet.")
+
+        elif master.settings.background_noise_method == "MT":
+            background = maxint
+            noise = 0
+            for index,i in enumerate(data[:-master.settings.slicepoints]):
+                buffer = data[index:index+master.settings.slicepoints]
+                if mean(buffer) < background:
+                    background = mean(buffer)
+                    if master.settings.noise == "MM":
+                        noise = max(buffer)-min(buffer)
+                    elif master.settings.noise == "RMS":
+                        noise = std(buffer)
+            if noise == 0:
+                noise = 1
+
+        return {'Background': background, 'Noise': noise}
+
+    def determine_breakpoints(self, master):
+        time, intensity = zip(*master.data.data)
+
         f = InterpolatedUnivariateSpline(time[master.low:master.high], intensity[master.low:master.high])
         f_prime = f.derivative()
 
@@ -97,14 +106,30 @@ class Functions(object):
 
         return breaks
 
-    def calibrate_chrom(self, master, data):
-        # TODO: Decide if baseline correction should be built in, or if
-        # this is something that we expect the user to do manually and
-        # check in the GUI.
-        
-        # I broke it!
-        
-        #data = Trace().baseline_correction(data)
+    def determine_peak_area(self, master):
+        peak_area = 0
+        time, intensity = zip(*master.data.data)
+
+        for index,j in enumerate(intensity[master.low:master.high]):
+            try:
+                peak_area += max(j,0) * (time[master.low+index]-time[master.low+index-1])
+            except IndexError:
+                continue
+
+        return peak_area
+    
+    def determine_residual(self, master):
+        residual = 0
+
+        try:
+            if master.gauss_area != 0:
+                residual = min(master.gauss_area / master.total_area, 1.0)
+        except ZeroDivisionError:
+            pass
+
+        return residual
+
+    def calibrate_chrom(self, master, data):       
         self.time_pairs = self.find_peak(master, data)
         if len(self.time_pairs) >= master.settings.min_peaks:
             self.function = self.determine_calibration_function(self)
@@ -114,6 +139,12 @@ class Functions(object):
             data.filename = path.join(master.batch_folder.get(), "uncalibrated_"+path.basename(data.filename))
         self.write_data(master, data)
 
+    def check_disk_access(self, master):
+        disk_access = True
+        for directory in master.directories:
+            if not access(directory, W_OK):
+                disk_access = False
+        return disk_access
     def combine_results(self, master):
         """
         """
@@ -315,6 +346,20 @@ class Functions(object):
                     fw.write("\n")
                 fw.write("\n")
 
+    def determine_gaussian_area(self, master):
+        time, intensity = zip(*master.data.data)
+        x_data, y_data = zip(*master.data_subset)
+        gauss_area = 0
+
+        new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
+        new_gauss_y = self.gauss_function(new_gauss_x, *master.coeff)
+        new_gauss_y = [x + master.NOBAN['Background'] for x in new_gauss_y]
+
+        for index, j in enumerate(intensity[master.low:master.high]):
+            gauss_area += max(self.gauss_function(time[master.low+index],*master.coeff),0) * (time[master.low+index]-time[master.low+index-1])
+
+        return gauss_area
+
     def determine_calibration_function(self, master):
         """ TODO
         """
@@ -326,7 +371,24 @@ class Functions(object):
             raise NotImplementedError("Ultra performance calibration has not been implemented in the refactoring yet.")
         return function
 
-    def determine_gaussian_parameters(self, coeff):
+    def determine_gaussian_coefficients(self, master):
+        x_data, y_data = zip(*master.data_subset)
+        peak = array(x_data)[y_data > exp(-0.5)*max(y_data)]
+        guess_sigma = 0.5*(max(peak) - min(peak))
+        new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
+        p0 = [numpy_max(y_data), x_data[argmax(y_data)],guess_sigma]
+        try:
+            coeff, var_matrix = curve_fit(self.gauss_function, x_data, y_data, p0)
+
+        except TypeError:
+            self.log("Not enough data points to fit a Gaussian to peak: "+str(i[0]))
+
+        except RuntimeError:
+            self.log("Unable to determine residuals for peak: "+str(i[1]))
+
+        return coeff
+
+    def determine_gaussian_parameters(self, master):
         """Calculate the FWHM.
         
         This function will calculate the FWHM based on the following formula
@@ -337,10 +399,19 @@ class Functions(object):
         Keyword arguments:
         coeff -- coefficients as calculated by SciPy curve_fit
         """
-        fwhm = abs(2*coeff[2]*math.sqrt(2*math.log(2)))
+        fwhm = abs(2*master.coeff[2]*math.sqrt(2*math.log(2)))
         width = 0.5*fwhm
-        center = coeff[1]
+        center = master.coeff[1]
         return {'fwhm':fwhm, 'width':width, 'center':center}
+
+    def determine_total_area(self, master):
+        total_area = 0
+        time, intensity = zip(*master.data.data)
+
+        for index,j in enumerate(intensity[master.low:self.high]):
+            total_area += max(j-master.NOBAN['Background'],0) * (time[master.low+index]-time[master.low+index-1])
+
+        return total_area
 
     def find_peak(self, master, data):
         """ TODO
@@ -382,159 +453,76 @@ class Functions(object):
         """ TODO
         """
 
-        peaks = []
-        times = []
-        signal_noises = []
-        peak_areas = []
-        background_areas = []
-        peak_noises = []
-        residuals = []
-        backgrounds = []
-        noises = []
-        fwhms = []
-        actual_times = []
+        self.master = master
+        self.data = data
+        self.settings = master.settings
+
         results = []
 
         time, intensity = zip(*data.data)
 
+        # Initialize PDF and plot overview
+        if master.settings.create_figure == "True" and bisect_left(time, master.settings.start) and bisect_right(time, master.settings.end):
+            self.pdf = Pdf(self)
+            self.pdf.plot_overview(self)
+
+        # Iterate over peaks
         for i in master.reference:
+            self.peak = i[0]
+            self.time = i[1]
             peak_area = 0
             background_area = 0
-            gauss_area = 0
-            total_area = 0
+            self.gauss_area = 0
+            self.total_area = 0
 
-            # Find Insertion Points
+            # Find insertion points
             self.low = bisect_left(time, i[1]-i[2])
             self.high = bisect_right(time, i[1]+i[2])
 
             self.low_background = bisect_left(time, max(i[1]-master.settings.background_window, master.settings.start))
             self.high_background = bisect_right(time, min(i[1]+master.settings.background_window, master.settings.end))
 
-            # Determine Background and Noise
-            if master.settings.background_noise_method == "NOBAN":
-                NOBAN = self.noban(master, intensity[self.low_background:self.high_background])
-            elif master.settings.background_noise_method == "MT":
-                NOBAN = self.background_noise(master, intensity[self.low_background:self.high_background])
-
-            max_value = max(intensity[self.low:self.high])
-
-            # Peak and Background areas
-            for index,j in enumerate(intensity[self.low:self.high]):
-                try:
-                    peak_area += max(j,0) * (time[self.low+index]-time[self.low+index-1])
-                    background_area += max(NOBAN['Background'],0) * (time[self.low+index]-time[self.low+index-1])
-                except IndexError:
-                    continue
+            # Determine Areas, background and noise
+            self.NOBAN = self.determine_background_and_noise(self)
+            peak_area = self.determine_peak_area(self)
+            background_area = self.determine_background_area(self)
             peak_noise = std(intensity[self.low:self.high])
+            signal_noise = (max(intensity[self.low:self.high]) - self.NOBAN['Background'])/self.NOBAN['Noise']
+            self.total_area = self.determine_total_area(self)
 
-            # Horrible Fitting Section
+            # Data Subset (based on second derivative)
+            self.breaks = self.determine_breakpoints(self)
+            self.data_subset = self.subset_data(self)
 
-            #breaks = self.determine_breakpoints(self, data)
+            # Gaussian fit
+            self.coeff = self.determine_gaussian_coefficients(self)
+            if self.coeff.any():
+                self.gauss_area = self.determine_gaussian_area(self)
+                fwhm = self.determine_gaussian_parameters(self)
+                height = self.gauss_function(fwhm['center']+fwhm['width'], *self.coeff)+self.NOBAN['Background']
+            self.residual = self.determine_residual(self)
 
-            f = InterpolatedUnivariateSpline(time[self.low:self.high], intensity[self.low:self.high])
-            f_prime = f.derivative()
+            # Add individual peak to PDF
+            self.pdf.plot_individual(self)
 
-            new_x = linspace(time[self.low], time[self.high], 2500*(time[self.high]-time[self.low]))
-            new_y = f(new_x)
-            new_prime_y = f_prime(new_x)
+            # Results
+            results.append({'peak': self.peak, 
+                'time': self.time, 
+                'peak_area': peak_area, 
+                'signal_noise': signal_noise, 
+                'background_area': background_area, 
+                'peak_noise': peak_noise, 
+                'residual': self.residual, 
+                'background': self.NOBAN['Background'], 
+                'noise': self.NOBAN['Noise'], 
+                'fwhm': fwhm['fwhm'], 
+                'actual_time': fwhm['center']})
 
-            maxm = argrelextrema(new_prime_y, greater)
-            minm = argrelextrema(new_prime_y, less)
+        # Close PDF
+        if master.settings.create_figure == "True":
+            self.pdf.close(self)
 
-            breaks = maxm[0].tolist() + minm[0].tolist()
-            breaks = sorted(breaks)
-            
-            # Initialize maxPoint, xData and yData
-            #new_x = linspace(time[low], time[high], 2500*(time[high]-time[low])
-            newX = new_x
-            newY = new_y
-            
-            maxPoint = 0
-            xData = newX
-            yData = [x - NOBAN['Background'] for x in newY]
-
-            # Subset the data
-            # Region from newY[0] to breaks[0]
-            try:
-                if max(newY[0:breaks[0]]) > maxPoint:
-                    maxPoint = max(newY[0:breaks[0]])
-                    xData = newX[0:breaks[0]]
-                    yData = [x - NOBAN['Background'] for x in newY[0:breaks[0]]]
-            except IndexError:
-                pass
-            # Regions between breaks[x] and breaks[x+1]
-            try:
-                for index,j in enumerate(breaks):
-                    if max(newY[breaks[index]:breaks[index+1]]) > maxPoint:
-                        maxPoint = max(newY[breaks[index]:breaks[index+1]])
-                        xData = newX[breaks[index]:breaks[index+1]]
-                        yData = [x - max(NOBAN['Background'],0) for x in newY[breaks[index]:breaks[index+1]]]
-            except IndexError:
-                pass
-            # Region from break[-1] to newY[-1]
-            try:
-                if max(newY[breaks[-1]:-1]) > maxPoint:
-                    maxPoint = max(newY[breaks[-1]:-1])
-                    xData = newX[breaks[-1]:-1]
-                    yData = [x - NOBAN['Background'] for x in newY[breaks[-1]:-1]]
-            except IndexError:
-                pass
-
-            # Gaussian fit on main points
-            peak = xData[yData > exp(-0.5)*max(yData)]
-            guess_sigma = 0.5*(max(peak) - min(peak))
-            newGaussX = linspace(xData[0], xData[-1], 2500*(xData[-1]-xData[0]))
-            p0 = [numpy_max(yData), xData[argmax(yData)],guess_sigma]
-            try:
-                coeff, var_matrix = curve_fit(self.gauss_function, xData, yData, p0)
-                newGaussY = self.gauss_function(newGaussX, *coeff)
-                newGaussY = [x + NOBAN['Background'] for x in newGaussY]
-                for index,j in enumerate(intensity[self.low:self.high]):
-                    gauss_area += max(self.gauss_function(time[self.low+index],*coeff),0) * (time[self.low+index]-time[self.low+index-1])
-
-                fwhm = self.determine_gaussian_parameters(coeff)
-                height = self.gauss_function(fwhm['center']+fwhm['width'], *coeff)+NOBAN['Background']
-
-            except TypeError:
-                self.log("Not enough data points to fit a Gaussian to peak: "+str(i[0]))
-
-            except RuntimeError:
-                self.log("Unable to determine residuals for peak: "+str(i[1]))
-
-            # Determine Area
-            for index,j in enumerate(intensity[self.low:self.high]):
-                total_area += max(j-NOBAN['Background'],0) * (time[self.low+index]-time[self.low+index-1])
-
-            # Determine Residual
-            try:
-                if gauss_area != 0:
-                    residual = min(gauss_area / total_area, 1.0)
-            except ZeroDivisionError:
-                pass
-
-            # Append
-            peaks.append(i[0])
-            times.append(i[1])
-            peak_areas.append(peak_area)
-            signal_noises.append((max_value - NOBAN['Background'])/NOBAN['Noise'])
-            background_areas.append(background_area)
-            peak_noises.append(peak_noise)
-            residuals.append(residual)
-            backgrounds.append(NOBAN['Background'])
-            noises.append(NOBAN['Noise'])
-            fwhms.append(fwhm['fwhm'])
-            actual_times.append(fwhm['center'])
-
-            results.append({'peak': i[0], 'time': i[1], 'peak_area': peak_area, 'signal_noise': (max_value - NOBAN['Background'])/NOBAN['Noise'], 
-                'background_area': background_area, 'peak_noise': peak_noise,
-                'residual': residual, 'background': NOBAN['Background'], 'noise': NOBAN['Noise'], 
-                'fwhm': fwhm['fwhm'], 'actual_time': fwhm['center']})
-        
         return results
-        #return {'peak': peaks, 'time': times, 'peak_areas': peak_areas, 'signal_noises': signal_noises, 
-                #'background_areas': background_areas, 'peak_noises': peak_noises,
-                #'residuals': residuals, 'backgrounds': backgrounds, 'noises': noises, 
-                #'actual_times': actual_times, 'fwhms': fwhms, 'actual_times': actual_times}
 
     def get_calibration_files(self, master):
         """ TODO
@@ -574,10 +562,7 @@ class Functions(object):
         """
         if debug.logging == True and debug.logLevel >= 1:
             with open(debug.logFile,'a') as fw:
-                fw.write(str(datetime.now().replace(microsecond=0))+str(message)+"\n")
-
-    def noban(self, master):
-        raise NotImplementedError("This feature is not implemented in the refactor yet.")
+                fw.write(str(datetime.now().replace(microsecond=0))+str(message)+"\n")     
 
     def quantify_chrom(self, master):
         pass
@@ -609,6 +594,46 @@ class Functions(object):
             tkMessageBox.showinfo("File Error","The selected reference file could not be opened.")
         return peaks
 
+    def subset_data(self, master):
+        
+        max_point = 0
+        time, intensity = zip(*master.data.data)
+        f = InterpolatedUnivariateSpline(time[master.low:master.high], intensity[master.low:master.high])
+        new_x = linspace(time[master.low], time[master.high], 2500*(time[master.high]-time[master.low]))
+        new_y = f(new_x)
+        new_y = [x - master.NOBAN['Background'] for x in new_y]
+
+        # Subset the data
+        # Region from newY[0] to breaks[0]
+        try:
+            if max(new_y[0:master.breaks[0]]) > max_point:
+                max_point = max(new_y[0:master.breaks[0]])
+                x_data = new_x[0:master.breaks[0]]
+                y_data = [x - self.NOBAN['Background'] for x in new_y[0:master.breaks[0]]]
+        except IndexError:
+            pass
+
+        # Regions between breaks[x] and breaks[x+1]
+        try:
+            for index, j in enumerate(master.breaks):
+                if max(new_y[master.breaks[index]:master.breaks[index+1]]) > max_point:
+                    max_point = max(new_y[master.breaks[index]:master.breaks[index+1]])
+                    x_data = new_x[master.breaks[index]:master.breaks[index+1]]
+                    y_data = [x - max(self.NOBAN['Background'],0) for x in new_y[master.breaks[index]:master.breaks[index+1]]]
+        except IndexError:
+            pass
+
+        # Region from break[-1] to newY[-1]
+        try:
+            if max(new_y[master.breaks[-1]:-1]) > max_point:
+                max_point = max(new_y[master.breaks[-1]:-1])
+                x_data = new_x[master.breaks[-1]:-1]
+                y_data = [x - self.NOBAN['Background'] for x in new_y[master.breaks[-1]:-1]]
+        except IndexError:
+            pass
+
+        return zip(x_data, y_data)
+
     def write_data(self, master, data):
         """ TODO
         """
@@ -626,6 +651,14 @@ class Functions(object):
         with open(result_file,'w') as fw:
             fw.write("Name\tTime\tPeak Area\tS/N\tBackground\tNoise\tGaussian Residual RMS\tPeak Noise\tBackground Area\tPeak Time\tFWHM\n")
             for i in results:
-                fw.write(str(i['peak'])+"\t"+str(i['time'])+"\t"+str(i['peak_area'])+"\t"+str(i['signal_noise'])+"\t"+str(i['background'])+"\t"+
-                    str(i['noise'])+"\t"+str(i['residual'])+"\t"+str(i['peak_noise'])+"\t"+str(i['background_area'])+"\t"+
-                    str(i['actual_time'])+"\t"+str(i['fwhm'])+"\n")
+                fw.write(str(i['peak'])+"\t"+
+                    str(i['time'])+"\t"+
+                    str(i['peak_area'])+"\t"+
+                    str(i['signal_noise'])+"\t"+
+                    str(i['background'])+"\t"+
+                    str(i['noise'])+"\t"+
+                    str(i['residual'])+"\t"+
+                    str(i['peak_noise'])+"\t"+
+                    str(i['background_area'])+"\t"+
+                    str(i['actual_time'])+"\t"+
+                    str(i['fwhm'])+"\n")

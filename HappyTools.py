@@ -24,7 +24,7 @@ try:
 except ImportError:
     # Python 3
     import tkinter as tk
-    import tk.filedialog as filedialog
+    import tk.filedialog as filedialog                                  
 import tkMessageBox
 from glob import glob
 from matplotlib import image, figure
@@ -32,7 +32,6 @@ from os import path, getcwd
 
 # Custom libraries
 import HappyTools.plugins as plugins
-import HappyTools.libs.functions as functions
 from HappyTools.util.Functions import Functions
 
 # Gui elements
@@ -70,10 +69,12 @@ class HappyToolsGui(object):
 
     def __init__(self, master):
         # ACCESS CHECK
-        if not functions.checkAccess(directories):
+        self.directories = directories
+        if not Functions().check_disk_access(self):
             tkMessageBox.showinfo("Access Error", "HappyTools does not have sufficient disk access rights. Please close "+
                     "HappyTools and check if the current user has read/write access to all folders in the Happytools "+
                     "folder.")
+
         # SETTINGS
         self.settings = Settings(self)
         if path.isfile(path.join(getcwd(), self.settings.settings)):
@@ -194,6 +195,7 @@ class HappyToolsGui(object):
         self.bck_noise = tk.IntVar(value=1)
         self.peak_qual = tk.IntVar(value=1)
         self.quant_file = tk.StringVar()
+        self.create_figure = "True"
 
         self.quant_file = filedialog.askopenfilename(title="Select Quantitation File")
         self.reference = Functions().read_peak_list(self.quant_file)
@@ -201,7 +203,6 @@ class HappyToolsGui(object):
             result = Functions().quantify_peak(self, data)
             Functions().write_results(self, data, result)
         Functions().combine_results(self)
-        #print result['signal_noises']
 
     def smooth_chromatogram(self):
         try:
