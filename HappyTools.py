@@ -12,7 +12,7 @@
 # limitations under the License.
 #
 # You should have received a copy of the Apache 2.0 license along
-# with this program; if not, see 
+# with this program; if not, see
 # http://www.apache.org/licenses/LICENSE-2.0
 
 # General imports
@@ -49,10 +49,10 @@ from HappyTools.bin.Trace import Trace
 
 # Directories
 directories = [
-    path.join(getcwd(),"HappyTools","plugins"),
-    path.join(getcwd(),"HappyTools","gui"),
-    path.join(getcwd(),"HappyTools","bin"),
-    path.join(getcwd(),"HappyTools","util")
+    path.join(getcwd(), "HappyTools", "plugins"),
+    path.join(getcwd(), "HappyTools", "gui"),
+    path.join(getcwd(), "HappyTools", "bin"),
+    path.join(getcwd(), "HappyTools", "util")
 ]
 
 # Function overwrites
@@ -89,8 +89,8 @@ class HappyToolsGui(object):
         # FRAME
         frame = tk.Frame(master)
         master.title("HappyTools "+str(version.version)+" (Build "+str(version.build)+")")
-        iconbitmap = path.join(getcwd(),"HappyTools","gui","assets","Icon.ico")
-        backgroundimage = path.join(getcwd(),"HappyTools","gui","assets","UI.png")
+        iconbitmap = path.join(getcwd(), "HappyTools", "gui", "assets", "Icon.ico")
+        backgroundimage = path.join(getcwd(), "HappyTools", "gui", "assets", "UI.png")
         if path.isfile(iconbitmap):
             master.iconbitmap(default=iconbitmap)
         if path.isfile(backgroundimage):
@@ -99,7 +99,7 @@ class HappyToolsGui(object):
             background_image.axis('off')
             self.fig.set_tight_layout(True)
             background_image.imshow(img)
-        
+
         # QUIT
         def close():
             master.destroy()
@@ -121,8 +121,8 @@ class HappyToolsGui(object):
         processmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Process", menu=processmenu)
         processmenu.add_command(label="Calibrate Chromatogram", command=self.calibrate_chromatogram)
-        processmenu.add_command(label="Quantify Chromatogram", command=self.foo)
-        
+        processmenu.add_command(label="Quantify Chromatogram", command=self.quantify_chromatogram)
+
         advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced", menu=advancedmenu)
         advancedmenu.add_command(label="Peak Detection", command=self.foo)
@@ -139,7 +139,7 @@ class HappyToolsGui(object):
 
         aboutmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="About", menu=aboutmenu)
-        aboutmenu.add_command(label="About HappyTools", command= self.open_about_window)
+        aboutmenu.add_command(label="About HappyTools", command=self.open_about_window)
 
         #if glob(path.join(".","plugins","*.py")):
             #import importlib
@@ -185,6 +185,23 @@ class HappyToolsGui(object):
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
+
+    def quantify_chromatogram(self):
+        self.batch_folder = tk.StringVar(value=getcwd())
+        self.abs_int = tk.IntVar(value=1)
+        self.rel_int = tk.IntVar(value=1)
+        self.bck_sub = tk.IntVar(value=1)
+        self.bck_noise = tk.IntVar(value=1)
+        self.peak_qual = tk.IntVar(value=1)
+        self.quant_file = tk.StringVar()
+
+        self.quant_file = filedialog.askopenfilename(title="Select Quantitation File")
+        self.reference = Functions().read_peak_list(self.quant_file)
+        for data in self.data:
+            result = Functions().quantify_peak(self, data)
+            Functions().write_results(self, data, result)
+        Functions().combine_results(self)
+        #print result['signal_noises']
 
     def smooth_chromatogram(self):
         try:
