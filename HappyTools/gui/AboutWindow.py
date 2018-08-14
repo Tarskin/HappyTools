@@ -1,10 +1,10 @@
+import HappyTools.gui.Version as version
 try:
     # Python 2
     import Tkinter as tk
 except ImportError:
     # Python 3
     import tkinter as tk
-import HappyTools.gui.Version as version
 
 class AboutWindow(object):
     # TODO: Get the version and build from HappyTools.py in here

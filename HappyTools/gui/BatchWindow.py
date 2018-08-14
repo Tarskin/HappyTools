@@ -1,7 +1,4 @@
 #from __future__ import absolute_import
-from HappyTools.util.Functions import Functions
-
-import HappyTools.gui.Settings as settings
 import HappyTools.gui.Version as version
 try:
     # Python 2
@@ -25,11 +22,13 @@ class batchWindow(object):
         none
         """
         self.master = master
+        self.functions = master.functions
         self.settings = master.settings
 
         self.output_window = tk.IntVar()
         self.abs_int = tk.IntVar()
         self.rel_int = tk.IntVar()
+        self.gauss_int = tk.IntVar()
         self.bck_sub = tk.IntVar()
         self.bck_noise = tk.IntVar()
         self.peak_qual = tk.IntVar()
@@ -61,7 +60,7 @@ class batchWindow(object):
         def run():
             """Start the batch process.
             """
-            Functions().batch_process(self)
+            self.functions.batch_process(self)
 
         top = tk.top = tk.Toplevel()
         top.title("Batch Process")
@@ -119,6 +118,7 @@ class batchWindow(object):
             """
             master.abs_int.set(1)
             master.rel_int.set(1)
+            master.gauss_int.set(1)
             master.bck_sub.set(1)
             master.bck_noise.set(1)
             master.peak_qual.set(1)
@@ -128,6 +128,7 @@ class batchWindow(object):
             """
             master.abs_int.set(0)
             master.rel_int.set(0)
+            master.gauss_int.set(0)
             master.bck_sub.set(0)
             master.bck_noise.set(0)
             master.peak_qual.set(0)
@@ -159,6 +160,8 @@ class batchWindow(object):
         bn.grid(row=5, column=0, sticky=tk.W)
         bck = tk.Checkbutton(top, text=u"\u00B9Background subtracted Intensities", variable=master.bck_sub, onvalue=1, offvalue=0)
         bck.grid(row=2, column=1, sticky=tk.W)
+        exp = tk.Checkbutton(top, text=u"\u00B9Gaussian Intensities", variable=master.gauss_int, onvalue=1, offvalue=0)
+        exp.grid(row=3, column=1, sticky=tk.W)
         button = tk.Button(top,text='Ok',command = lambda: close())
         button.grid(row = 6, column = 0, columnspan = 2)
         top.lift()

@@ -1,6 +1,5 @@
 import HappyTools.gui.Version as version
 import matplotlib.pyplot as plt
-from HappyTools.util.Functions import Functions
 
 from matplotlib.backends.backend_pdf import PdfPages
 from bisect import bisect_left, bisect_right
@@ -12,7 +11,7 @@ from os import path
 class Pdf(object):
     def __init__(self, master):
         self.pdf = PdfPages(path.join(master.master.batch_folder.get(),path.splitext(path.basename(master.data.filename))[0]+".pdf"))
-    
+
     def plot_overview(self, master):
         time, intensity = zip(*master.data.data)
         d = self.pdf.infodict()
@@ -39,15 +38,15 @@ class Pdf(object):
         self.pdf.savefig(fig)
         plt.close(fig)
 
-    def plot_individual(self, master):
+    def plot_individual(self, master):      
         time, intensity = zip(*master.data.data)
-        f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
+        f = InterpolatedUnivariateSpline(time[master.low:master.high], intensity[master.low:master.high])
 
-        new_x = np.linspace(time[master.low], time[master.high], 2500*(time[master.high]-time[master.low]))
+        new_x = linspace(time[master.low], time[master.high], 2500*(time[master.high]-time[master.low]))
         new_y = f(new_x)
 
-        new_gauss_x = np.linspace(time[master.low], time[master.high], 2500*(time[master.high]-time[master.low]))
-        new_gauss_y = Functions().gauss_function(new_gauss_x, *master.coeff)
+        new_gauss_x = linspace(time[master.low], time[master.high], 2500*(time[master.high]-time[master.low]))
+        new_gauss_y = master.gauss_function(new_gauss_x, *master.coeff)
 
         fig =  plt.figure(figsize=(8, 6))
         ax = fig.add_subplot(111)
@@ -61,7 +60,7 @@ class Pdf(object):
                 (master.NOBAN['Background'],max(intensity[master.low:master.high])),
                 color='orange',linestyle='dotted')
         plt.plot((min(max(master.fwhm['center']-master.fwhm['width'],new_x[0]),new_x[-1]),max(min(master.fwhm['center']+master.fwhm['width'],new_x[-1]),new_x[0])),
-                (height,height),color='red',linestyle='dashed')
+                (master.height,master.height),color='red',linestyle='dashed')
         plt.legend(['Raw Data','Background','Noise','Univariate Spline','Gaussian Fit ('+str(int(master.residual*100))+
                 '%)','Signal (S/N '+str(master.signal_noise)+")","FWHM:"+"{0:.2f}".format(master.fwhm['fwhm'])], loc='best')
         plt.title("Detail view: "+str(master.peak))

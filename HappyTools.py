@@ -70,7 +70,8 @@ class HappyToolsGui(object):
     def __init__(self, master):
         # ACCESS CHECK
         self.directories = directories
-        if not Functions().check_disk_access(self):
+        self.functions = Functions(self)
+        if not self.functions.check_disk_access(self):
             tkMessageBox.showinfo("Access Error", "HappyTools does not have sufficient disk access rights. Please close "+
                     "HappyTools and check if the current user has read/write access to all folders in the Happytools "+
                     "folder.")
@@ -170,12 +171,13 @@ class HappyToolsGui(object):
     def calibrate_chromatogram(self):
         self.cal_file = tk.StringVar()
         self.cal_file = filedialog.askopenfilename(title="Select Calibration File")
-        self.reference = Functions().read_peak_list(self.cal_file)
+        self.reference = self.functions.read_peak_list(self.cal_file)
         for data in self.data:
-            self.time_pairs = Functions().find_peak(self, data)
-            self.function = Functions().determine_calibration_function(self)
-            data = Functions().apply_calibration_function(self, data)
+            self.time_pairs = self.functions.find_peak(self, data)
+            self.function = self.functions.determine_calibration_function(self)
+            data = self.functions.apply_calibration_function(self, data)
         self.data[0].plot_data(self.data, self.fig, self.canvas)
+        print("Done")
 
     def open_batch_window(self):
         batchWindow(self)
@@ -186,6 +188,7 @@ class HappyToolsGui(object):
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
+        print("Done")
 
     def quantify_chromatogram(self):
         self.batch_folder = tk.StringVar(value=getcwd())
@@ -196,13 +199,14 @@ class HappyToolsGui(object):
         self.peak_qual = tk.IntVar(value=1)
         self.quant_file = tk.StringVar()
         self.create_figure = "True"
+        self.results = []
 
         self.quant_file = filedialog.askopenfilename(title="Select Quantitation File")
-        self.reference = Functions().read_peak_list(self.quant_file)
+        self.reference = self.functions.read_peak_list(self.quant_file)
         for data in self.data:
-            result = Functions().quantify_peak(self, data)
-            Functions().write_results(self, data, result)
-        Functions().combine_results(self)
+            self.results.append({'file':path.basename(file), 'results': self.functions.quantify_chrom(self, data)})
+        self.functions.combine_results(self)
+        print("Done")
 
     def smooth_chromatogram(self):
         try:
@@ -210,6 +214,7 @@ class HappyToolsGui(object):
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
+        print("Done")
 
     def save_chromatogram(self):
         try:
@@ -217,6 +222,7 @@ class HappyToolsGui(object):
                 Trace().save_chrom(self)
         except AttributeError:
             pass
+        print("Done")
 
     def baseline_correction(self):
         try:
@@ -224,6 +230,7 @@ class HappyToolsGui(object):
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
+        print("Done")
 
     def foo(self):
         raise NotImplementedError("This feature is not implemented in the refactor yet.")
