@@ -510,6 +510,7 @@ class Functions(object):
         """
 
         self.master = master
+        self.reference = master.reference
         self.data = data
         self.settings = master.settings
 
@@ -523,7 +524,7 @@ class Functions(object):
             self.pdf.plot_overview(self)
 
         # Iterate over peaks
-        for i in master.reference:
+        for i in self.reference:
             self.peak = i[0]
             self.time = i[1]
             self.peak_area = 0

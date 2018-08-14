@@ -27,7 +27,7 @@ class Pdf(object):
         plt.title(str(path.splitext(path.basename(master.data.filename))[0]))
         plt.xlabel("Retention Time [m]")
         plt.ylabel("Intensity [au]")
-        for i in master.master.reference:
+        for i in master.reference:
             low = bisect_left(time, i[1]-i[2])
             high = bisect_right(time, i[1]+i[2])
             new_time = linspace(time[low], time[high], len(time[low:high]))

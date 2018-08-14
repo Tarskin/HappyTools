@@ -194,6 +194,7 @@ class HappyToolsGui(object):
         self.batch_folder = tk.StringVar(value=getcwd())
         self.abs_int = tk.IntVar(value=1)
         self.rel_int = tk.IntVar(value=1)
+        self.gauss_int = tk.IntVar(value=1)
         self.bck_sub = tk.IntVar(value=1)
         self.bck_noise = tk.IntVar(value=1)
         self.peak_qual = tk.IntVar(value=1)
@@ -204,7 +205,7 @@ class HappyToolsGui(object):
         self.quant_file = filedialog.askopenfilename(title="Select Quantitation File")
         self.reference = self.functions.read_peak_list(self.quant_file)
         for data in self.data:
-            self.results.append({'file':path.basename(file), 'results': self.functions.quantify_chrom(self, data)})
+            self.results.append({'file':path.basename(data.filename), 'results': self.functions.quantify_chrom(self, data)})
         self.functions.combine_results(self)
         print("Done")
 
