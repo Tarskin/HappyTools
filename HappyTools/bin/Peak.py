@@ -76,6 +76,7 @@ class Peak(object):
 
     def determine_gaussian_area(self, master):
         time, intensity = zip(*master.data.data)
+        x_data, y_data = zip(*master.data_subset)
         gaussian_area = 0.
 
         new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
@@ -89,6 +90,7 @@ class Peak(object):
     def determine_gaussian_coefficients(self, master):
         coeff = []
 
+        x_data, y_data = zip(*master.data_subset)
         peak = array(x_data)[y_data > exp(-0.5)*max(y_data)]
         guess_sigma = 0.5*(max(peak) - min(peak))
         new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
