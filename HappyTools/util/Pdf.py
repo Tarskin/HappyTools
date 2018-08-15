@@ -40,30 +40,33 @@ class Pdf(object):
 
     def plot_individual(self, master):      
         time, intensity = zip(*master.data.data)
-        f = InterpolatedUnivariateSpline(time[master.low:master.high], intensity[master.low:master.high])
+        low = bisect_left(time, master.time-master.window)
+        high = bisect_right(time, master.time+master.window)
 
-        new_x = linspace(time[master.low], time[master.high], 2500*(time[master.high]-time[master.low]))
+        f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
+
+        new_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
         new_y = f(new_x)
 
-        new_gauss_x = linspace(time[master.low], time[master.high], 2500*(time[master.high]-time[master.low]))
-        new_gauss_y = master.gauss_function(new_gauss_x, *master.coeff)
+        new_gauss_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
+        new_gauss_y = master.gauss_function(new_gauss_x, *master.peak.coeff)
 
         fig =  plt.figure(figsize=(8, 6))
         ax = fig.add_subplot(111)
-        plt.plot(time[master.low:master.high], intensity[master.low:master.high], 'b*')
-        plt.plot((new_x[0],new_x[-1]),(master.NOBAN['Background'],master.NOBAN['Background']),'red')
-        plt.plot((new_x[0],new_x[-1]),(master.NOBAN['Background']+master.NOBAN['Noise'],master.NOBAN['Background']+master.NOBAN['Noise']),color='green')
+        plt.plot(time[low:high], intensity[low:high], 'b*')
+        plt.plot((new_x[0],new_x[-1]),(master.peak.background,master.peak.background),'red')
+        plt.plot((new_x[0],new_x[-1]),(master.peak.background+master.peak.noise,master.peak.background+master.peak.noise),color='green')
         plt.plot(new_x,new_y, color='blue',linestyle='dashed')
         plt.plot(new_gauss_x, new_gauss_y, color='green',linestyle='dashed')
-        plt.plot((time[intensity[master.low:master.high].index(max(intensity[master.low:master.high]))+master.low],
-                time[intensity[master.low:master.high].index(max(intensity[master.low:master.high]))+master.low]),
-                (master.NOBAN['Background'],max(intensity[master.low:master.high])),
+        plt.plot((time[intensity[low:high].index(max(intensity[low:high]))+low],
+                time[intensity[low:high].index(max(intensity[low:high]))+low]),
+                (master.peak.background,max(intensity[low:high])),
                 color='orange',linestyle='dotted')
-        plt.plot((min(max(master.fwhm['center']-master.fwhm['width'],new_x[0]),new_x[-1]),max(min(master.fwhm['center']+master.fwhm['width'],new_x[-1]),new_x[0])),
-                (master.height,master.height),color='red',linestyle='dashed')
-        plt.legend(['Raw Data','Background','Noise','Univariate Spline','Gaussian Fit ('+str(int(master.residual*100))+
-                '%)','Signal (S/N '+str(master.signal_noise)+")","FWHM:"+"{0:.2f}".format(master.fwhm['fwhm'])], loc='best')
-        plt.title("Detail view: "+str(master.peak))
+        plt.plot((min(max(master.peak.center-master.peak.width,new_x[0]),new_x[-1]),max(min(master.peak.center+master.peak.width,new_x[-1]),new_x[0])),
+                (master.peak.height,master.peak.height),color='red',linestyle='dashed')
+        plt.legend(['Raw Data','Background','Noise','Univariate Spline','Gaussian Fit ('+str(int(master.peak.residual*100))+
+                '%)','Signal (S/N '+"{0:.2f}".format(master.peak.signal_noise)+")","FWHM: "+"{0:.2f}".format(master.peak.fwhm)], loc='best')
+        plt.title("Detail view: "+str(master.peak.peak))
         plt.xlabel("Retention Time [m]")
         plt.ylabel("Intensity [au]")
         self.pdf.savefig(fig)

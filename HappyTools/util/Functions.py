@@ -4,19 +4,16 @@ import HappyTools.gui.Debug as debug
 from HappyTools.util.Pdf import Pdf
 from HappyTools.util.Output import Output
 from HappyTools.bin.Chromatogram import Chromatogram
+from HappyTools.bin.Peak import Peak
 
 from datetime import datetime
 from scipy.interpolate import InterpolatedUnivariateSpline
-from scipy.optimize import curve_fit
 from scipy.signal import argrelextrema
-from numpy import std, mean, polyfit, poly1d, linspace, argmax, greater, less, array
-from numpy import max as numpy_max
+from numpy import polyfit, poly1d, linspace, greater, less
 from numpy import exp # only till gauss function gets moved to math
 from bisect import bisect_left, bisect_right
 from os import path, W_OK, access
 from glob import glob
-from sys import maxint
-import math
 
 class Functions(object):
     def __init__(self, master):
@@ -90,7 +87,35 @@ class Functions(object):
                 disk_access = False
         return disk_access
 
-    def determine_background_and_noise(self, master):
+    def determine_breakpoints(self, master):
+        time, intensity = zip(*master.data.data)
+        low = bisect_left(time, master.time-master.window)
+        high = bisect_right(time, master.time+master.window)
+    
+        f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
+        f_prime = f.derivative()
+
+        new_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
+        new_prime_y = f_prime(new_x)
+
+        maxm = argrelextrema(new_prime_y, greater)
+        minm = argrelextrema(new_prime_y, less)
+
+        breaks = maxm[0].tolist() + minm[0].tolist()
+        breaks = sorted(breaks)
+
+        return breaks
+
+    def determine_calibration_function(self, master):
+        expected, observed = zip(*master.time_pairs)
+        if master.settings.use_UPC == "False":
+            z = polyfit(observed, expected, 2)
+            function = poly1d(z)
+        elif master.settings.use_UPC == "True":
+            raise NotImplementedError("Ultra performance calibration has not been implemented in the refactoring yet.")
+        return function
+
+    """def determine_background_and_noise(self, master):
         time, intensity = zip(*master.data.data[master.low_background:master.high_background])
 
         if master.settings.background_noise_method == "NOBAN":
@@ -139,13 +164,9 @@ class Functions(object):
 
         return breaks
 
-
-    
-
-
     def determine_calibration_function(self, master):
-        """ TODO
-        """
+        "" TODO
+        ""
         expected, observed = zip(*master.time_pairs)
         if master.settings.use_UPC == "False":
             z = polyfit(observed, expected, 2)
@@ -188,7 +209,7 @@ class Functions(object):
         return coeff
 
     def determine_gaussian_parameters(self, master):
-        """Calculate the FWHM.
+        ""Calculate the FWHM.
         
         This function will calculate the FWHM based on the following formula
         FWHM = 2*sigma*sqrt(2*ln(2)). The function will return a dictionary
@@ -197,7 +218,7 @@ class Functions(object):
         
         Keyword arguments:
         coeff -- coefficients as calculated by SciPy curve_fit
-        """
+        ""
         fwhm = abs(2*master.coeff[2]*math.sqrt(2*math.log(2)))
         width = 0.5*fwhm
         center = master.coeff[1]
@@ -234,6 +255,7 @@ class Functions(object):
             total_area += max(j-master.NOBAN['Background'],0) * (time[master.low+index]-time[master.low+index-1])
 
         return total_area
+    """
 
     def find_peak(self, master, data):
         """ TODO
@@ -246,19 +268,20 @@ class Functions(object):
     
         for i in master.reference:
 
-            self.low = bisect_left(time, i[1]-i[2])
-            self.high = bisect_right(time, i[1]+i[2])
+            self.peak = i[0]
+            self.time = i[1]
+            self.window = i[2]
 
-            self.low_background = bisect_left(time, max(i[1]-master.settings.background_window, master.settings.start))
-            self.high_background = bisect_right(time, min(i[1]+master.settings.background_window, master.settings.end))
+            self.peak = Peak(self)
+            self.peak.determine_background_and_noise(self)
+            self.peak.determine_signal_noise(self)
 
-            NOBAN = self.determine_background_and_noise(self)
+            max_value = max(intensity[self.peak.low:self.peak.high])
+            max_index = intensity[self.peak.low:self.peak.high].index(max_value)
 
-            max_value = max(intensity[self.low:self.high])
-            max_index = intensity[self.low:self.high].index(max_value)
-
-            if ((max_value - NOBAN['Background'])/NOBAN['Noise']) >= master.settings.min_peak_SN:
-                time_pairs.append((i[1],time[self.low+max_index]))
+            #if ((max_value - NOBAN['Background'])/NOBAN['Noise']) >= master.settings.min_peak_SN:
+            if self.peak.signal_noise >= master.settings.min_peak_SN:
+                time_pairs.append((i[1],time[self.peak.low+max_index]))
         
         return time_pairs
 
@@ -322,57 +345,50 @@ class Functions(object):
 
         # Iterate over peaks
         for i in self.reference:
-            self.peak = str(i[0])
-            self.time = float(i[1])
-            self.peak_area = 0.
-            self.background_area = 0.
-            self.gauss_area = 0.
-            self.total_area = 0.
+            
+            self.peak = i[0]
+            self.time = i[1]
+            self.window = i[2]
 
-            # Find insertion points
-            self.low = bisect_left(time, i[1]-i[2])
-            self.high = bisect_right(time, i[1]+i[2])
-
-            self.low_background = bisect_left(time, max(i[1]-master.settings.background_window, master.settings.start))
-            self.high_background = bisect_right(time, min(i[1]+master.settings.background_window, master.settings.end))
+            self.peak = Peak(self)
 
             # Determine Areas, background and noise
-            self.NOBAN = self.determine_background_and_noise(self)
-            self.peak_area = self.determine_peak_area(self)
-            self.background_area = self.determine_background_area(self)
-            self.peak_noise = std(intensity[self.low:self.high])
-            self.signal_noise = (max(intensity[self.low:self.high]) - self.NOBAN['Background'])/self.NOBAN['Noise']
-            self.total_area = self.determine_total_area(self)
+            self.peak.determine_background_and_noise(self)
+            self.peak.determine_peak_area(self)
+            self.peak.determine_background_area(self)
+            self.peak.determine_peak_noise(self)
+            self.peak.determine_signal_noise(self)
+            self.peak.determine_total_area(self)
 
             # Data Subset (based on second derivative)
             self.breaks = self.determine_breakpoints(self)
             self.data_subset = self.subset_data(self)
 
             # Gaussian fit
-            self.coeff = self.determine_gaussian_coefficients(self)
-            if self.coeff.any():
-                self.gauss_area = self.determine_gaussian_area(self)
-                self.fwhm = self.determine_gaussian_parameters(self)
-                self.height = self.gauss_function(self.fwhm['center']+self.fwhm['width'], *self.coeff)+self.NOBAN['Background']
-            self.residual = self.determine_residual(self)
+            self.peak.determine_gaussian_coefficients(self)
+            if self.peak.coeff.any():
+                self.peak.determine_gaussian_area(self)
+                self.peak.determine_gaussian_parameters(self)
+                self.peak.determine_height(self)
+            self.peak.determine_residual(self)
 
             # Add individual peak to PDF
             if master.settings.create_figure == "True":
                 self.pdf.plot_individual(self)
 
             # Results
-            results.append({'peak': self.peak, 
-                'time': self.time, 
-                'peak_area': self.peak_area,
-                'gaussian_area': self.gauss_area,
-                'signal_noise': self.signal_noise, 
-                'background_area': self.background_area, 
-                'peak_noise': self.peak_noise, 
-                'residual': self.residual, 
-                'background': self.NOBAN['Background'], 
-                'noise': self.NOBAN['Noise'], 
-                'fwhm': self.fwhm['fwhm'], 
-                'actual_time': self.fwhm['center']})
+            results.append({'peak': self.peak.peak, 
+                'time': self.peak.time, 
+                'peak_area': self.peak.peak_area,
+                'gaussian_area': self.peak.gaussian_area,
+                'signal_noise': self.peak.signal_noise, 
+                'background_area': self.peak.background_area, 
+                'peak_noise': self.peak.peak_noise, 
+                'residual': self.peak.residual, 
+                'background': self.peak.background,
+                'noise': self.peak.noise,
+                'fwhm': self.peak.fwhm,
+                'actual_time': self.peak.actual_time})
 
         # Close PDF
         if master.settings.create_figure == "True":
@@ -411,8 +427,11 @@ class Functions(object):
         
         max_point = 0
         time, intensity = zip(*master.data.data)
-        f = InterpolatedUnivariateSpline(time[master.low:master.high], intensity[master.low:master.high])
-        new_x = linspace(time[master.low], time[master.high], 2500*(time[master.high]-time[master.low]))
+        low = bisect_left(time, master.time-master.window)
+        high = bisect_right(time, master.time+master.window)
+
+        f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
+        new_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
         new_y = f(new_x)
 
         x_data = new_x

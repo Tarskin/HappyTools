@@ -27,8 +27,8 @@ class Output(object):
             for j in i['results']:
                 header = header + "\t"+str(j['time'])
             header = header + "\n"
-            self.header = header
             break
+        self.header = header            
 
         if master.abs_int.get() == 1:
             if master.bck_sub.get() == 0:

@@ -131,6 +131,6 @@ class Trace(object):
         """
         for i in master.data:
             with open(i.filename,'w') as fw:
-                for j in i.data:
-                    w.write(str(format(j[0],'0.'+str(master.settings.decimalNumbers)+'f'))+"\t"+str(format(j[1],'0.'+str(master.settings.decimalNumbers)+'f'))+"\n")
+                for data_point in i.data:
+                    fw.write(str(format(data_point[0],'0.'+str(master.settings.decimal_numbers)+'f'))+"\t"+str(format(data_point[1],'0.'+str(master.settings.decimal_numbers)+'f'))+"\n")
 
