@@ -31,6 +31,7 @@ class Settings(object):
         self.background_noise_method = "MT"
 
         self.output = "summary.results"
+        self.date_format = "%Y-%m-%d-%H%MZ"
         self.settings = "HappyTools.ini"
 
         self.exclusion_files = ["LICENSE.txt","CHANGELOG.txt"]

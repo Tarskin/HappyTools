@@ -33,6 +33,7 @@ from os import path, getcwd
 # Custom libraries
 import HappyTools.plugins as plugins
 from HappyTools.util.Functions import Functions
+from HappyTools.util.Output import Output
 
 # Gui elements
 from HappyTools.gui.CustomToolbar import CustomToolbar
@@ -206,7 +207,11 @@ class HappyToolsGui(object):
         self.reference = self.functions.read_peak_list(self.quant_file)
         for data in self.data:
             self.results.append({'file':path.basename(data.filename), 'results': self.functions.quantify_chrom(self, data)})
-        self.functions.combine_results(self)
+
+        self.output = Output(self)
+        self.output.init_output_file(self)
+        self.output.build_output_file(self)
+
         print("Done")
 
     def smooth_chromatogram(self):

@@ -2,6 +2,7 @@ import HappyTools.gui.ProgressBar as progressbar
 import HappyTools.gui.Version as version
 import HappyTools.gui.Debug as debug
 from HappyTools.util.Pdf import Pdf
+from HappyTools.util.Output import Output
 from HappyTools.bin.Chromatogram import Chromatogram
 
 from datetime import datetime
@@ -56,7 +57,7 @@ class Functions(object):
             if master.anal_file.get():
 
                 self.results = []
-                analytes = self.read_peak_list(master.anal_file.get())
+                self.reference = self.read_peak_list(master.anal_file.get())
                 files = self.get_quantitation_files(self)
 
                 for index, file in enumerate(files):
@@ -64,7 +65,10 @@ class Functions(object):
                     self.results.append({'file':path.basename(file), 'results': self.quantify_chrom(self, data)})
                     bar.update_progress_bar(bar.progressbar2, bar.quantitation_percentage, index, len(files))
 
-                self.combine_results(self)
+                self.output = Output(self)
+                self.output.init_output_file(self)
+                self.output.build_output_file(self)
+
                 bar.update_progress_bar(bar.progressbar2, bar.quantitation_percentage, 1, 1)
 
             print("Done")
@@ -85,213 +89,6 @@ class Functions(object):
             if not access(directory, W_OK):
                 disk_access = False
         return disk_access
-
-    def combine_results(self, master):
-        """
-        """
-        # Construct the filename for the output
-        utc_datetime = datetime.utcnow()
-        s = utc_datetime.strftime("%Y-%m-%d-%H%MZ")
-        filename = s + "_" + master.settings.output
-
-        # Construct header
-        header = ""
-        for i in master.results:
-            for j in i['results']:
-                header = header + "\t"+str(j['peak'])
-            header = header + "\n"
-            for j in i['results']:
-                header = header + "\t"+str(j['time'])
-            header = header + "\n"
-            break
-
-        # Write results, settings and version information
-        with open(path.join(master.batch_folder.get(), filename), 'w') as fw:
-            # Metadata
-            fw.write("HappyTools Settings\n")
-            fw.write("Version:\t"+str(version.version)+"\n")
-            fw.write("Build:\t"+str(version.build)+"\n")
-            fw.write("Start Time:\t"+str(master.settings.start)+"\n")
-            fw.write("End Time:\t"+str(master.settings.end)+"\n")
-            fw.write("Baseline Order:\t"+str(master.settings.baseline_order)+"\n")
-            fw.write("Background Window:\t"+str(master.settings.background_window)+"\n")
-            fw.write("Background and noise method:\t"+str(master.settings.background_noise_method)+"\n")
-            if master.settings.background_noise_method == "MT":
-                fw.write("MT Slice Points:\t"+str(master.settings.slicepoints)+"\n")
-            elif master.settings.background_noise_method == "NOBAN":
-                fw.write("NOBAN Initial Estimate:\t"+str(master.settings.noban_start)+"\n")
-            fw.write("Noise:\t"+str(master.settings.noise)+"\n")
-            fw.write("\n")
-
-            # Peak area (non background subtracted)
-            if master.abs_int.get() == 1 and master.bck_sub.get() == 0:
-                fw.write("Peak Area")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    for j in i['results']:
-                        fw.write("\t"+str(j['peak_area']))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # Peak area (background subtracted)
-            if  master.abs_int.get() == 1 and master.bck_sub.get() == 1:
-                fw.write("Peak Area (Background Subtracted)")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    for j in i['results']:
-                        fw.write("\t"+str(max(j['peak_area']-j['background_area'],0)))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # Gaussian area (non background subtracted)
-            if master.abs_int.get() == 1 and master.gauss_int.get() == 1 and master.bck_sub.get() == 0:
-                fw.write("Gaussian Area")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    for j in i['results']:
-                        fw.write("\t"+str(j['gaussian_area']))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # Gaussian area (background subtracted)
-            if master.abs_int.get() == 1 and master.gauss_int.get() == 1 and master.bck_sub.get() == 1:
-                fw.write("Gaussian Area (Background Subtracted)")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    for j in i['results']:
-                        fw.write("\t"+str(j['gaussian_area']-j['background_area']))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # Relative area
-            if master.rel_int.get() == 1 and master.bck_sub.get() == 0:
-                fw.write("Relative Peak Area (TAN)")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    total = 0.
-                    for j in i['results']:
-                        total += j['peak_area']
-                    for j in i['results']:
-                        try:
-                            fw.write("\t"+str(j['peak_area']/total))
-                        except ZeroDivisionError:
-                            fw.write("\t"+str(0.0))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # Relative Area (Background subtracted)
-            if master.rel_int.get() == 1 and master.bck_sub.get() == 1:
-                fw.write("Relative Peak Area (TAN, Background Subtracted)")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    total = 0.
-                    for j in i['results']:
-                        total += max(j['peak_area']-j['background_area'],0)
-                    for j in i['results']:
-                        try:
-                            fw.write("\t"+str(max(j['peak_area']-j['background_area'],0)/total))
-                        except ZeroDivisionError:
-                            fw.write("\t"+str(0.0))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # Peak Noise (standard deviation of the integration window)
-            if master.bck_noise.get() == 1:
-                fw.write("Peak Noise (standard deviation of integration window)")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    total = 0.
-                    for j in i['results']:
-                        fw.write("\t"+str(j['peak_noise']))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # Background
-            if master.bck_noise.get() == 1:
-                fw.write("Background")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    for j in i['results']:
-                        fw.write("\t"+str(j['background']))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # Noise
-            if master.bck_noise.get() == 1:
-                fw.write("Noise")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    for j in i['results']:
-                        fw.write("\t"+str(j['noise']))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # S/N
-            if master.peak_qual.get() == 1:
-                fw.write("Signal-to-Noise")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    for j in i['results']:
-                        fw.write("\t"+str(j['signal_noise']))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # GPQ
-            if master.peak_qual.get() == 1:
-                fw.write("GPQ (Gaussian Peak Quality)")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    for j in i['results']:
-                        fw.write("\t"+str(j['residual']))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # FWHM
-            if master.peak_qual.get() == 1:
-                fw.write("FWHM")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    for j in i['results']:
-                        fw.write("\t"+str(j['fwhm']))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # Tr residual
-            if master.peak_qual.get() == 1:
-                fw.write("Retention Time Residual")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    #if i['Calibration']:
-                    #    fw.write(" ["+str(i['Calibration'])+"]")
-                    for j in i['results']:
-                        residualTime = abs(float(j['actual_time']) - float(j['time']))
-                        fw.write("\t"+str(residualTime))
-                    fw.write("\n")
-                fw.write("\n")
-
-            # Peak Tr
-            if master.peak_qual.get() == 1:
-                fw.write("Retention Time")
-                fw.write(header)
-                for i in master.results:
-                    fw.write(i['file'])
-                    for j in i['results']:
-                        fw.write("\t"+str(float(j['actual_time'])))
-                    fw.write("\n")
-                fw.write("\n")
 
     def determine_background_and_noise(self, master):
         time, intensity = zip(*master.data.data[master.low_background:master.high_background])
@@ -525,12 +322,12 @@ class Functions(object):
 
         # Iterate over peaks
         for i in self.reference:
-            self.peak = i[0]
-            self.time = i[1]
-            self.peak_area = 0
-            self.background_area = 0
-            self.gauss_area = 0
-            self.total_area = 0
+            self.peak = str(i[0])
+            self.time = float(i[1])
+            self.peak_area = 0.
+            self.background_area = 0.
+            self.gauss_area = 0.
+            self.total_area = 0.
 
             # Find insertion points
             self.low = bisect_left(time, i[1]-i[2])
@@ -560,7 +357,8 @@ class Functions(object):
             self.residual = self.determine_residual(self)
 
             # Add individual peak to PDF
-            self.pdf.plot_individual(self)
+            if master.settings.create_figure == "True":
+                self.pdf.plot_individual(self)
 
             # Results
             results.append({'peak': self.peak, 
