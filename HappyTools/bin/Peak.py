@@ -187,4 +187,4 @@ class Peak(object):
         for index,j in enumerate(intensity[self.low:self.high]):
             total_area += max(j-self.background,0) * (time[self.low+index]-time[self.low+index-1])
 
-        return total_area
+        self.total_area = total_area
