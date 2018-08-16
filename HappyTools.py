@@ -21,10 +21,12 @@ try:
     # Python 2
     import Tkinter as tk
     import tkFileDialog as filedialog
+    import ttk
 except ImportError:
     # Python 3
     import tkinter as tk
     import tk.filedialog as filedialog                                  
+    import tk.ttk as tk
 import tkMessageBox
 from glob import glob
 from matplotlib import image, figure
@@ -69,9 +71,11 @@ class HappyToolsGui(object):
         root.mainloop()
 
     def __init__(self, master):
+        self.counter = tk.IntVar(value=0)
+        self.functions = Functions(self)
+
         # ACCESS CHECK
         self.directories = directories
-        self.functions = Functions(self)
         if not self.functions.check_disk_access(self):
             tkMessageBox.showinfo("Access Error", "HappyTools does not have sufficient disk access rights. Please close "+
                     "HappyTools and check if the current user has read/write access to all folders in the Happytools "+
@@ -101,7 +105,11 @@ class HappyToolsGui(object):
             img = image.imread(backgroundimage)
             background_image.axis('off')
             self.fig.set_tight_layout(True)
-            background_image.imshow(img)
+            background_image.imshow(img)       
+        self.progress = ttk.Progressbar(master, orient="horizontal",
+            length=1000, mode="determinate", variable=self.counter,
+            maximum=100)
+        self.progress.pack(fill=tk.X)
 
         # QUIT
         def close():
@@ -170,15 +178,22 @@ class HappyToolsGui(object):
         self.settings.settings_popup(self.settings)
 
     def calibrate_chromatogram(self):
+        self.counter.set(0)
         self.cal_file = tk.StringVar()
         self.cal_file = filedialog.askopenfilename(title="Select Calibration File")
         self.reference = self.functions.read_peak_list(self.cal_file)
-        for data in self.data:
+        for index, data in enumerate(self.data):
+
+            progress = (float(index) / len(self.data))*100
+            self.counter.set(progress)
+            self.progress.update()
+
             self.time_pairs = self.functions.find_peak(self, data)
             self.function = self.functions.determine_calibration_function(self)
             data = self.functions.apply_calibration_function(self, data)
+
+        self.counter.set(100)
         self.data[0].plot_data(self.data, self.fig, self.canvas)
-        print("Done")
 
     def open_batch_window(self):
         batchWindow(self)
@@ -189,9 +204,9 @@ class HappyToolsGui(object):
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
-        print("Done")
 
     def quantify_chromatogram(self):
+        self.counter.set(0)
         self.batch_folder = tk.StringVar(value=getcwd())
         self.abs_int = tk.IntVar(value=1)
         self.rel_int = tk.IntVar(value=1)
@@ -205,14 +220,18 @@ class HappyToolsGui(object):
 
         self.quant_file = filedialog.askopenfilename(title="Select Quantitation File")
         self.reference = self.functions.read_peak_list(self.quant_file)
-        for data in self.data:
+        for index, data in enumerate(self.data):
+
+            progress = (float(index) / len(self.data))*100
+            self.counter.set(progress)
+            self.progress.update()
+
             self.results.append({'file':path.basename(data.filename), 'results': self.functions.quantify_chrom(self, data)})
 
         self.output = Output(self)
         self.output.init_output_file(self)
         self.output.build_output_file(self)
-
-        print("Done")
+        self.counter.set(100)
 
     def smooth_chromatogram(self):
         try:
@@ -228,7 +247,6 @@ class HappyToolsGui(object):
                 Trace().save_chrom(self)
         except AttributeError:
             pass
-        print("Done")
 
     def baseline_correction(self):
         try:
@@ -236,7 +254,6 @@ class HappyToolsGui(object):
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
-        print("Done")
 
     def foo(self):
         raise NotImplementedError("This feature is not implemented in the refactor yet.")

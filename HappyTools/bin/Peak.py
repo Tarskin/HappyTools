@@ -40,6 +40,11 @@ class Peak(object):
         self.low_background = bisect_left(time, max(self.time-master.settings.background_window, master.settings.start))
         self.high_background = bisect_right(time, min(self.time+master.settings.background_window, master.settings.end))
 
+    def background_correct(self, master):
+        time, intensity = zip(*master.data.data)
+        intensity = [x+abs(self.background) for x in intensity]
+        master.data.data = zip(time,intensity)
+
     def determine_background_and_noise(self, master):
         time, intensity = zip(*master.data.data[self.low_background:self.high_background])
 
@@ -99,10 +104,10 @@ class Peak(object):
             coeff, var_matrix = curve_fit(self.gauss_function, x_data, y_data, p0)
 
         except TypeError:
-            self.log("Not enough data points to fit a Gaussian to peak: "+str(self.peak))
+            master.log("Not enough data points to fit a Gaussian to peak: "+str(self.peak))
 
         except RuntimeError:
-            self.log("Unable to determine residuals for peak: "+str(self.peak))
+            master.log("Unable to determine residuals for peak: "+str(self.peak))
 
         self.coeff = coeff
 

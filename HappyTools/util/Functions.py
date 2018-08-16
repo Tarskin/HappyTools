@@ -68,8 +68,6 @@ class Functions(object):
 
                 bar.update_progress_bar(bar.progressbar2, bar.quantitation_percentage, 1, 1)
 
-            print("Done")
-
     def calibrate_chrom(self, master, data):       
         self.time_pairs = self.find_peak(master, data)
         if len(self.time_pairs) >= master.settings.min_peaks:
@@ -352,8 +350,13 @@ class Functions(object):
 
             self.peak = Peak(self)
 
-            # Determine Areas, background and noise
+            # Background correct
             self.peak.determine_background_and_noise(self)
+            if self.peak.background < 0.:
+                self.peak.background_correct(self)
+                self.peak.determine_background_and_noise(self)
+
+            # Determine Areas, background and noise
             self.peak.determine_peak_area(self)
             self.peak.determine_background_area(self)
             self.peak.determine_peak_noise(self)
