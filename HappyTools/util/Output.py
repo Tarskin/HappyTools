@@ -1,4 +1,4 @@
-import HappyTools.gui.Version as version
+import HappyTools.gui.version as version
 from datetime import datetime
 from os import path, W_OK
 
@@ -201,7 +201,7 @@ class Output(object):
 
     def write_peak_noise(self, master):
         with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
-            fw.write("Peak Noise (standard deviation of integration window)")
+            fw.write("Peak Noise (Standard deviation of integration window)")
             fw.write(self.header)
             for i in master.results:
                 fw.write(i['file'])

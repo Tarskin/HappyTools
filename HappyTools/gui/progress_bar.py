@@ -48,3 +48,21 @@ class ProgressBar(object):
     
     def close(self):
         self.master.destroy()
+
+class SimpleProgressBar(object):
+    def __init__(self, master):
+        self.master = master
+        self.bar = ttk.Progressbar(master.master, orient="horizontal",
+            length=1000, mode="determinate", variable=master.counter,
+            maximum=100)        
+
+    def update_progress_bar(self, master):
+        self.bar.update()
+
+    def reset_bar(self, master):
+        master.counter.set(0)
+        self.bar.update()
+
+    def fill_bar(self, master):
+        master.counter.set(100)
+        self.bar.update()        

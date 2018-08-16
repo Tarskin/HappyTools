@@ -1,10 +1,10 @@
-import HappyTools.gui.ProgressBar as progressbar
-import HappyTools.gui.Version as version
-import HappyTools.gui.Debug as debug
-from HappyTools.util.Pdf import Pdf
-from HappyTools.util.Output import Output
-from HappyTools.bin.Chromatogram import Chromatogram
-from HappyTools.bin.Peak import Peak
+import HappyTools.gui.progress_bar as progressbar
+import HappyTools.gui.version as version
+import HappyTools.gui.debug as debug
+from HappyTools.util.pdf import Pdf
+from HappyTools.util.output import Output
+from HappyTools.bin.chromatogram import Chromatogram
+from HappyTools.bin.peak import Peak
 
 from datetime import datetime
 from scipy.interpolate import InterpolatedUnivariateSpline
@@ -423,7 +423,7 @@ class Functions(object):
 
                         pass
         except IOError:
-            tkMessageBox.showinfo("File Error","The selected reference file could not be opened.")
+            self.log("The selected reference file "+str(file)+" could not be opened.")
         return peaks
 
     def subset_data(self, master):

@@ -1,4 +1,4 @@
-import HappyTools.gui.Version as version
+import HappyTools.gui.version as version
 import matplotlib.pyplot as plt
 
 from matplotlib.backends.backend_pdf import PdfPages

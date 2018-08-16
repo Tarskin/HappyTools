@@ -1,11 +1,10 @@
+from HappyTools.bin.trace import Trace
 import os
-
-import Trace
 
 class Chromatogram(object):
     def __init__(self, filename):
         self.filename = filename
-        self.data = Trace.Trace().open_chrom(filename)
+        self.data = Trace().open_chrom(filename)
 
     def plot_data(self, data, fig, canvas):
         """Plot all chromatograms in data on the canvas.

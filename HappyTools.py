@@ -34,20 +34,22 @@ from os import path, getcwd
 
 # Custom libraries
 import HappyTools.plugins as plugins
-from HappyTools.util.Functions import Functions
-from HappyTools.util.Output import Output
+from HappyTools.util.functions import Functions
+from HappyTools.util.output import Output
 
 # Gui elements
-from HappyTools.gui.CustomToolbar import CustomToolbar
-from HappyTools.gui.AboutWindow import AboutWindow
-from HappyTools.gui.BatchWindow import batchWindow
-from HappyTools.gui.Settings import Settings
-import HappyTools.gui.Version as version
-import HappyTools.gui.Debug as debug
+from HappyTools.gui.custom_toolbar import CustomToolbar
+from HappyTools.gui.about_window import AboutWindow
+from HappyTools.gui.batch_window import batchWindow
+from HappyTools.gui.settings import Settings
+from HappyTools.gui.output_window import OutputWindow
+import HappyTools.gui.progress_bar as progressbar
+import HappyTools.gui.version as version
+import HappyTools.gui.debug as debug
 
 # Class imports
-from HappyTools.bin.Chromatogram import Chromatogram
-from HappyTools.bin.Trace import Trace
+from HappyTools.bin.chromatogram import Chromatogram
+from HappyTools.bin.trace import Trace
 
 # Directories
 directories = [
@@ -71,6 +73,17 @@ class HappyToolsGui(object):
         root.mainloop()
 
     def __init__(self, master):
+        self.output_window = tk.IntVar(value=0)
+        self.batch_folder = tk.StringVar(value=getcwd())
+        self.abs_int = tk.IntVar(value=0)
+        self.rel_int = tk.IntVar(value=0)
+        self.gauss_int = tk.IntVar(value=0)
+        self.bck_sub = tk.IntVar(value=0)
+        self.bck_noise = tk.IntVar(value=0)
+        self.peak_qual = tk.IntVar(value=0)
+        self.create_figure = "True"
+
+        self.master = master
         self.counter = tk.IntVar(value=0)
         self.functions = Functions(self)
 
@@ -106,10 +119,8 @@ class HappyToolsGui(object):
             background_image.axis('off')
             self.fig.set_tight_layout(True)
             background_image.imshow(img)       
-        self.progress = ttk.Progressbar(master, orient="horizontal",
-            length=1000, mode="determinate", variable=self.counter,
-            maximum=100)
-        self.progress.pack(fill=tk.X)
+        self.progress = progressbar.SimpleProgressBar(self)
+        self.progress.bar.pack(fill=tk.X)
 
         # QUIT
         def close():
@@ -133,6 +144,7 @@ class HappyToolsGui(object):
         menu.add_cascade(label="Process", menu=processmenu)
         processmenu.add_command(label="Calibrate Chromatogram", command=self.calibrate_chromatogram)
         processmenu.add_command(label="Quantify Chromatogram", command=self.quantify_chromatogram)
+        processmenu.add_command(label="Select Outputs", command=self.select_outputs)
 
         advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced", menu=advancedmenu)
@@ -178,22 +190,26 @@ class HappyToolsGui(object):
         self.settings.settings_popup(self.settings)
 
     def calibrate_chromatogram(self):
-        self.counter.set(0)
-        self.cal_file = tk.StringVar()
-        self.cal_file = filedialog.askopenfilename(title="Select Calibration File")
-        self.reference = self.functions.read_peak_list(self.cal_file)
-        for index, data in enumerate(self.data):
+        try:
+            self.cal_file = tk.StringVar()
+            self.cal_file = filedialog.askopenfilename(title="Select Calibration File")
+            self.reference = self.functions.read_peak_list(self.cal_file)
 
-            progress = (float(index) / len(self.data))*100
-            self.counter.set(progress)
-            self.progress.update()
+            self.progress.reset_bar(self)
+            for index, data in enumerate(self.data):
 
-            self.time_pairs = self.functions.find_peak(self, data)
-            self.function = self.functions.determine_calibration_function(self)
-            data = self.functions.apply_calibration_function(self, data)
+                progress = (float(index) / len(self.data))*100
+                self.counter.set(progress)
+                self.progress.update_progress_bar(self)
 
-        self.counter.set(100)
-        self.data[0].plot_data(self.data, self.fig, self.canvas)
+                self.time_pairs = self.functions.find_peak(self, data)
+                self.function = self.functions.determine_calibration_function(self)
+                data = self.functions.apply_calibration_function(self, data)
+
+            self.progress.fill_bar(self)
+            self.data[0].plot_data(self.data, self.fig, self.canvas)
+        except AttributeError:
+            pass
 
     def open_batch_window(self):
         batchWindow(self)
@@ -206,32 +222,29 @@ class HappyToolsGui(object):
             pass
 
     def quantify_chromatogram(self):
-        self.counter.set(0)
-        self.batch_folder = tk.StringVar(value=getcwd())
-        self.abs_int = tk.IntVar(value=1)
-        self.rel_int = tk.IntVar(value=1)
-        self.gauss_int = tk.IntVar(value=1)
-        self.bck_sub = tk.IntVar(value=1)
-        self.bck_noise = tk.IntVar(value=1)
-        self.peak_qual = tk.IntVar(value=1)
-        self.quant_file = tk.StringVar()
-        self.create_figure = "True"
-        self.results = []
+        try:
+            self.results = []
+            self.quant_file = filedialog.askopenfilename(title="Select Quantitation File")
+            self.reference = self.functions.read_peak_list(self.quant_file)
 
-        self.quant_file = filedialog.askopenfilename(title="Select Quantitation File")
-        self.reference = self.functions.read_peak_list(self.quant_file)
-        for index, data in enumerate(self.data):
+            self.progress.reset_bar(self)        
+            for index, data in enumerate(self.data):
 
-            progress = (float(index) / len(self.data))*100
-            self.counter.set(progress)
-            self.progress.update()
+                progress = (float(index) / len(self.data))*100
+                self.counter.set(progress)
+                self.progress.update_progress_bar(self)
 
-            self.results.append({'file':path.basename(data.filename), 'results': self.functions.quantify_chrom(self, data)})
+                self.results.append({'file':path.basename(data.filename), 'results': self.functions.quantify_chrom(self, data)})
 
-        self.output = Output(self)
-        self.output.init_output_file(self)
-        self.output.build_output_file(self)
-        self.counter.set(100)
+            self.output = Output(self)
+            self.output.init_output_file(self)
+            self.output.build_output_file(self)
+            self.progress.fill_bar(self)
+        except AttributeError:
+            pass
+
+    def select_outputs(self):
+        OutputWindow(self)
 
     def smooth_chromatogram(self):
         try:
@@ -239,7 +252,6 @@ class HappyToolsGui(object):
             self.data[0].plot_data(self.data, self.fig, self.canvas)
         except AttributeError:
             pass
-        print("Done")
 
     def save_chromatogram(self):
         try:

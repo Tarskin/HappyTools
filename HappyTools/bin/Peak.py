@@ -1,4 +1,4 @@
-from HappyTools.util.Math import Math
+from HappyTools.util.math import Math
 from bisect import bisect_left, bisect_right
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit

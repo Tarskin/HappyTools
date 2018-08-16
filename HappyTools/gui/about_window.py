@@ -1,4 +1,4 @@
-import HappyTools.gui.Version as version
+import HappyTools.gui.version as version
 try:
     # Python 2
     import Tkinter as tk
