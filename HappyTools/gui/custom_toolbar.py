@@ -10,25 +10,30 @@ from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg
 class CustomToolbar(NavigationToolbar2TkAgg):
     def __init__(self, canvas_, parent_):
         self.toolitems = (
-            ('Home',        'Reset original view',                          'home',         'home'),
-            ('Back',        'Back to previous view',                        'back',         'back'),
-            ('Forward',     'Forward to next view',                         'forward',      'forward'),
-            ('Pan',         'Pan axes with left mouse, zoom with right',    'move',         'pan'),
-            ('Zoom',        'Zoom to rectangle',                            'zoom_to_rect', 'zoom'),
-            ('Axes',        'Define the X- and Y-axis limits',              'subplots',     'plot_axes'),
-            ('Subplots',    'Configure subplots',                           'subplots',     'configure_subplots'),
-            ('Save',        'Save the figure',                              'filesave',     'save_figure'),
+            ('Home', 'Reset original view', 'home', 'home'),
+            ('Back', 'Back to previous view', 'back', 'back'),
+            ('Forward', 'Forward to next view', 'forward', 'forward'),
+            ('Pan', 'Pan axes with left mouse, zoom with right', 'move',
+                'pan'),
+            ('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'),
+            ('Axes', 'Define the X- and Y-axis limits', 'subplots',
+                'plot_axes'),
+            ('Subplots', 'Configure subplots', 'subplots',
+                'configure_subplots'),
+            ('Save', 'Save the figure', 'filesave', 'save_figure'),
         )
         NavigationToolbar2TkAgg.__init__(self, canvas_, parent_)
 
     def plot_axes(self):
         def close():
             try:
-                self.canvas.figure.axes[0].set_xlim([float(x_min_window.get()),float(x_max_window.get())])
+                self.canvas.figure.axes[0].set_xlim([float(x_min_window.get()),
+                    float(x_max_window.get())])
             except ValueError:
                 pass
             try:
-                self.canvas.figure.axes[0].set_ylim([float(y_min_window.get()),float(y_max_window.get())])
+                self.canvas.figure.axes[0].set_ylim([float(y_min_window.get()),
+                    float(y_max_window.get())])
             except ValueError:
                 pass
             self.canvas.draw()

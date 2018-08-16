@@ -4,8 +4,9 @@ import re
 import operator
 import numpy as np
 
+
 class Trace(object):
-    
+
     def open_chrom(self, file):
         """Read a chromatogram and return the data.
 
@@ -16,26 +17,34 @@ class Trace(object):
         Keyword arguments:
         file -- unicode string
         """
-        with open(file,'r') as fr:
+        with open(file, 'r') as fr:
             chrom_data = []
             if 'txt' in file:
                 for line in fr:
-                    if line[0].isdigit() == True:
+                    if line[0].isdigit() is True:
                         line_chunks = line.strip().split()
-                        # Number based regex splitting to get rid of thousand seperators
-                        time_sep = re.sub(r'-?\d', '', line_chunks[0], flags=re.U)
+                        """ Number based regex splitting to get rid of
+                        thousand seperators
+                        """
+                        time_sep = re.sub(r'-?\d', '', line_chunks[0],
+                                          flags=re.U)
                         for sep in time_sep[:-1]:
                             line_chunks[0] = line_chunks[0].replace(sep, '')
                         if time_sep:
-                            line_chunks[0] = line_chunks[0].replace(time_sep[-1], '.')
-                        int_sep = re.sub(r'-?\d', '', line_chunks[-1], flags=re.U)
+                            line_chunks[0] = line_chunks[0].replace(
+                                time_sep[-1], '.')
+                        int_sep = re.sub(r'-?\d', '', line_chunks[-1],
+                                         flags=re.U)
                         for sep in int_sep[:-1]:
-                            line_chunks[-1] = line_chunks[-1].replace(sep[-1], '')
+                            line_chunks[-1] = line_chunks[-1].replace(
+                                sep[-1], '')
                         if int_sep:
-                            line_chunks[-1] = line_chunks[-1].replace(int_sep[-1], '.')
+                            line_chunks[-1] = line_chunks[-1].replace(
+                                int_sep[-1], '.')
                         # End of regex based splitting
                         try:
-                            chrom_data.append((float(line_chunks[0]),float(line_chunks[-1])))
+                            chrom_data.append((float(line_chunks[0]),
+                                               float(line_chunks[-1])))
                         except UnicodeEncodeError:
                             print("Omitting line: "+str(line))
             elif 'arw' in file:
@@ -43,16 +52,18 @@ class Trace(object):
                     lines = line.split('\r')
                 for line in lines:
                     try:
-                        if line[0][0].isdigit() == False:
+                        if line[0][0].isdigit() is False:
                             pass
                         else:
                             line_chunks = line.rstrip()
                             line_chunks = line_chunks.split()
-                            chrom_data.append((float(line_chunks[0]),float(line_chunks[1])))
+                            chrom_data.append((float(line_chunks[0]),
+                                               float(line_chunks[1])))
                     except IndexError:
                         pass
             else:
-                print("Incorrect inputfile format, please upload a raw data 'txt' or 'arw' file.")
+                print("Incorrect inputfile format, please upload a raw " +
+                      "data 'txt' or 'arw' file.")
         return chrom_data
 
     def baseline_correction(self, master):
@@ -71,32 +82,34 @@ class Trace(object):
         uplifted chromatogram is returned to the calling function.
 
         Keyword arguments:
-        data -- 
+        data --
         """
 
         for i in master.data:
             # Background determination
             background = []
-            chunks = [i.data[x:x+master.settings.points] for x in xrange(0, len(i.data), master.settings.points)]
+            chunks = [i.data[x:x+master.settings.points] for x in xrange(
+                0, len(i.data), master.settings.points)]
             for j in chunks:
                 buff1, buff2 = zip(*j)
-                min_index, min_value = min(enumerate(buff2), key=operator.itemgetter(1))
+                min_index, min_value = min(enumerate(buff2),
+                                           key=operator.itemgetter(1))
                 if buff1[0] > master.settings.start and buff1[-1] < master.settings.end:
                     background.append((buff1[min_index], buff2[min_index]))
             time, intensity = zip(*background)
-            newX = np.linspace(min(time), max(time),100)
+            newX = np.linspace(min(time), max(time), 100)
             func = np.polyfit(time, intensity, master.settings.baseline_order)
             p = np.poly1d(func)
 
-            # Transform 
-            time = [a for a,b in i.data]
-            new_chrom_intensity = [b-p(a) for a,b in i.data]
-                
+            # Transform
+            time = [a for a, b in i.data]
+            new_chrom_intensity = [b-p(a) for a, b in i.data]
+
             # Uplift
             low = bisect_left(time, master.settings.start)
             high = bisect_right(time, master.settings.end)
-            offset = abs(min(min(new_chrom_intensity[low:high]),0))
-            i.data = zip(time,[x+offset for x in new_chrom_intensity])
+            offset = abs(min(min(new_chrom_intensity[low:high]), 0))
+            i.data = zip(time, [x+offset for x in new_chrom_intensity])
 
         # Return
         return master.data
@@ -107,8 +120,8 @@ class Trace(object):
         # Apply Savitzky-Golay filter
         for i in master.data:
             time, intensity = zip(*i.data)
-            new = savgol_filter(intensity,21,3)
-            i.data = zip(time,new)
+            new = savgol_filter(intensity, 21, 3)
+            i.data = zip(time, new)
 
         # Return
         return master.data
@@ -119,10 +132,12 @@ class Trace(object):
         # Normalize to maximum intensity
         for i in master.data:
             time, intensity = zip(*i.data)
-            maximum = max(intensity[bisect_left(time, master.settings.start):bisect_right(time, master.settings.end)])
-            normalized_intensity = [b/maximum for a,b, in i.data]
+            maximum = max(intensity[bisect_left(
+                time, master.settings.start):bisect_right(
+                time, master.settings.end)])
+            normalized_intensity = [b/maximum for a, b, in i.data]
             i.data = zip(time, normalized_intensity)
-        
+
         # Return
         return master.data
 
@@ -130,7 +145,10 @@ class Trace(object):
         """ TODO
         """
         for i in master.data:
-            with open(i.filename,'w') as fw:
+            with open(i.filename, 'w') as fw:
                 for data_point in i.data:
-                    fw.write(str(format(data_point[0],'0.'+str(master.settings.decimal_numbers)+'f'))+"\t"+str(format(data_point[1],'0.'+str(master.settings.decimal_numbers)+'f'))+"\n")
-
+                    fw.write(
+                        str(format(data_point[0], '0.' +
+                            str(master.settings.decimal_numbers)+'f'))+"\t" +
+                        str(format(data_point[1], '0.' +
+                            str(master.settings.decimal_numbers)+'f'))+"\n")

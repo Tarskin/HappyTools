@@ -9,10 +9,10 @@ from numpy import exp # Temporary
 from sys import maxint
 from math import sqrt, log
 
+
 class Peak(object):
     def __init__(self, master):
-        #self.settings = master.settings
-        #self.data = master.data
+        self.settings = master.settings
 
         self.peak = master.peak
         self.time = master.time
@@ -31,36 +31,40 @@ class Peak(object):
         self.center = 0.
         self.actual_time = 0.
         self.total_area = 0.
-        self.coeff = 0. 
-        
+        self.coeff = 0.
+
         time, intensity = zip(*master.data.data)
         self.low = bisect_left(time, self.time-self.window)
         self.high = bisect_right(time, self.time+self.window)
 
-        self.low_background = bisect_left(time, max(self.time-master.settings.background_window, master.settings.start))
-        self.high_background = bisect_right(time, min(self.time+master.settings.background_window, master.settings.end))
+        self.low_background = bisect_left(time, max(
+            self.time-self.settings.background_window, self.settings.start))
+        self.high_background = bisect_right(time, min(
+            self.time+self.settings.background_window, self.settings.end))
 
     def background_correct(self, master):
         time, intensity = zip(*master.data.data)
         intensity = [x+abs(self.background) for x in intensity]
-        master.data.data = zip(time,intensity)
+        master.data.data = zip(time, intensity)
 
     def determine_background_and_noise(self, master):
-        time, intensity = zip(*master.data.data[self.low_background:self.high_background])
+        time, intensity = zip(*master.data.data[self.low_background:
+            self.high_background])
 
-        if master.settings.background_noise_method == "NOBAN":
-            raise NotImplementedError("This feature is not implemented in the refactor yet.")
+        if self.settings.background_noise_method == "NOBAN":
+            raise NotImplementedError("This feature is not implemented in "+
+                "the refactor yet.")
 
-        elif master.settings.background_noise_method == "MT":
+        elif self.settings.background_noise_method == "MT":
             background = maxint
             noise = 0
-            for index,i in enumerate(intensity[:-master.settings.slicepoints]):
-                buffer = intensity[index:index+master.settings.slicepoints]
+            for index, i in enumerate(intensity[:-self.settings.slicepoints]):
+                buffer = intensity[index:index+self.settings.slicepoints]
                 if mean(buffer) < background:
                     background = mean(buffer)
-                    if master.settings.noise == "MM":
+                    if self.settings.noise == "MM":
                         noise = max(buffer)-min(buffer)
-                    elif master.settings.noise == "RMS":
+                    elif self.settings.noise == "RMS":
                         noise = std(buffer)
             if noise == 0:
                 noise = 1
@@ -71,9 +75,10 @@ class Peak(object):
     def determine_background_area(self, master):
         background_area = 0
         time, intensity = zip(*master.data.data)
-        for index,j in enumerate(intensity[self.low:self.high]):
+        for index, j in enumerate(intensity[self.low:self.high]):
             try:
-                background_area += max(self.background,0) * (time[self.low+index]-time[self.low+index-1])
+                background_area += max(self.background, 0) * (
+                    time[self.low+index]-time[self.low+index-1])
             except IndexError:
                 continue
 
@@ -84,11 +89,14 @@ class Peak(object):
         x_data, y_data = zip(*master.data_subset)
         gaussian_area = 0.
 
-        new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
+        new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-
+            x_data[0]))
         new_gauss_y = self.gauss_function(new_gauss_x, *self.coeff)
 
         for index, j in enumerate(intensity[self.low:self.high]):
-            gaussian_area += max(self.gauss_function(time[self.low+index],*self.coeff),0) * (time[self.low+index]-time[self.low+index-1])
+            gaussian_area += max(self.gauss_function(time[self.low+index],
+                *self.coeff), 0) * (time[self.low+index]-
+                time[self.low+index-1])
 
         self.gaussian_area = gaussian_area
 
@@ -98,16 +106,20 @@ class Peak(object):
         x_data, y_data = zip(*master.data_subset)
         peak = array(x_data)[y_data > exp(-0.5)*max(y_data)]
         guess_sigma = 0.5*(max(peak) - min(peak))
-        new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-x_data[0]))
-        p0 = [numpy_max(y_data), x_data[argmax(y_data)],guess_sigma]
+        new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-
+            x_data[0]))
+        p0 = [numpy_max(y_data), x_data[argmax(y_data)], guess_sigma]
         try:
-            coeff, var_matrix = curve_fit(self.gauss_function, x_data, y_data, p0)
+            coeff, var_matrix = curve_fit(self.gauss_function, x_data, y_data,
+                p0)
 
         except TypeError:
-            master.log("Not enough data points to fit a Gaussian to peak: "+str(self.peak))
+            master.log("Not enough data points to fit a Gaussian to peak: "+
+                str(self.peak))
 
         except RuntimeError:
-            master.log("Unable to determine residuals for peak: "+str(self.peak))
+            master.log("Unable to determine residuals for peak: "+
+                str(self.peak))
 
         self.coeff = coeff
 
@@ -126,26 +138,26 @@ class Peak(object):
 
     def determine_gaussian_parameters(self, master):
         """Calculate the FWHM.
-        
+
         This function will calculate the FWHM based on the following formula
         FWHM = 2*sigma*sqrt(2*ln(2)). The function will return a dictionary
         with the fwhm ('fwhm'), the Gaussian peak center ('center') and the
         +/- width, from the peak center ('width').
-        
+
         Keyword arguments:
         coeff -- coefficients as calculated by SciPy curve_fit
         """
         fwhm = abs(2*self.coeff[2]*sqrt(2*log(2)))
         width = 0.5*fwhm
         center = self.coeff[1]
-        
+
         self.fwhm = fwhm
         self.width = width
         self.center = center
 
     def determine_height(self, master):
         edge = self.center+self.width
-        height = master.gauss_function(edge, *self.coeff)# + self.background
+        height = master.gauss_function(edge, *self.coeff)
 
         self.height = height
 
@@ -153,9 +165,10 @@ class Peak(object):
         peak_area = 0.
         time, intensity = zip(*master.data.data)
 
-        for index,j in enumerate(intensity[self.low:self.high]):
+        for index, j in enumerate(intensity[self.low:self.high]):
             try:
-                peak_area += max(j,0) * (time[self.low+index]-time[self.low+index-1])
+                peak_area += max(j, 0) * (time[self.low+index]-time[
+                    self.low+index-1])
             except IndexError:
                 continue
 
@@ -184,12 +197,13 @@ class Peak(object):
         signal_noise = (maximum_point - self.background) / self.noise
 
         self.signal_noise = signal_noise
-        
+
     def determine_total_area(self, master):
         total_area = 0.
         time, intensity = zip(*master.data.data)
 
-        for index,j in enumerate(intensity[self.low:self.high]):
-            total_area += max(j-self.background,0) * (time[self.low+index]-time[self.low+index-1])
+        for index, j in enumerate(intensity[self.low:self.high]):
+            total_area += max(j-self.background, 0) * (time[self.low+index]-
+                time[self.low+index-1])
 
         self.total_area = total_area

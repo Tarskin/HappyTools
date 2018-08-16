@@ -7,7 +7,9 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+#
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
@@ -16,7 +18,9 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 
 # General imports
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg, NavigationToolbar2TkAgg
+)
 try:
     # Python 2
     import Tkinter as tk
@@ -25,7 +29,7 @@ try:
 except ImportError:
     # Python 3
     import tkinter as tk
-    import tk.filedialog as filedialog                                  
+    import tk.filedialog as filedialog
     import tk.ttk as tk
 import tkMessageBox
 from glob import glob
@@ -59,10 +63,12 @@ directories = [
     path.join(getcwd(), "HappyTools", "util")
 ]
 
+
 # Function overwrites
 def dynamic_update(foo):
     pass
 NavigationToolbar2TkAgg.dynamic_update = dynamic_update
+
 
 # Applicatiom
 class HappyToolsGui(object):
@@ -90,9 +96,11 @@ class HappyToolsGui(object):
         # ACCESS CHECK
         self.directories = directories
         if not self.functions.check_disk_access(self):
-            tkMessageBox.showinfo("Access Error", "HappyTools does not have sufficient disk access rights. Please close "+
-                    "HappyTools and check if the current user has read/write access to all folders in the Happytools "+
-                    "folder.")
+            tkMessageBox.showinfo(
+                "Access Error", "HappyTools does " +
+                "not have sufficient disk access rights. Please close " +
+                "HappyTools and check if the current user has read/" +
+                "write access to all folders in the Happytools folder.")
 
         # SETTINGS
         self.settings = Settings(self)
@@ -108,9 +116,12 @@ class HappyToolsGui(object):
 
         # FRAME
         frame = tk.Frame(master)
-        master.title("HappyTools "+str(version.version)+" (Build "+str(version.build)+")")
-        iconbitmap = path.join(getcwd(), "HappyTools", "gui", "assets", "Icon.ico")
-        backgroundimage = path.join(getcwd(), "HappyTools", "gui", "assets", "UI.png")
+        master.title("HappyTools "+str(version.version) +
+                     " (Build "+str(version.build)+")")
+        iconbitmap = path.join(getcwd(), "HappyTools", "gui", "assets",
+                               "Icon.ico")
+        backgroundimage = path.join(getcwd(), "HappyTools", "gui",
+                                    "assets", "UI.png")
         if path.isfile(iconbitmap):
             master.iconbitmap(default=iconbitmap)
         if path.isfile(backgroundimage):
@@ -118,7 +129,7 @@ class HappyToolsGui(object):
             img = image.imread(backgroundimage)
             background_image.axis('off')
             self.fig.set_tight_layout(True)
-            background_image.imshow(img)       
+            background_image.imshow(img)
         self.progress = progressbar.SimpleProgressBar(self)
         self.progress.bar.pack(fill=tk.X)
 
@@ -134,17 +145,25 @@ class HappyToolsGui(object):
 
         filemenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="File", menu=filemenu)
-        filemenu.add_command(label="Open Chromatogram", command=self.open_chromatogram_window)
-        filemenu.add_command(label="Smooth Chromatogram", command=self.smooth_chromatogram)
-        filemenu.add_command(label="Baseline Correction", command=self.baseline_correction)
-        filemenu.add_command(label="Normalize chromatogram", command=self.normalize_chromatogram)
-        filemenu.add_command(label="Save Chromatogram", command=self.save_chromatogram)
+        filemenu.add_command(label="Open Chromatogram",
+                             command=self.open_chromatogram_window)
+        filemenu.add_command(label="Smooth Chromatogram",
+                             command=self.smooth_chromatogram)
+        filemenu.add_command(label="Baseline Correction",
+                             command=self.baseline_correction)
+        filemenu.add_command(label="Normalize chromatogram",
+                             command=self.normalize_chromatogram)
+        filemenu.add_command(label="Save Chromatogram",
+                             command=self.save_chromatogram)
 
         processmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Process", menu=processmenu)
-        processmenu.add_command(label="Calibrate Chromatogram", command=self.calibrate_chromatogram)
-        processmenu.add_command(label="Quantify Chromatogram", command=self.quantify_chromatogram)
-        processmenu.add_command(label="Select Outputs", command=self.select_outputs)
+        processmenu.add_command(label="Calibrate Chromatogram",
+                                command=self.calibrate_chromatogram)
+        processmenu.add_command(label="Quantify Chromatogram",
+                                command=self.quantify_chromatogram)
+        processmenu.add_command(label="Select Outputs",
+                                command=self.select_outputs)
 
         advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced", menu=advancedmenu)
@@ -154,24 +173,18 @@ class HappyToolsGui(object):
 
         batchmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Batch", menu=batchmenu)
-        batchmenu.add_command(label="Batch Process", command=self.open_batch_window)
+        batchmenu.add_command(label="Batch Process",
+                              command=self.open_batch_window)
 
         settingsmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Settings", menu=settingsmenu)
-        settingsmenu.add_command(label="Settings", command=self.open_settings_window)
+        settingsmenu.add_command(label="Settings",
+                                 command=self.open_settings_window)
 
         aboutmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="About", menu=aboutmenu)
-        aboutmenu.add_command(label="About HappyTools", command=self.open_about_window)
-
-        #if glob(path.join(".","plugins","*.py")):
-            #import importlib
-            #pluginsmenu = tk.Menu(menu,tearoff=0)
-            #menu.add_cascade(label="Plugins", menu=pluginsmenu)
-            #for file in glob(path.join(".","plugins","*.py")):
-                #moduleName = path.split(file)[-1].split(".")[0]
-                #module = importlib.import_module(moduleName)
-                #pluginsmenu.add_command(label=moduleName, command=functions.makeFunc(module))
+        aboutmenu.add_command(label="About HappyTools",
+                              command=self.open_about_window)
 
     def open_about_window(self):
         AboutWindow(tk.Toplevel())
@@ -192,7 +205,8 @@ class HappyToolsGui(object):
     def calibrate_chromatogram(self):
         try:
             self.cal_file = tk.StringVar()
-            self.cal_file = filedialog.askopenfilename(title="Select Calibration File")
+            self.cal_file = filedialog.askopenfilename(
+                title="Select Calibration File")
             self.reference = self.functions.read_peak_list(self.cal_file)
 
             self.progress.reset_bar(self)
@@ -224,17 +238,19 @@ class HappyToolsGui(object):
     def quantify_chromatogram(self):
         try:
             self.results = []
-            self.quant_file = filedialog.askopenfilename(title="Select Quantitation File")
+            self.quant_file = filedialog.askopenfilename(
+                title="Select Quantitation File")
             self.reference = self.functions.read_peak_list(self.quant_file)
 
-            self.progress.reset_bar(self)        
+            self.progress.reset_bar(self)
             for index, data in enumerate(self.data):
 
                 progress = (float(index) / len(self.data))*100
                 self.counter.set(progress)
                 self.progress.update_progress_bar(self)
 
-                self.results.append({'file':path.basename(data.filename), 'results': self.functions.quantify_chrom(self, data)})
+                self.results.append({'file': path.basename(data.filename),
+                                     'results': self.functions.quantify_chrom(self, data)})
 
             self.output = Output(self)
             self.output.init_output_file(self)
@@ -268,7 +284,8 @@ class HappyToolsGui(object):
             pass
 
     def foo(self):
-        raise NotImplementedError("This feature is not implemented in the refactor yet.")
+        raise NotImplementedError("This feature is not implemented in the " +
+                                  "refactor yet.")
 
 # Call the main app
 if __name__ == "__main__":
