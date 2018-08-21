@@ -305,8 +305,6 @@ class Functions(object):
                     except ValueError:
                         self.log("Ignoring line: "+str(line)+" from file: "+
                             str(file_name))
-
-                        pass
         except IOError:
             self.log("The selected reference file "+str(file)+" could not "+
                 "be opened.")
