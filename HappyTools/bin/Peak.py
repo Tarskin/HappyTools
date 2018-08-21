@@ -1,6 +1,5 @@
 from HappyTools.util.fitting import Fitting
 from bisect import bisect_left, bisect_right
-from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
 from numpy import argmax, array, linspace, mean, std
 from numpy import max as numpy_max

@@ -1,5 +1,4 @@
 from HappyTools.gui.output_window import OutputWindow
-import HappyTools.gui.version as version
 try:
     # Python 2
     import Tkinter as tk

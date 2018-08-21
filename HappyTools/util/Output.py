@@ -205,7 +205,6 @@ class Output(object):
             fw.write(self.header)
             for i in master.results:
                 fw.write(i['file'])
-                total = 0.
                 for j in i['results']:
                     fw.write("\t"+str(j['peak_noise']))
                 fw.write("\n")

@@ -25,14 +25,11 @@ try:
     # Python 2
     import Tkinter as tk
     import tkFileDialog as filedialog
-    import ttk
 except ImportError:
     # Python 3
     import tkinter as tk
     import tk.filedialog as filedialog
-    import tk.ttk as tk
 import tkMessageBox
-from glob import glob
 from matplotlib import image, figure
 from os import path, getcwd
 
@@ -49,7 +46,6 @@ from HappyTools.gui.settings import Settings
 from HappyTools.gui.output_window import OutputWindow
 import HappyTools.gui.progress_bar as progressbar
 import HappyTools.gui.version as version
-import HappyTools.gui.debug as debug
 
 # Class imports
 from HappyTools.bin.chromatogram import Chromatogram
@@ -115,7 +111,7 @@ class HappyToolsGui(object):
         self.canvas.draw()
 
         # FRAME
-        frame = tk.Frame(master)
+        tk.Frame(master)
         master.title("HappyTools "+str(version.version) +
                      " (Build "+str(version.build)+")")
         iconbitmap = path.join(getcwd(), "HappyTools", "gui", "assets",
