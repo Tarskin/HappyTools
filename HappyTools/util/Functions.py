@@ -3,6 +3,7 @@ import HappyTools.gui.version as version
 import HappyTools.gui.debug as debug
 from HappyTools.gui.tooltip import ToolTip
 from HappyTools.util.pdf import Pdf
+from HappyTools.util.fitting import Fitting
 from HappyTools.util.output import Output
 from HappyTools.bin.chromatogram import Chromatogram
 from HappyTools.bin.peak import Peak
@@ -10,12 +11,10 @@ from HappyTools.bin.peak import Peak
 from datetime import datetime
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.signal import argrelextrema
-from numpy import polyfit, poly1d, linspace, greater, less
-from numpy import exp  # only till gauss function gets moved to math
+from numpy import greater, less, linspace, poly1d, polyfit
 from bisect import bisect_left, bisect_right
 from os import path, W_OK, access
 from glob import glob
-
 
 class Functions(object):
     def __init__(self, master):
@@ -172,19 +171,6 @@ class Functions(object):
 
         return time_pairs
 
-    def gauss_function(self, x, *p):
-        """Define and return a Gaussian function.
-
-        This function returns the value of a Gaussian function, using the
-        A, mu and sigma value that is provided as *p.
-
-        Keyword arguments:
-        x -- number
-        p -- A, mu and sigma numbers
-        """
-        A, mu, sigma = p
-        return A*exp(-(x-mu)**2/(2.*sigma**2))
-
     def get_calibration_files(self, master):
         """ TODO
         """
@@ -214,6 +200,10 @@ class Functions(object):
             with open(debug.logFile, 'a') as fw:
                 fw.write(str(datetime.now().replace(microsecond=0))+"\t"+
                     str(message)+"\n")
+
+    def peak_detection(self, master):
+        raise NotImplementedError("This feature is not implemented in the " +
+                                  "refactor yet.")
 
     def quantify_chrom(self, master, data):
         """ TODO
@@ -323,6 +313,14 @@ class Functions(object):
             self.log("The selected reference file "+str(file)+" could not "+
                 "be opened.")
         return peaks
+
+    def save_calibrants(self, master):
+        raise NotImplementedError("This feature is not implemented in the " +
+                                  "refactor yet.")
+
+    def save_annotation(self, master):
+        raise NotImplementedError("This feature is not implemented in the " +
+                                  "refactor yet.")
 
     def subset_data(self, master):
 

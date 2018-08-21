@@ -167,9 +167,12 @@ class HappyToolsGui(object):
 
         advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced", menu=advancedmenu)
-        advancedmenu.add_command(label="Peak Detection", command=self.foo)
-        advancedmenu.add_command(label="Save Calibrants", command=self.foo)
-        advancedmenu.add_command(label="Save Annotation", command=self.foo)
+        advancedmenu.add_command(label="Peak Detection", 
+                                 command=self.peak_detection)
+        advancedmenu.add_command(label="Save Calibrants", 
+                                 command=self.save_calibrants)
+        advancedmenu.add_command(label="Save Annotation", 
+                                 command=self.save_annotation)
 
         batchmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Batch", menu=batchmenu)
@@ -197,14 +200,13 @@ class HappyToolsGui(object):
                 foo = Chromatogram(file)
                 data.append(foo)
             self.data = data
-            self.data[0].plot_data(data, self.fig, self.canvas)
+            self.data[0].plot_data(self)
 
     def open_settings_window(self):
         self.settings.settings_popup(self.settings)
 
     def calibrate_chromatogram(self):
         try:
-            self.cal_file = tk.StringVar()
             self.cal_file = filedialog.askopenfilename(
                 title="Select Calibration File")
             self.reference = self.functions.read_peak_list(self.cal_file)
@@ -221,17 +223,18 @@ class HappyToolsGui(object):
                 data = self.functions.apply_calibration_function(self, data)
 
             self.progress.fill_bar(self)
-            self.data[0].plot_data(self.data, self.fig, self.canvas)
+            self.data[0].plot_data(self)
         except AttributeError:
             pass
 
+    @classmethod
     def open_batch_window(self):
         batchWindow(self)
 
     def normalize_chromatogram(self):
         try:
             self.data = Trace().norm_chrom(self)
-            self.data[0].plot_data(self.data, self.fig, self.canvas)
+            self.data[0].plot_data(self)
         except AttributeError:
             pass
 
@@ -259,13 +262,23 @@ class HappyToolsGui(object):
         except AttributeError:
             pass
 
+    def peak_detection(self):
+        self.functions.peak_detection(self)
+
+    def save_annotation(self):
+        self.functions.save_annotation(self)
+
+    def save_calibrants(self):
+        self.functions.save_calibrants(self)
+
+    @classmethod
     def select_outputs(self):
         OutputWindow(self)
 
     def smooth_chromatogram(self):
         try:
             self.data = Trace().smooth_chrom(self)
-            self.data[0].plot_data(self.data, self.fig, self.canvas)
+            self.data[0].plot_data(self)
         except AttributeError:
             pass
 
@@ -279,13 +292,9 @@ class HappyToolsGui(object):
     def baseline_correction(self):
         try:
             self.data = Trace().baseline_correction(self)
-            self.data[0].plot_data(self.data, self.fig, self.canvas)
+            self.data[0].plot_data(self)
         except AttributeError:
             pass
-
-    def foo(self):
-        raise NotImplementedError("This feature is not implemented in the " +
-                                  "refactor yet.")
 
 # Call the main app
 if __name__ == "__main__":

@@ -1,9 +1,8 @@
-from HappyTools.util.math import Math
+#from HappyTools.util.math import Math
 from bisect import bisect_left, bisect_right
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
-from scipy.signal import argrelextrema
-from numpy import argmax, array, linspace, polyfit, poly1d, mean, std
+from numpy import argmax, array, linspace, mean, std
 from numpy import max as numpy_max
 from numpy import exp # Temporary
 from sys import maxint
