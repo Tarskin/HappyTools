@@ -163,11 +163,11 @@ class HappyToolsGui(object):
 
         advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced", menu=advancedmenu)
-        advancedmenu.add_command(label="Peak Detection", 
+        advancedmenu.add_command(label="Peak Detection",
                                  command=self.peak_detection)
-        advancedmenu.add_command(label="Save Calibrants", 
+        advancedmenu.add_command(label="Save Calibrants",
                                  command=self.save_calibrants)
-        advancedmenu.add_command(label="Save Annotation", 
+        advancedmenu.add_command(label="Save Annotation",
                                  command=self.save_annotation)
 
         batchmenu = tk.Menu(menu, tearoff=0)
