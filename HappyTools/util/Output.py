@@ -1,6 +1,6 @@
 import HappyTools.gui.version as version
 from datetime import datetime
-from os import path, W_OK
+from os import path
 
 class Output(object):
     def __init__(self, master):
@@ -28,7 +28,7 @@ class Output(object):
                 header = header + "\t"+str(j['time'])
             header = header + "\n"
             break
-        self.header = header            
+        self.header = header
 
         if master.abs_int.get() == 1:
             if master.bck_sub.get() == 0:

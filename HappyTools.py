@@ -75,7 +75,7 @@ class HappyToolsGui(object):
     @classmethod
     def run(cls):
         root = tk.Tk()
-        app = HappyToolsGui(root)
+        HappyToolsGui(root)
         root.mainloop()
 
     def __init__(self, master):
@@ -227,7 +227,6 @@ class HappyToolsGui(object):
         except AttributeError:
             pass
 
-    @classmethod
     def open_batch_window(self):
         batchWindow(self)
 

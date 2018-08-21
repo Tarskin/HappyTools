@@ -1,3 +1,4 @@
+from HappyTools.util.fitting import Fitting
 import HappyTools.gui.version as version
 import matplotlib.pyplot as plt
 
@@ -38,7 +39,7 @@ class Pdf(object):
         self.pdf.savefig(fig)
         plt.close(fig)
 
-    def plot_individual(self, master):      
+    def plot_individual(self, master):
         time, intensity = zip(*master.data.data)
         low = bisect_left(time, master.time-master.window)
         high = bisect_right(time, master.time+master.window)
@@ -49,10 +50,10 @@ class Pdf(object):
         new_y = f(new_x)
 
         new_gauss_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
-        new_gauss_y = master.gauss_function(new_gauss_x, *master.peak.coeff)
+        new_gauss_y = Fitting().gauss_function(new_gauss_x, *master.peak.coeff)
 
         fig =  plt.figure(figsize=(8, 6))
-        ax = fig.add_subplot(111)
+        fig.add_subplot(111)
         plt.plot(time[low:high], intensity[low:high], 'b*')
         plt.plot((new_x[0],new_x[-1]),(master.peak.background,master.peak.background),'red')
         plt.plot((new_x[0],new_x[-1]),(master.peak.background+master.peak.noise,master.peak.background+master.peak.noise),color='green')

@@ -1,4 +1,4 @@
-#from HappyTools.util.math import Math
+from HappyTools.util.fitting import Fitting
 from bisect import bisect_left, bisect_right
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
@@ -90,10 +90,10 @@ class Peak(object):
 
         new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-
             x_data[0]))
-        new_gauss_y = self.gauss_function(new_gauss_x, *self.coeff)
+        new_gauss_y = Fitting().gauss_function(new_gauss_x, *self.coeff)
 
         for index, j in enumerate(intensity[self.low:self.high]):
-            gaussian_area += max(self.gauss_function(time[self.low+index],
+            gaussian_area += max(Fitting().gauss_function(time[self.low+index],
                 *self.coeff), 0) * (time[self.low+index]-
                 time[self.low+index-1])
 
@@ -109,7 +109,7 @@ class Peak(object):
             x_data[0]))
         p0 = [numpy_max(y_data), x_data[argmax(y_data)], guess_sigma]
         try:
-            coeff, var_matrix = curve_fit(self.gauss_function, x_data, y_data,
+            coeff, var_matrix = curve_fit(Fitting().gauss_function, x_data, y_data,
                 p0)
 
         except TypeError:
@@ -121,19 +121,6 @@ class Peak(object):
                 str(self.peak))
 
         self.coeff = coeff
-
-    def gauss_function(self, x, *p):
-        """Define and return a Gaussian function.
-
-        This function returns the value of a Gaussian function, using the
-        A, mu and sigma value that is provided as *p.
-
-        Keyword arguments:
-        x -- number
-        p -- A, mu and sigma numbers
-        """
-        A, mu, sigma = p
-        return A*exp(-(x-mu)**2/(2.*sigma**2))
 
     def determine_gaussian_parameters(self, master):
         """Calculate the FWHM.
@@ -156,7 +143,7 @@ class Peak(object):
 
     def determine_height(self, master):
         edge = self.center+self.width
-        height = master.gauss_function(edge, *self.coeff)
+        height = Fitting().gauss_function(edge, *self.coeff)
 
         self.height = height
 
