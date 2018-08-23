@@ -10,8 +10,8 @@ HappyTools depends on NumPy, SciPy and matplotlib. NumPy and SciPy are used pred
 
 A set of video tutorials on how to use HappyTools will be available shortly and these can be found at <insert link once done>. We hope that you are interested in HappyTools and willing to give it a try!
 
-Developer information
+# Developer information
 If you would like to take part in HappyTools development, take a look at the file CONTRIBUTING.
 
-License information
+# License information
 See the file LICENSE.txt for information on the history of this software, terms & conditions for usage, and a DISCLAIMER OF ALL WARRANTIES.
