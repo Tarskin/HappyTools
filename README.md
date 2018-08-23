@@ -6,7 +6,9 @@ HappyTools is open-source software for researchers focussing on chromatography. 
 * Source: https://github.com/Tarskin/HappyTools
 * Bug reports: https://github.com/Tarskin/HappyTools/issues
 
-SciPy depends on NumPy, which provides convenient and fast N-dimensional array manipulation. SciPy is built to work with NumPy arrays, and provides many user-friendly and efficient numerical routines such as routines for numerical integration and optimization. Together, they run on all popular operating systems, are quick to install, and are free of charge. NumPy and SciPy are easy to use, but powerful enough to be depended upon by some of the world's leading scientists and engineers. If you need to manipulate numbers on a computer and display or publish the results, give SciPy a try!
+HappyTools depends on NumPy, SciPy and matplotlib. NumPy and SciPy are used predominantly for data fitting and numerical operations on arrays. Matplotlib is used to draw all of the graphical elements that are used/created by HappyTools in both the GUI and the PDf reports. HappyTools is designed to also work as a package, allowing easy access to all of the functionality of HappyTools. However, the initial design of the package focussed on the HappyTools application (HappyTools.py in package root) meaning that importing HappyTools as a package might not work as expected. Therefore, please report any issues that you might encounter on the issues page that is linked above!
+
+A set of video tutorials on how to use HappyTools will be available shortly and these can be found at <insert link once done>. We hope that you are interested in HappyTools and willing to give it a try!
 
 Developer information
 If you would like to take part in HappyTools development, take a look at the file CONTRIBUTING.
