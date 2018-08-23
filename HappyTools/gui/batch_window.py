@@ -41,7 +41,7 @@ class batchWindow(object):
 
         top = tk.top = tk.Toplevel()
         top.title("Batch Process")
-        top.protocol("WM_DELETE_WINDOW", lambda: close())
+        top.protocol("WM_DELETE_WINDOW", self.close)
 
         calibrationButton = tk.Button(top, text="Calibration File",
                                       width=20,
@@ -52,7 +52,7 @@ class batchWindow(object):
         calibrationLabel.grid(row=1, column=1)
 
         analyteButton = tk.Button(top, text="Analyte File",
-                                  width=20, 
+                                  width=20,
                                   command=self.set_analyte_file)
         analyteButton.grid(row=2, column=0, sticky=tk.W)
         analyteLabel = tk.Label(tk.top, textvariable=self.anal_file,
@@ -79,6 +79,7 @@ class batchWindow(object):
         closeButton.grid(row=5, column=1, sticky=tk.E)
 
         top.lift()
+        self.top = top
 
         # Tooltips
         self.functions.create_tooltip(
@@ -108,7 +109,7 @@ class batchWindow(object):
     def close(self):
         """Close the batch processing pop-up.
         """
-        top.destroy()
+        self.top.destroy()
 
     def set_calibration_file(self):
         """Ask for the calibration file.
