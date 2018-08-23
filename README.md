@@ -3,8 +3,8 @@
 
 HappyTools is open-source software for researchers focussing on chromatography. It includes modules for retention time calibration, peak integration, quality control, automated curation and more. The tool was first described in the PLOS One article, located at http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0200280
 
-* Source: https://github.com/Tarskin/HappyTools
-* Bug reports: https://github.com/Tarskin/HappyTools/issues
+* _Source_: https://github.com/Tarskin/HappyTools
+* _Bug reports_: https://github.com/Tarskin/HappyTools/issues
 
 HappyTools depends on NumPy, SciPy and matplotlib. NumPy and SciPy are used predominantly for data fitting and numerical operations on arrays. Matplotlib is used to draw all of the graphical elements that are used/created by HappyTools in both the GUI and the PDf reports. HappyTools is designed to also work as a package, allowing easy access to all of the functionality of HappyTools. However, the initial design of the package focussed on the HappyTools application (HappyTools.py in package root) meaning that importing HappyTools as a package might not work as expected. Therefore, please report any issues that you might encounter on the issues page that is linked above!
 
