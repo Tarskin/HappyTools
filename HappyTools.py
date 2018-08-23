@@ -130,10 +130,7 @@ class HappyToolsGui(object):
         self.progress.bar.pack(fill=tk.X)
 
         # QUIT
-        def close():
-            master.destroy()
-            master.quit()
-        master.protocol("WM_DELETE_WINDOW", lambda: close())
+        master.protocol("WM_DELETE_WINDOW", self.close)
 
         # MENU
         menu = tk.Menu(master)
@@ -222,6 +219,10 @@ class HappyToolsGui(object):
             self.data[0].plot_data(self)
         except AttributeError:
             pass
+
+    def close(self):
+        self.master.destroy()
+        self.master.quit()
 
     def open_batch_window(self):
         batchWindow(self)
