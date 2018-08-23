@@ -92,7 +92,7 @@ class Trace(object):
                 0, len(i.data), master.settings.points)]
             for j in chunks:
                 buff1, buff2 = zip(*j)
-                min_index, min_value = min(enumerate(buff2),
+                min_index, _ = min(enumerate(buff2),
                                            key=operator.itemgetter(1))
                 if buff1[0] > master.settings.start and buff1[-1] < master.settings.end:
                     background.append((buff1[min_index], buff2[min_index]))

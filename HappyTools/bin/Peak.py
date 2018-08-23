@@ -46,7 +46,7 @@ class Peak(object):
         master.data.data = zip(time, intensity)
 
     def determine_background_and_noise(self, master):
-        time, intensity = zip(*master.data.data[self.low_background:
+        _, intensity = zip(*master.data.data[self.low_background:
             self.high_background])
 
         if self.settings.background_noise_method == "NOBAN":
