@@ -96,8 +96,9 @@ class Trace(object):
                                            key=operator.itemgetter(1))
                 if buff1[0] > master.settings.start and buff1[-1] < master.settings.end:
                     background.append((buff1[min_index], buff2[min_index]))
+
+            # Baseline function
             time, intensity = zip(*background)
-            newX = np.linspace(min(time), max(time), 100)
             func = np.polyfit(time, intensity, master.settings.baseline_order)
             p = np.poly1d(func)
 
