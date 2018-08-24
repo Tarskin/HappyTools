@@ -182,8 +182,9 @@ class HappyToolsGui(object):
         aboutmenu.add_command(label="About HappyTools",
                               command=self.open_about_window)
 
-    def open_about_window(self):
-        AboutWindow(tk.Toplevel())
+    @classmethod
+    def open_about_window(cls):
+        AboutWindow()
 
     def open_chromatogram_window(self):
         files = filedialog.askopenfilenames(title="Open Chromatogram File(s)")

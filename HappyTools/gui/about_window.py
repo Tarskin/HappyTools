@@ -16,18 +16,22 @@ class AboutWindow(object):
                    "license can be found at the following URL:\n\n" +
                    "http://www.apache.org/licenses/LICENSE-2.0")
 
-    def __init__(self, master):
-        self.master = master
-        self.master.title("HappyTools")
-        self.master.resizable(width=False, height=False)
-        self.master.protocol("WM_DELETE_WINDOW", self.close)
+    def __init__(self):
+        root = tk.Toplevel()
+        frame = tk.Frame(root)
 
-        self.frame = tk.Frame(self.master)
-        about = tk.Label(self.frame, text=self.INFORMATION, justify=tk.LEFT,
+        root.title("HappyTools")
+        root.resizable(width=False, height=False)
+        root.protocol("WM_DELETE_WINDOW", self.close)
+        
+        about = tk.Label(frame, text=self.INFORMATION, justify=tk.LEFT,
                          wraplength=250)
+
         about.pack()
-        self.frame.pack()
-        self.master.lift()
+        frame.pack()
+        root.lift()
+
+        self.root = root
 
     def close(self):
-        self.master.destroy()
+        self.root.destroy()
