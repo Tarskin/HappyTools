@@ -281,8 +281,7 @@ class HappyToolsGui(object):
 
     def save_chromatogram(self):
         try:
-            for data in self.data:
-                Trace().save_chrom(self)
+            Trace().save_chrom(self)
         except AttributeError:
             pass
 
