@@ -23,9 +23,7 @@ class Trace(object):
                 for line in fr:
                     if line[0].isdigit() is True:
                         line_chunks = line.strip().split()
-                        """ Number based regex splitting to get rid of
-                        thousand seperators
-                        """
+
                         time_sep = re.sub(r'-?\d', '', line_chunks[0],
                                           flags=re.U)
                         for sep in time_sep[:-1]:
@@ -33,6 +31,7 @@ class Trace(object):
                         if time_sep:
                             line_chunks[0] = line_chunks[0].replace(
                                 time_sep[-1], '.')
+
                         int_sep = re.sub(r'-?\d', '', line_chunks[-1],
                                          flags=re.U)
                         for sep in int_sep[:-1]:
@@ -41,7 +40,7 @@ class Trace(object):
                         if int_sep:
                             line_chunks[-1] = line_chunks[-1].replace(
                                 int_sep[-1], '.')
-                        # End of regex based splitting
+
                         try:
                             chrom_data.append((float(line_chunks[0]),
                                                float(line_chunks[-1])))
