@@ -31,7 +31,7 @@ class Peak(object):
         self.total_area = 0.
         self.coeff = 0.
 
-        time, intensity = zip(*master.data.data)
+        time, _ = zip(*master.data.data)
         self.low = bisect_left(time, self.time-self.window)
         self.high = bisect_right(time, self.time+self.window)
 
@@ -84,12 +84,7 @@ class Peak(object):
 
     def determine_gaussian_area(self, master):
         time, intensity = zip(*master.data.data)
-        x_data, y_data = zip(*master.data_subset)
         gaussian_area = 0.
-
-        new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-
-            x_data[0]))
-        new_gauss_y = Fitting().gauss_function(new_gauss_x, *self.coeff)
 
         for index, j in enumerate(intensity[self.low:self.high]):
             gaussian_area += max(Fitting().gauss_function(time[self.low+index],

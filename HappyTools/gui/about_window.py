@@ -23,7 +23,7 @@ class AboutWindow(object):
         root.title("HappyTools")
         root.resizable(width=False, height=False)
         root.protocol("WM_DELETE_WINDOW", self.close)
-        
+
         about = tk.Label(frame, text=self.INFORMATION, justify=tk.LEFT,
                          wraplength=250)
 
