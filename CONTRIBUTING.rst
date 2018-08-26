@@ -1,4 +1,6 @@
-# HappyTools pull request guidelines
+=============================
+HappyTools pull request guidelines
+=============================
 Pull requests are always welcome, and we the HappyTools community will appreciate any help that you can provide.
 
 When submitting a pull request, we ask you check the following:
