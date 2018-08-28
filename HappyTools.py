@@ -19,17 +19,11 @@
 
 # General imports
 from matplotlib.backends.backend_tkagg import (
-    FigureCanvasTkAgg, NavigationToolbar2TkAgg
+    FigureCanvasTkAgg, NavigationToolbar2Tk
 )
-try:
-    # Python 2
-    import Tkinter as tk
-    import tkFileDialog as filedialog
-except ImportError:
-    # Python 3
-    import tkinter as tk
-    import tk.filedialog as filedialog
-import tkMessageBox
+import tkinter as tk
+import tkinter.filedialog as filedialog
+import tkinter.messagebox as messagebox
 from matplotlib import image, figure
 from os import path, getcwd
 
@@ -63,7 +57,7 @@ directories = [
 # Function overwrites
 def dynamic_update(foo):
     pass
-NavigationToolbar2TkAgg.dynamic_update = dynamic_update
+NavigationToolbar2Tk.dynamic_update = dynamic_update
 
 
 # Applicatiom
@@ -92,7 +86,7 @@ class HappyToolsGui(object):
         # ACCESS CHECK
         self.directories = directories
         if not self.functions.check_disk_access(self):
-            tkMessageBox.showinfo(
+            messagebox.showinfo(
                 "Access Error", "HappyTools does " +
                 "not have sufficient disk access rights. Please close " +
                 "HappyTools and check if the current user has read/" +

@@ -4,10 +4,10 @@ try:
 except ImportError:
     # Python 3
     import tkinter as tk
-from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 
 
-class CustomToolbar(NavigationToolbar2TkAgg):
+class CustomToolbar(NavigationToolbar2Tk):
     def __init__(self, canvas_, parent_):
         self.toolitems = (
             ('Home', 'Reset original view', 'home', 'home'),
@@ -22,7 +22,7 @@ class CustomToolbar(NavigationToolbar2TkAgg):
                 'configure_subplots'),
             ('Save', 'Save the figure', 'filesave', 'save_figure'),
         )
-        NavigationToolbar2TkAgg.__init__(self, canvas_, parent_)
+        NavigationToolbar2Tk.__init__(self, canvas_, parent_)
 
     def plot_axes(self):
         self.push_current()

@@ -1,12 +1,6 @@
 from HappyTools.gui.output_window import OutputWindow
-try:
-    # Python 2
-    import Tkinter as tk
-    import tkFileDialog as filedialog
-except ImportError:
-    # Python 3
-    import tkinter as tk
-    import tk.filedialog as filedialog
+import tkinter as tk
+import tkinter.filedialog as filedialog
 
 
 class batchWindow(object):

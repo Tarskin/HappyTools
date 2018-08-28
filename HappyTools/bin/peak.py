@@ -3,8 +3,8 @@ from bisect import bisect_left, bisect_right
 from scipy.optimize import curve_fit
 from numpy import argmax, array, linspace, mean, std
 from numpy import max as numpy_max
-from numpy import exp # Temporary
-from sys import maxint
+from numpy import exp
+from sys import maxsize
 from math import sqrt, log
 
 
@@ -54,7 +54,7 @@ class Peak(object):
                 "the refactor yet.")
 
         elif self.settings.background_noise_method == "MT":
-            background = maxint
+            background = maxsize
             noise = 0
             for index, i in enumerate(intensity[:-self.settings.slicepoints]):
                 buffer = intensity[index:index+self.settings.slicepoints]

@@ -69,7 +69,7 @@ class Trace(object):
 
         # Background determination
         background = []
-        chunks = [self.chrom_data[x:x+master.settings.points] for x in xrange(
+        chunks = [self.chrom_data[x:x+master.settings.points] for x in range(
                   0, len(self.chrom_data), master.settings.points)]
         for j in chunks:
             buff1, buff2 = zip(*j)
@@ -91,7 +91,8 @@ class Trace(object):
         high = bisect_right(time, master.settings.end)
         offset = abs(min(min(new_chrom_intensity[low:high]), 0))
 
-        self.chrom_data = zip(time, [x+offset for x in new_chrom_intensity])
+        self.chrom_data = list(zip(time,
+                               [x+offset for x in new_chrom_intensity]))
 
     def smooth_chrom(self, master):
         """ TODO
@@ -99,7 +100,7 @@ class Trace(object):
         # Apply Savitzky-Golay filter
         time, intensity = zip(*self.chrom_data)
         new = savgol_filter(intensity, 21, 3)
-        self.chrom_data = zip(time, new)
+        self.chrom_data = list(zip(time, new))
 
     def norm_chrom(self, master):
         """ TODO
@@ -112,7 +113,7 @@ class Trace(object):
             time, master.settings.end)])
         normalized_intensity = [b/maximum for a, b, in self.chrom_data]
 
-        self.chrom_data = zip(time, normalized_intensity)
+        self.chrom_data = list(zip(time, normalized_intensity))
 
     def save_chrom(self, master):
         """ TODO
