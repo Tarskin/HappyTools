@@ -5,7 +5,7 @@ from os import path
 class Chromatogram(object):
     def __init__(self, filename):
         self.filename = filename
-        self.data = Trace().open_chrom(filename)
+        self.data = Trace().open_chrom(self)
 
     def plot_data(self, master):
         master.fig.clear()

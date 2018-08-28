@@ -7,7 +7,7 @@ import numpy as np
 
 class Trace(object):
 
-    def open_chrom(self, file):
+    def open_chrom(self, master):
         """Read a chromatogram and return the data.
 
         This function opens a chromatogram (txt or arw), interprets the
@@ -17,9 +17,9 @@ class Trace(object):
         Keyword arguments:
         file -- unicode string
         """
-        with open(file, 'r') as fr:
+        with open(master.filename, 'r') as fr:
             chrom_data = []
-            if 'txt' in file:
+            if master.filename.lower().endswith('txt'):
                 for line in fr:
                     if line[0].isdigit() is True:
                         line_chunks = line.strip().split()
@@ -46,7 +46,7 @@ class Trace(object):
                                                float(line_chunks[-1])))
                         except UnicodeEncodeError:
                             print("Omitting line: "+str(line))
-            elif 'arw' in file:
+            elif master.filename.lower().endswith('arw'):
                 for line in fr:
                     lines = line.split('\r')
                 for line in lines:
