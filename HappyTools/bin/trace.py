@@ -6,16 +6,13 @@ import numpy as np
 
 
 class Trace(object):
+    def __init__(self, master):
+        """ TODO
+        """
+        self.chrom_data = None
 
     def open_chrom(self, master):
-        """Read a chromatogram and return the data.
-
-        This function opens a chromatogram (txt or arw), interprets the
-        local thousands/decimal seperators and creates a list of retention
-        time and intensity tuples which is returned.
-
-        Keyword arguments:
-        file -- unicode string
+        """ TODO
         """
         with open(master.filename, 'r') as fr:
             chrom_data = []
@@ -63,83 +60,59 @@ class Trace(object):
             else:
                 print("Incorrect inputfile format, please upload a raw " +
                       "data 'txt' or 'arw' file.")
+        self.chrom_data = chrom_data
         return chrom_data
 
     def baseline_correction(self, master):
-        """Perform baseline correction and return the corrected data.
-
-        This function determines the baseline of a chromatogram between
-        two timepoints, specified with the start and end parameter. The
-        chromatogram is split into segments of a length specified in the
-        points parameter. The lowest intensity of each segment is used to
-        determine a function of the order specified in the baseline_order
-        using the numpy.polyfit function. The original chromatogram is then
-        transformed by subtracting the function from the original data. The
-        resulting chromatogram might have negative intensities between the
-        start and end timepoints, the minimum intensity within that region
-        is used to uplift the entire chromatogram. The transformed and
-        uplifted chromatogram is returned to the calling function.
-
-        Keyword arguments:
-        data --
+        """ TODO
         """
 
-        for i in master.data:
-            # Background determination
-            background = []
-            chunks = [i.data[x:x+master.settings.points] for x in xrange(
-                0, len(i.data), master.settings.points)]
-            for j in chunks:
-                buff1, buff2 = zip(*j)
-                min_index, _ = min(enumerate(buff2),
-                                           key=operator.itemgetter(1))
-                if buff1[0] > master.settings.start and buff1[-1] < master.settings.end:
-                    background.append((buff1[min_index], buff2[min_index]))
+        # Background determination
+        background = []
+        chunks = [self.chrom_data[x:x+master.settings.points] for x in xrange(
+                  0, len(self.chrom_data), master.settings.points)]
+        for j in chunks:
+            buff1, buff2 = zip(*j)
+            min_index, _ = min(enumerate(buff2), key=operator.itemgetter(1))
+            if buff1[0] > master.settings.start and buff1[-1] < master.settings.end:
+                background.append((buff1[min_index], buff2[min_index]))
 
-            # Baseline function
-            time, intensity = zip(*background)
-            func = np.polyfit(time, intensity, master.settings.baseline_order)
-            p = np.poly1d(func)
+        # Baseline function
+        time, intensity = zip(*background)
+        func = np.polyfit(time, intensity, master.settings.baseline_order)
+        p = np.poly1d(func)
 
-            # Transform
-            time = [a for a, b in i.data]
-            new_chrom_intensity = [b-p(a) for a, b in i.data]
+        # Transform
+        time = [a for a, b in self.chrom_data]
+        new_chrom_intensity = [b-p(a) for a, b in self.chrom_data]
 
-            # Uplift
-            low = bisect_left(time, master.settings.start)
-            high = bisect_right(time, master.settings.end)
-            offset = abs(min(min(new_chrom_intensity[low:high]), 0))
-            i.data = zip(time, [x+offset for x in new_chrom_intensity])
+        # Uplift
+        low = bisect_left(time, master.settings.start)
+        high = bisect_right(time, master.settings.end)
+        offset = abs(min(min(new_chrom_intensity[low:high]), 0))
 
-        # Return
-        return master.data
+        self.chrom_data = zip(time, [x+offset for x in new_chrom_intensity])
 
     def smooth_chrom(self, master):
         """ TODO
         """
         # Apply Savitzky-Golay filter
-        for i in master.data:
-            time, intensity = zip(*i.data)
-            new = savgol_filter(intensity, 21, 3)
-            i.data = zip(time, new)
-
-        # Return
-        return master.data
+        time, intensity = zip(*self.chrom_data)
+        new = savgol_filter(intensity, 21, 3)
+        self.chrom_data = zip(time, new)
 
     def norm_chrom(self, master):
         """ TODO
         """
-        # Normalize to maximum intensity
-        for i in master.data:
-            time, intensity = zip(*i.data)
-            maximum = max(intensity[bisect_left(
-                time, master.settings.start):bisect_right(
-                time, master.settings.end)])
-            normalized_intensity = [b/maximum for a, b, in i.data]
-            i.data = zip(time, normalized_intensity)
+        time, intensity = zip(*self.chrom_data)
 
-        # Return
-        return master.data
+        # Normalize to maximum intensity
+        maximum = max(intensity[bisect_left(
+            time, master.settings.start):bisect_right(
+            time, master.settings.end)])
+        normalized_intensity = [b/maximum for a, b, in self.chrom_data]
+
+        self.chrom_data = zip(time, normalized_intensity)
 
     def save_chrom(self, master):
         """ TODO

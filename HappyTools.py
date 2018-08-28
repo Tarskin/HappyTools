@@ -194,7 +194,9 @@ class HappyToolsGui(object):
                 foo = Chromatogram(file)
                 data.append(foo)
             self.data = data
-            self.data[0].plot_data(self)
+            #self.data[0].plot_data(self)
+        for chrom in self.data:
+            chrom.plot_data_new(self)
 
     def open_settings_window(self):
         self.settings.settings_popup(self.settings)
@@ -230,8 +232,9 @@ class HappyToolsGui(object):
 
     def normalize_chromatogram(self):
         try:
-            self.data = Trace().norm_chrom(self)
-            self.data[0].plot_data(self)
+            for chrom in self.data:
+                chrom.trace.norm_chrom(self)
+                chrom.plot_data_new(self)
         except AttributeError:
             pass
 
@@ -274,8 +277,9 @@ class HappyToolsGui(object):
 
     def smooth_chromatogram(self):
         try:
-            self.data = Trace().smooth_chrom(self)
-            self.data[0].plot_data(self)
+            for chrom in self.data:
+                chrom.trace.smooth_chrom(self)
+                chrom.plot_data_new(self)
         except AttributeError:
             pass
 
@@ -287,8 +291,9 @@ class HappyToolsGui(object):
 
     def baseline_correction(self):
         try:
-            self.data = Trace().baseline_correction(self)
-            self.data[0].plot_data(self)
+            for chrom in self.data:
+                chrom.trace.baseline_correction(self)
+                chrom.plot_data_new(self)
         except AttributeError:
             pass
 
