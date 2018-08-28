@@ -188,9 +188,8 @@ class HappyToolsGui(object):
                 foo = Chromatogram(file)
                 data.append(foo)
             self.data = data
-            #self.data[0].plot_data(self)
         for chrom in self.data:
-            chrom.plot_data_new(self)
+            chrom.plot_data(self)
 
     def open_settings_window(self):
         self.settings.settings_popup(self.settings)
@@ -202,20 +201,21 @@ class HappyToolsGui(object):
             self.reference = self.functions.read_peak_list(self.cal_file)
 
             self.progress.reset_bar(self)
-            for index, data in enumerate(self.data):
+            for index, self.chrom in enumerate(self.data):
 
                 progress = (float(index) / len(self.data))*100
                 self.counter.set(progress)
                 self.progress.update_progress_bar(self)
 
-                self.time_pairs = self.functions.find_peak(self, data)
+                self.time_pairs = self.functions.find_peak(self)
                 self.function = self.functions.determine_calibration_function(self)
-                data = self.functions.apply_calibration_function(self, data)
+                self.functions.apply_calibration_function(self)
 
-            self.progress.fill_bar(self)
-            self.data[0].plot_data(self)
         except AttributeError:
             pass
+        self.progress.fill_bar(self)
+        for chrom in self.data:
+            chrom.plot_data(self)
 
     def close(self):
         self.master.destroy()
@@ -228,7 +228,7 @@ class HappyToolsGui(object):
         try:
             for chrom in self.data:
                 chrom.trace.norm_chrom(self)
-                chrom.plot_data_new(self)
+                chrom.plot_data(self)
         except AttributeError:
             pass
 
@@ -240,14 +240,14 @@ class HappyToolsGui(object):
             self.reference = self.functions.read_peak_list(self.quant_file)
 
             self.progress.reset_bar(self)
-            for index, data in enumerate(self.data):
+            for index, self.chrom in enumerate(self.data):
 
                 progress = (float(index) / len(self.data))*100
                 self.counter.set(progress)
                 self.progress.update_progress_bar(self)
 
-                self.results.append({'file': path.basename(data.filename),
-                                     'results': self.functions.quantify_chrom(self, data)})
+                self.results.append({'file': path.basename(self.chrom.filename),
+                                     'results': self.functions.quantify_chrom(self)})
 
             self.output = Output(self)
             self.output.init_output_file(self)
@@ -273,7 +273,7 @@ class HappyToolsGui(object):
         try:
             for chrom in self.data:
                 chrom.trace.smooth_chrom(self)
-                chrom.plot_data_new(self)
+                chrom.plot_data(self)
         except AttributeError:
             pass
 
@@ -287,7 +287,7 @@ class HappyToolsGui(object):
         try:
             for chrom in self.data:
                 chrom.trace.baseline_correction(self)
-                chrom.plot_data_new(self)
+                chrom.plot_data(self)
         except AttributeError:
             pass
 

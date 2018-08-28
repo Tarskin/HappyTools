@@ -18,12 +18,11 @@ class Functions(object):
     def __init__(self, master):
         self.master = master
 
-    def apply_calibration_function(self, master, data):
+    def apply_calibration_function(self, master):
         """ TODO
         """
-        time, intensity = zip(*data.data)
-        data.data = zip(master.function(time), intensity)
-        return data
+        time, intensity = zip(*master.chrom.trace.chrom_data)
+        master.chrom.trace.chrom_data = zip(master.function(time), intensity)
 
     def batch_process(self, master):
         if master.batch_folder.get():
@@ -114,7 +113,7 @@ class Functions(object):
         return disk_access
 
     def determine_breakpoints(self, master):
-        time, intensity = zip(*master.data.data)
+        time, intensity = zip(*master.data.trace.chrom_data)
         low = bisect_left(time, master.time-master.window)
         high = bisect_right(time, master.time+master.window)
 
@@ -142,14 +141,14 @@ class Functions(object):
                 "been implemented in the refactoring yet.")
         return function
 
-    def find_peak(self, master, data):
+    def find_peak(self, master):
         """ TODO
         """
         self.settings = master.settings
-        self.data = data
+        self.data = master.chrom
         time_pairs = []
 
-        time, intensity = zip(*data.data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
 
         for i in master.reference:
 
@@ -203,18 +202,19 @@ class Functions(object):
         raise NotImplementedError("This feature is not implemented in the " +
                                   "refactor yet.")
 
-    def quantify_chrom(self, master, data):
+    #def quantify_chrom(self, master, data):
+    def quantify_chrom(self, master):
         """ TODO
         """
 
         self.master = master
         self.reference = master.reference
-        self.data = data
+        self.data = master.chrom
         self.settings = master.settings
 
         results = []
 
-        time, intensity = zip(*data.data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
 
         # Initialize PDF and plot overview
         if master.settings.create_figure == "True" and bisect_left(
@@ -321,7 +321,7 @@ class Functions(object):
     def subset_data(self, master):
 
         max_point = 0
-        time, intensity = zip(*master.data.data)
+        time, intensity = zip(*master.data.trace.chrom_data)
         low = bisect_left(time, master.time-master.window)
         high = bisect_right(time, master.time+master.window)
 
