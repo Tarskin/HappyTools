@@ -244,7 +244,7 @@ class HappyToolsGui(object):
             pass
 
     def quantify_chromatogram(self):
-        #try:
+        try:
             self.results = []
             self.quant_file = filedialog.askopenfilename(
                 title="Select Quantitation File")
@@ -264,8 +264,8 @@ class HappyToolsGui(object):
             self.output.init_output_file(self)
             self.output.build_output_file(self)
             self.progress.fill_bar(self)
-        #except AttributeError:
-            #pass
+        except AttributeError:
+            pass
 
     def peak_detection(self):
         self.functions.peak_detection(self)

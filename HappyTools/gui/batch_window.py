@@ -20,13 +20,13 @@ class batchWindow(object):
         self.functions = master.functions
         self.settings = master.settings
 
-        self.output_window = tk.IntVar()
-        self.abs_int = tk.IntVar()
-        self.rel_int = tk.IntVar()
-        self.gauss_int = tk.IntVar()
-        self.bck_sub = tk.IntVar()
-        self.bck_noise = tk.IntVar()
-        self.peak_qual = tk.IntVar()
+        self.output_window_open = tk.IntVar(value=0)
+        self.abs_int = tk.IntVar(value=0)
+        self.rel_int = tk.IntVar(value=0)
+        self.gauss_int = tk.IntVar(value=0)
+        self.bck_sub = tk.IntVar(value=0)
+        self.bck_noise = tk.IntVar(value=0)
+        self.peak_qual = tk.IntVar(value=0)
 
         self.cal_file = tk.StringVar()
         self.anal_file = tk.StringVar()
@@ -61,7 +61,7 @@ class batchWindow(object):
         batchLabel.grid(row=3, column=1, sticky=tk.W)
 
         outputButton = tk.Button(tk.top, text="Output Options",
-                                 command=self.create_output_window)
+                                 command=self.open_output_window)
         outputButton.grid(row=4, column=0, columnspan=2,
                           sticky=tk.E+tk.W)
 
@@ -97,13 +97,24 @@ class batchWindow(object):
             "which you can select which outputs you want HappyTools to show " +
             "in the final summary.")
 
-    def create_output_window(self):
-        self.output = OutputWindow(self)
-
     def close(self):
         """Close the batch processing pop-up.
         """
         self.top.destroy()
+
+    def open_output_window(self):
+        OutputWindow(self)
+        
+    def run(self):
+        """Start the batch process.
+        """
+        self.functions.batch_process(self)
+
+    def set_batch_folder(self):
+        """Ask for the batch folder.
+        """
+        self.batch_folder.set(filedialog.askdirectory(
+            title="Batch Folder"))
 
     def set_calibration_file(self):
         """Ask for the calibration file.
@@ -117,13 +128,4 @@ class batchWindow(object):
         self.anal_file.set(filedialog.askopenfilename(
             title="Analyte File"))
 
-    def set_batch_folder(self):
-        """Ask for the batch folder.
-        """
-        self.batch_folder.set(filedialog.askdirectory(
-            title="Batch Folder"))
 
-    def run(self):
-        """Start the batch process.
-        """
-        self.functions.batch_process(self)

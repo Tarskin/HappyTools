@@ -43,8 +43,8 @@ class Functions(object):
                 files = self.get_calibration_files(self)
 
                 for index, file in enumerate(files):
-                    data = Chromatogram(file)
-                    self.calibrate_chrom(self, data)
+                    self.chrom = Chromatogram(file)
+                    self.calibrate_chrom(self)
                     bar.update_progress_bar(bar.progressbar,
                         bar.calibration_percentage, index, len(files))
 
@@ -57,10 +57,10 @@ class Functions(object):
                 self.reference = self.read_peak_list(master.anal_file.get())
                 files = self.get_quantitation_files(self)
 
-                for index, file in enumerate(files):
-                    data = Chromatogram(file)
-                    self.results.append({'file': path.basename(file),
-                        'results': self.quantify_chrom(self, data)})
+                for index, chromatogram in enumerate(files):
+                    self.chrom = Chromatogram(chromatogram)
+                    self.results.append({'file': path.basename(chromatogram),
+                        'results': self.quantify_chrom(self)})
                     bar.update_progress_bar(bar.progressbar2,
                         bar.quantitation_percentage, index, len(files))
 
@@ -71,17 +71,17 @@ class Functions(object):
                 bar.update_progress_bar(bar.progressbar2,
                     bar.quantitation_percentage, 1, 1)
 
-    def calibrate_chrom(self, master, data):
-        self.time_pairs = self.find_peak(master, data)
+    def calibrate_chrom(self, master):
+        self.time_pairs = self.find_peak(master)
         if len(self.time_pairs) >= master.settings.min_peaks:
             self.function = self.determine_calibration_function(self)
-            data = self.apply_calibration_function(self, data)
-            data.filename = path.join(master.batch_folder.get(),
-                "calibrated_"+path.basename(data.filename))
+            self.apply_calibration_function(self)
+            self.chrom.filename = path.join(master.batch_folder.get(),
+                "calibrated_"+path.basename(self.chrom.filename))
         else:
             data.filename = path.join(master.batch_folder.get(),
-                "uncalibrated_"+path.basename(data.filename))
-        self.write_data(master, data)
+                "uncalibrated_"+path.basename(self.chrom.filename))
+        self.write_data(master)
 
     def create_tooltip(self, master, widget, text):
         """Create a tooltip.
@@ -202,7 +202,6 @@ class Functions(object):
         raise NotImplementedError("This feature is not implemented in the " +
                                   "refactor yet.")
 
-    #def quantify_chrom(self, master, data):
     def quantify_chrom(self, master):
         """ TODO
         """
@@ -367,16 +366,16 @@ class Functions(object):
 
         return zip(x_data, y_data)
 
-    def write_data(self, master, data):
+    def write_data(self, master):
         """ TODO
         """
         try:
-            with open(data.filename, 'w') as fw:
-                for data_point in data.data:
+            with open(master.chrom.filename, 'w') as fw:
+                for data_point in master.chrom.trace.chrom_data:
                     fw.write(str(format(data_point[0], '0.'+str(
                         master.settings.decimal_numbers)+'f'))+"\t"+str(
                         format(data_point[1], '0.'+str(
                         master.settings.decimal_numbers)+'f'))+"\n")
         except IOError:
-            self.log("File: "+str(path.basename(data.filename))+" could not "+
+            self.log("File: "+str(path.basename(master.chrom.filename))+" could not "+
                 "be opened.")
