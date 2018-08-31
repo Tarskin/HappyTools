@@ -1,8 +1,7 @@
 from HappyTools.util.fitting import Fitting
 from bisect import bisect_left, bisect_right
 from scipy.optimize import curve_fit
-from numpy import argmax, array, exp, linspace, mean, std, where
-from numpy import max as numpy_max
+from numpy import amax, argmax, array, exp, linspace, mean, std, where
 from sys import maxsize
 from math import sqrt, log
 
@@ -109,7 +108,7 @@ class Peak(object):
         guess_sigma = 0.5*(max(peak) - min(peak))
         new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-
             x_data[0]))
-        p0 = [numpy_max(y_data), x_data[argmax(y_data)], guess_sigma]
+        p0 = [amax(y_data), x_data[argmax(y_data)], guess_sigma]
         try:
             coeff, var_matrix = curve_fit(Fitting().gauss_function, x_data, y_data,
                 p0)
