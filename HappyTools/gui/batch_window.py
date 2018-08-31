@@ -104,7 +104,7 @@ class batchWindow(object):
 
     def open_output_window(self):
         OutputWindow(self)
-        
+
     def run(self):
         """Start the batch process.
         """
