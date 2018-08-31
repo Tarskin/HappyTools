@@ -1,9 +1,4 @@
-try:
-    # Python 2
-    import Tkinter as tk
-except ImportError:
-    # Python 3
-    import tkinter as tk
+import tkinter as tk
 from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 
 

@@ -69,7 +69,7 @@ class HappyToolsGui(object):
         root.mainloop()
 
     def __init__(self, master):
-        self.output_window = tk.IntVar(value=0)
+        self.output_window_open = tk.IntVar(value=0)
         self.batch_folder = tk.StringVar(value=getcwd())
         self.abs_int = tk.IntVar(value=0)
         self.rel_int = tk.IntVar(value=0)
@@ -150,7 +150,7 @@ class HappyToolsGui(object):
         processmenu.add_command(label="Quantify Chromatogram",
                                 command=self.quantify_chromatogram)
         processmenu.add_command(label="Select Outputs",
-                                command=self.select_outputs)
+                                command=self.open_output_window)
 
         advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced", menu=advancedmenu)
@@ -188,8 +188,14 @@ class HappyToolsGui(object):
                 foo = Chromatogram(file)
                 data.append(foo)
             self.data = data
+
+        self.fig.clear()
         for chrom in self.data:
             chrom.plot_data(self)
+        self.canvas.draw()
+
+    def open_output_window(self):
+        OutputWindow(self)
 
     def open_settings_window(self):
         self.settings.settings_popup(self.settings)
@@ -214,8 +220,11 @@ class HappyToolsGui(object):
         except AttributeError:
             pass
         self.progress.fill_bar(self)
+
+        self.fig.clear()
         for chrom in self.data:
             chrom.plot_data(self)
+        self.canvas.draw()
 
     def close(self):
         self.master.destroy()
@@ -226,14 +235,16 @@ class HappyToolsGui(object):
 
     def normalize_chromatogram(self):
         try:
+            self.fig.clear()
             for chrom in self.data:
                 chrom.trace.norm_chrom(self)
                 chrom.plot_data(self)
+            self.canvas.draw()
         except AttributeError:
             pass
 
     def quantify_chromatogram(self):
-        try:
+        #try:
             self.results = []
             self.quant_file = filedialog.askopenfilename(
                 title="Select Quantitation File")
@@ -253,8 +264,8 @@ class HappyToolsGui(object):
             self.output.init_output_file(self)
             self.output.build_output_file(self)
             self.progress.fill_bar(self)
-        except AttributeError:
-            pass
+        #except AttributeError:
+            #pass
 
     def peak_detection(self):
         self.functions.peak_detection(self)
@@ -265,15 +276,13 @@ class HappyToolsGui(object):
     def save_calibrants(self):
         self.functions.save_calibrants(self)
 
-    @classmethod
-    def select_outputs(self):
-        OutputWindow(self)
-
     def smooth_chromatogram(self):
         try:
+            self.fig.clear()
             for chrom in self.data:
                 chrom.trace.smooth_chrom(self)
                 chrom.plot_data(self)
+            self.canvas.draw()
         except AttributeError:
             pass
 
@@ -285,9 +294,11 @@ class HappyToolsGui(object):
 
     def baseline_correction(self):
         try:
+            self.fig.clear()
             for chrom in self.data:
                 chrom.trace.baseline_correction(self)
                 chrom.plot_data(self)
+            self.canvas.draw()
         except AttributeError:
             pass
 

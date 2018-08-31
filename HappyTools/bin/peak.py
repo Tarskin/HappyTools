@@ -1,9 +1,8 @@
 from HappyTools.util.fitting import Fitting
 from bisect import bisect_left, bisect_right
 from scipy.optimize import curve_fit
-from numpy import argmax, array, linspace, mean, std
+from numpy import argmax, array, exp, linspace, mean, std, where
 from numpy import max as numpy_max
-from numpy import exp
 from sys import maxsize
 from math import sqrt, log
 
@@ -44,6 +43,15 @@ class Peak(object):
         time, intensity = zip(*master.data.trace.chrom_data)
         intensity = [x+abs(self.background) for x in intensity]
         master.data.trace.chrom_data = list(zip(time, intensity))
+
+    def determine_actual_time(self, master):
+        time, intensity = zip(*master.data.trace.chrom_data)
+        if self.coeff.any():
+            intensity = Fitting().gauss_function(time, *self.coeff)
+            intensity = intensity.tolist()
+
+        max_intensity_index = intensity.index(max(intensity))
+        self.actual_time = time[max_intensity_index]
 
     def determine_background_and_noise(self, master):
         _, intensity = zip(*master.data.trace.chrom_data[self.low_background:
@@ -158,7 +166,7 @@ class Peak(object):
         time, intensity = zip(*master.data.trace.chrom_data)
         peak_noise = std(intensity[self.low:self.high])
 
-        self.peak_nose = peak_noise
+        self.peak_noise = peak_noise
 
     def determine_residual(self, master):
         residual = 0.

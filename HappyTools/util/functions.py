@@ -256,6 +256,7 @@ class Functions(object):
                 self.peak.determine_gaussian_area(self)
                 self.peak.determine_gaussian_parameters(self)
                 self.peak.determine_height(self)
+            self.peak.determine_actual_time(self)
             self.peak.determine_residual(self)
 
             # Add individual peak to PDF
@@ -263,7 +264,8 @@ class Functions(object):
                 self.pdf.plot_individual(self)
 
             # Results
-            results.append({'peak': self.peak.peak,
+            results.append({
+                'peak': self.peak.peak,
                 'time': self.peak.time,
                 'peak_area': self.peak.peak_area,
                 'gaussian_area': self.peak.gaussian_area,
@@ -274,7 +276,8 @@ class Functions(object):
                 'background': self.peak.background,
                 'noise': self.peak.noise,
                 'fwhm': self.peak.fwhm,
-                'actual_time': self.peak.actual_time})
+                'actual_time': self.peak.actual_time
+            })
 
         # Close PDF
         if master.settings.create_figure == "True":

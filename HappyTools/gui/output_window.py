@@ -1,9 +1,4 @@
-try:
-    # Python 2
-    import Tkinter as tk
-except ImportError:
-    # Python 3
-    import tkinter as tk
+import tkinter as tk
 
 
 class OutputWindow(object):
@@ -18,10 +13,9 @@ class OutputWindow(object):
         Keyword arguments:
         none
         """
-        self.master = master
-        if self.master.output_window.get() == 1:
+        if master.output_window_open.get() == 1:
             return
-        self.master.output_window.set(1)
+        master.output_window_open.set(1)
 
         top = tk.Toplevel()
         top.protocol("WM_DELETE_WINDOW", self.close)
@@ -59,10 +53,11 @@ class OutputWindow(object):
         button.grid(row=6, column=0, columnspan=2)
         top.lift()
 
+        self.master = master
         self.top = top
 
     def close(self):
-        self.master.output_window.set(0)
+        self.master.output_window_open.set(0)
         self.top.destroy()
 
     def select_all(self):
