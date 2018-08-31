@@ -61,7 +61,6 @@ class Trace(object):
                 print("Incorrect inputfile format, please upload a raw " +
                       "data 'txt' or 'arw' file.")
         self.chrom_data = chrom_data
-        return chrom_data
 
     def baseline_correction(self, master):
         """ TODO
@@ -114,15 +113,3 @@ class Trace(object):
         normalized_intensity = [b/maximum for a, b, in self.chrom_data]
 
         self.chrom_data = list(zip(time, normalized_intensity))
-
-    def save_chrom(self, master):
-        """ TODO
-        """
-        for i in master.data:
-            with open(i.filename, 'w') as fw:
-                for data_point in i.data:
-                    fw.write(
-                        str(format(data_point[0], '0.' +
-                            str(master.settings.decimal_numbers)+'f'))+"\t" +
-                        str(format(data_point[1], '0.' +
-                            str(master.settings.decimal_numbers)+'f'))+"\n")

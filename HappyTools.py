@@ -191,7 +191,7 @@ class HappyToolsGui(object):
 
         self.fig.clear()
         for chrom in self.data:
-            chrom.plot_data(self)
+            chrom.plot_chrom(self)
         self.canvas.draw()
 
     def open_output_window(self):
@@ -223,7 +223,7 @@ class HappyToolsGui(object):
 
         self.fig.clear()
         for chrom in self.data:
-            chrom.plot_data(self)
+            chrom.plot_chrom(self)
         self.canvas.draw()
 
     def close(self):
@@ -238,7 +238,7 @@ class HappyToolsGui(object):
             self.fig.clear()
             for chrom in self.data:
                 chrom.trace.norm_chrom(self)
-                chrom.plot_data(self)
+                chrom.plot_chrom(self)
             self.canvas.draw()
         except AttributeError:
             pass
@@ -281,23 +281,24 @@ class HappyToolsGui(object):
             self.fig.clear()
             for chrom in self.data:
                 chrom.trace.smooth_chrom(self)
-                chrom.plot_data(self)
+                chrom.plot_chrom(self)
             self.canvas.draw()
         except AttributeError:
             pass
 
     def save_chromatogram(self):
-        try:
-            Trace().save_chrom(self)
-        except AttributeError:
-            pass
+        #try:
+            for chrom in self.data:
+                chrom.save_chrom(self)
+        #except AttributeError:
+            #pass
 
     def baseline_correction(self):
         try:
             self.fig.clear()
             for chrom in self.data:
                 chrom.trace.baseline_correction(self)
-                chrom.plot_data(self)
+                chrom.plot_chrom(self)
             self.canvas.draw()
         except AttributeError:
             pass
