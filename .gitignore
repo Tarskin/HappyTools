@@ -2,3 +2,5 @@
 *.pyc
 *.docx
 *.log
+*.results
+*.pdf

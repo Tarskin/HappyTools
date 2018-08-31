@@ -14,7 +14,7 @@ class Pdf(object):
         self.pdf = PdfPages(path.join(master.master.batch_folder.get(),path.splitext(path.basename(master.data.filename))[0]+".pdf"))
 
     def plot_overview(self, master):
-        time, intensity = zip(*master.data.data)
+        time, intensity = zip(*master.data.trace.chrom_data)
         d = self.pdf.infodict()
         d['Title'] = 'PDF Report for: '+str(path.splitext(path.basename(master.data.filename))[0])
         d['Author'] = 'HappyTools version: '+str(version.version)+" build: "+str(version.build)
@@ -40,7 +40,7 @@ class Pdf(object):
         plt.close(fig)
 
     def plot_individual(self, master):
-        time, intensity = zip(*master.data.data)
+        time, intensity = zip(*master.data.trace.chrom_data)
         low = bisect_left(time, master.time-master.window)
         high = bisect_right(time, master.time+master.window)
 

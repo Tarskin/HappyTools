@@ -19,17 +19,11 @@
 
 # General imports
 from matplotlib.backends.backend_tkagg import (
-    FigureCanvasTkAgg, NavigationToolbar2TkAgg
+    FigureCanvasTkAgg, NavigationToolbar2Tk
 )
-try:
-    # Python 2
-    import Tkinter as tk
-    import tkFileDialog as filedialog
-except ImportError:
-    # Python 3
-    import tkinter as tk
-    import tk.filedialog as filedialog
-import tkMessageBox
+import tkinter as tk
+import tkinter.filedialog as filedialog
+import tkinter.messagebox as messagebox
 from matplotlib import image, figure
 from os import path, getcwd
 
@@ -63,7 +57,7 @@ directories = [
 # Function overwrites
 def dynamic_update(foo):
     pass
-NavigationToolbar2TkAgg.dynamic_update = dynamic_update
+NavigationToolbar2Tk.dynamic_update = dynamic_update
 
 
 # Applicatiom
@@ -75,7 +69,7 @@ class HappyToolsGui(object):
         root.mainloop()
 
     def __init__(self, master):
-        self.output_window = tk.IntVar(value=0)
+        self.output_window_open = tk.IntVar(value=0)
         self.batch_folder = tk.StringVar(value=getcwd())
         self.abs_int = tk.IntVar(value=0)
         self.rel_int = tk.IntVar(value=0)
@@ -92,7 +86,7 @@ class HappyToolsGui(object):
         # ACCESS CHECK
         self.directories = directories
         if not self.functions.check_disk_access(self):
-            tkMessageBox.showinfo(
+            messagebox.showinfo(
                 "Access Error", "HappyTools does " +
                 "not have sufficient disk access rights. Please close " +
                 "HappyTools and check if the current user has read/" +
@@ -156,7 +150,7 @@ class HappyToolsGui(object):
         processmenu.add_command(label="Quantify Chromatogram",
                                 command=self.quantify_chromatogram)
         processmenu.add_command(label="Select Outputs",
-                                command=self.select_outputs)
+                                command=self.open_output_window)
 
         advancedmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Advanced", menu=advancedmenu)
@@ -194,7 +188,14 @@ class HappyToolsGui(object):
                 foo = Chromatogram(file)
                 data.append(foo)
             self.data = data
-            self.data[0].plot_data(self)
+
+        self.fig.clear()
+        for chrom in self.data:
+            chrom.plot_data(self)
+        self.canvas.draw()
+
+    def open_output_window(self):
+        OutputWindow(self)
 
     def open_settings_window(self):
         self.settings.settings_popup(self.settings)
@@ -206,20 +207,24 @@ class HappyToolsGui(object):
             self.reference = self.functions.read_peak_list(self.cal_file)
 
             self.progress.reset_bar(self)
-            for index, data in enumerate(self.data):
+            for index, self.chrom in enumerate(self.data):
 
                 progress = (float(index) / len(self.data))*100
                 self.counter.set(progress)
                 self.progress.update_progress_bar(self)
 
-                self.time_pairs = self.functions.find_peak(self, data)
+                self.time_pairs = self.functions.find_peak(self)
                 self.function = self.functions.determine_calibration_function(self)
-                data = self.functions.apply_calibration_function(self, data)
+                self.functions.apply_calibration_function(self)
 
-            self.progress.fill_bar(self)
-            self.data[0].plot_data(self)
         except AttributeError:
             pass
+        self.progress.fill_bar(self)
+
+        self.fig.clear()
+        for chrom in self.data:
+            chrom.plot_data(self)
+        self.canvas.draw()
 
     def close(self):
         self.master.destroy()
@@ -230,8 +235,11 @@ class HappyToolsGui(object):
 
     def normalize_chromatogram(self):
         try:
-            self.data = Trace().norm_chrom(self)
-            self.data[0].plot_data(self)
+            self.fig.clear()
+            for chrom in self.data:
+                chrom.trace.norm_chrom(self)
+                chrom.plot_data(self)
+            self.canvas.draw()
         except AttributeError:
             pass
 
@@ -243,14 +251,14 @@ class HappyToolsGui(object):
             self.reference = self.functions.read_peak_list(self.quant_file)
 
             self.progress.reset_bar(self)
-            for index, data in enumerate(self.data):
+            for index, self.chrom in enumerate(self.data):
 
                 progress = (float(index) / len(self.data))*100
                 self.counter.set(progress)
                 self.progress.update_progress_bar(self)
 
-                self.results.append({'file': path.basename(data.filename),
-                                     'results': self.functions.quantify_chrom(self, data)})
+                self.results.append({'file': path.basename(self.chrom.filename),
+                                     'results': self.functions.quantify_chrom(self)})
 
             self.output = Output(self)
             self.output.init_output_file(self)
@@ -268,14 +276,13 @@ class HappyToolsGui(object):
     def save_calibrants(self):
         self.functions.save_calibrants(self)
 
-    @classmethod
-    def select_outputs(self):
-        OutputWindow(self)
-
     def smooth_chromatogram(self):
         try:
-            self.data = Trace().smooth_chrom(self)
-            self.data[0].plot_data(self)
+            self.fig.clear()
+            for chrom in self.data:
+                chrom.trace.smooth_chrom(self)
+                chrom.plot_data(self)
+            self.canvas.draw()
         except AttributeError:
             pass
 
@@ -287,8 +294,11 @@ class HappyToolsGui(object):
 
     def baseline_correction(self):
         try:
-            self.data = Trace().baseline_correction(self)
-            self.data[0].plot_data(self)
+            self.fig.clear()
+            for chrom in self.data:
+                chrom.trace.baseline_correction(self)
+                chrom.plot_data(self)
+            self.canvas.draw()
         except AttributeError:
             pass
 
