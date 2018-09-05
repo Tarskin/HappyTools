@@ -163,7 +163,7 @@ class Peak(object):
         self.peak_area = peak_area
 
     def determine_peak_noise(self, master):
-        time, intensity = zip(*master.chrom.trace.chrom_data)
+        _, intensity = zip(*master.chrom.trace.chrom_data)
         peak_noise = std(intensity[self.low:self.high])
 
         self.peak_noise = peak_noise

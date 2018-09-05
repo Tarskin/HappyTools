@@ -83,11 +83,10 @@ class HappyToolsGui(object):
 
         self.master = master
         self.counter = tk.IntVar(value=0)
-        self.logger = logging.basicConfig(filename='HappyTools.log',
-                                          format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                                          datefmt='%Y-%m-%d %H:%M',
-                                          filemode='a',
-                                          level=logging.DEBUG)
+        logging.basicConfig(filename='HappyTools.log',
+                            format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                            datefmt='%Y-%m-%d %H:%M', filemode='a',
+                            level=logging.DEBUG)
         self.functions = Functions(self) # Change functions from class to non
 
         # ACCESS CHECK

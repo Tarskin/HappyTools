@@ -16,12 +16,12 @@ class PeakDetection(object):
 
         orig_time, orig_intensity = zip(*self.chrom.trace.chrom_data)
         curr_intensity = orig_intensity
-        
+
         time_start = bisect_left(orig_time, self.settings.start)
         time_end = bisect_right(orig_time, self.settings.end)
 
         # Loop till intensity falls below specified threshold
-        while (max(curr_intensity[time_start:time_end]) > 
+        while (max(curr_intensity[time_start:time_end]) >
                self.settings.peak_detection_min * max(
                orig_intensity[time_start:time_end])):
 
@@ -33,7 +33,7 @@ class PeakDetection(object):
             self.data_subset = self.functions.subset_data(self)
 
             # Get time and intensity lists
-            x_data, y_data = zip(*self.data_subset)
+            x_data, _ = zip(*self.data_subset)
 
             # Create Peak() object
             self.peak = None
