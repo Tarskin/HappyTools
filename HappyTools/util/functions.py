@@ -13,16 +13,18 @@ from numpy import greater, less, linspace, poly1d, polyfit
 from bisect import bisect_left, bisect_right
 from os import path, W_OK, access
 from glob import glob
+import logging
 
 class Functions(object):
     def __init__(self, master):
+        self.logger = logging.getLogger(__name__)
         self.master = master
 
     def apply_calibration_function(self, master):
         """ TODO
         """
         time, intensity = zip(*master.chrom.trace.chrom_data)
-        master.chrom.trace.chrom_data = zip(master.function(time), intensity)
+        master.chrom.trace.chrom_data = list(zip(master.function(time), intensity))
 
     def batch_process(self, master):
         if master.batch_folder.get():
@@ -113,7 +115,7 @@ class Functions(object):
         return disk_access
 
     def determine_breakpoints(self, master):
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
         low = bisect_left(time, master.time-master.window)
         high = bisect_right(time, master.time+master.window)
 
@@ -145,7 +147,7 @@ class Functions(object):
         """ TODO
         """
         self.settings = master.settings
-        self.data = master.chrom
+        self.chrom = master.chrom
         time_pairs = []
 
         time, intensity = zip(*master.chrom.trace.chrom_data)
@@ -190,14 +192,6 @@ class Functions(object):
                         master.batch_folder.get(), file))
         return quantitation_files
 
-    def log(self, message):
-        """ TODO
-        """
-        if debug.logging is True and debug.logLevel >= 1:
-            with open(debug.logFile, 'a') as fw:
-                fw.write(str(datetime.now().replace(microsecond=0))+"\t"+
-                    str(message)+"\n")
-
     def peak_detection(self, master):
         raise NotImplementedError("This feature is not implemented in the " +
                                   "refactor yet.")
@@ -208,7 +202,7 @@ class Functions(object):
 
         self.master = master
         self.reference = master.reference
-        self.data = master.chrom
+        self.chrom = master.chrom
         self.settings = master.settings
 
         results = []
@@ -305,11 +299,11 @@ class Functions(object):
                         peaks.append((str(line[0]), float(line[1]),
                             float(line[2])))
                     except ValueError:
-                        self.log("Ignoring line: "+str(line)+" from file: "+
-                            str(file_name))
+                        self.logger.info("Ignoring line: "+str(line)+" from "+
+                                         "file: "+str(file_name))
         except IOError:
-            self.log("The selected reference file "+str(file)+" could not "+
-                "be opened.")
+            self.logger.error("The selected reference file "+str(file_name)+
+                              " could not be opened.")
         return peaks
 
     def save_calibrants(self, master):
@@ -323,7 +317,7 @@ class Functions(object):
     def subset_data(self, master):
 
         max_point = 0
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
         low = bisect_left(time, master.time-master.window)
         high = bisect_right(time, master.time+master.window)
 
@@ -364,7 +358,7 @@ class Functions(object):
         except IndexError:
             pass
 
-        return zip(x_data, y_data)
+        return list(zip(x_data, y_data))
 
     def write_data(self, master):
         """ TODO
@@ -377,5 +371,5 @@ class Functions(object):
                         format(data_point[1], '0.'+str(
                         master.settings.decimal_numbers)+'f'))+"\n")
         except IOError:
-            self.log("File: "+str(path.basename(master.chrom.filename))+" could not "+
-                "be opened.")
+            self.logger.error("File: "+str(path.basename(
+                              master.chrom.filename))+" could not be opened.")

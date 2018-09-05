@@ -11,12 +11,12 @@ from os import path
 
 class Pdf(object):
     def __init__(self, master):
-        self.pdf = PdfPages(path.join(master.master.batch_folder.get(),path.splitext(path.basename(master.data.filename))[0]+".pdf"))
+        self.pdf = PdfPages(path.join(master.master.batch_folder.get(),path.splitext(path.basename(master.chrom.filename))[0]+".pdf"))
 
     def plot_overview(self, master):
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
         d = self.pdf.infodict()
-        d['Title'] = 'PDF Report for: '+str(path.splitext(path.basename(master.data.filename))[0])
+        d['Title'] = 'PDF Report for: '+str(path.splitext(path.basename(master.chrom.filename))[0])
         d['Author'] = 'HappyTools version: '+str(version.version)+" build: "+str(version.build)
         d['CreationDate'] = datetime.now()
         low = bisect_left(time, master.settings.start)
@@ -25,7 +25,7 @@ class Pdf(object):
         ax = fig.add_subplot(111)
         plt.plot(time[low:high], intensity[low:high], 'b-')
         plt.legend(['Raw Data'], loc='best')
-        plt.title(str(path.splitext(path.basename(master.data.filename))[0]))
+        plt.title(str(path.splitext(path.basename(master.chrom.filename))[0]))
         plt.xlabel("Retention Time [m]")
         plt.ylabel("Intensity [au]")
         for i in master.reference:
@@ -40,7 +40,7 @@ class Pdf(object):
         plt.close(fig)
 
     def plot_individual(self, master):
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
         low = bisect_left(time, master.time-master.window)
         high = bisect_right(time, master.time+master.window)
 

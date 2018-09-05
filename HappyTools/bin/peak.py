@@ -9,6 +9,7 @@ from math import sqrt, log
 class Peak(object):
     def __init__(self, master):
         self.settings = master.settings
+        self.logger = master.logger
 
         self.peak = master.peak
         self.time = master.time
@@ -29,7 +30,7 @@ class Peak(object):
         self.total_area = 0.
         self.coeff = 0.
 
-        time, _ = zip(*master.data.trace.chrom_data)
+        time, _ = zip(*master.chrom.trace.chrom_data)
         self.low = bisect_left(time, self.time-self.window)
         self.high = bisect_right(time, self.time+self.window)
 
@@ -39,12 +40,12 @@ class Peak(object):
             self.time+self.settings.background_window, self.settings.end))
 
     def background_correct(self, master):
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
         intensity = [x+abs(self.background) for x in intensity]
-        master.data.trace.chrom_data = list(zip(time, intensity))
+        master.chrom.trace.chrom_data = list(zip(time, intensity))
 
     def determine_actual_time(self, master):
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
         if self.coeff.any():
             intensity = Fitting().gauss_function(time, *self.coeff)
             intensity = intensity.tolist()
@@ -53,7 +54,7 @@ class Peak(object):
         self.actual_time = time[max_intensity_index]
 
     def determine_background_and_noise(self, master):
-        _, intensity = zip(*master.data.trace.chrom_data[self.low_background:
+        _, intensity = zip(*master.chrom.trace.chrom_data[self.low_background:
             self.high_background])
 
         if self.settings.background_noise_method == "NOBAN":
@@ -79,7 +80,7 @@ class Peak(object):
 
     def determine_background_area(self, master):
         background_area = 0
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
         for index, j in enumerate(intensity[self.low:self.high]):
             try:
                 background_area += max(self.background, 0) * (
@@ -90,7 +91,7 @@ class Peak(object):
         self.background_area = background_area
 
     def determine_gaussian_area(self, master):
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
         gaussian_area = 0.
 
         for index, j in enumerate(intensity[self.low:self.high]):
@@ -114,12 +115,12 @@ class Peak(object):
                 p0)
 
         except TypeError:
-            master.log("Not enough data points to fit a Gaussian to peak: "+
-                str(self.peak))
+            self.logger.warn("Not enough data points to fit a Gaussian to "+
+                             "peak: "+str(self.peak))
 
         except RuntimeError:
-            master.log("Unable to determine residuals for peak: "+
-                str(self.peak))
+            self.logger.error("Unable to determine residuals for peak: "+
+                              str(self.peak))
 
         self.coeff = coeff
 
@@ -150,7 +151,7 @@ class Peak(object):
 
     def determine_peak_area(self, master):
         peak_area = 0.
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
 
         for index, j in enumerate(intensity[self.low:self.high]):
             try:
@@ -162,7 +163,7 @@ class Peak(object):
         self.peak_area = peak_area
 
     def determine_peak_noise(self, master):
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
         peak_noise = std(intensity[self.low:self.high])
 
         self.peak_noise = peak_noise
@@ -179,7 +180,7 @@ class Peak(object):
         self.residual = residual
 
     def determine_signal_noise(self, master):
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
         maximum_point = max(intensity[self.low:self.high])
         signal_noise = (maximum_point - self.background) / self.noise
 
@@ -187,7 +188,7 @@ class Peak(object):
 
     def determine_total_area(self, master):
         total_area = 0.
-        time, intensity = zip(*master.data.trace.chrom_data)
+        time, intensity = zip(*master.chrom.trace.chrom_data)
 
         for index, j in enumerate(intensity[self.low:self.high]):
             total_area += max(j-self.background, 0) * (time[self.low+index]-

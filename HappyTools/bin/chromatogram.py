@@ -9,15 +9,14 @@ class Chromatogram(object):
         self.trace.open_chrom(self)
 
     def plot_chrom(self, master):
-        axes = master.fig.add_subplot(111)
         label = path.splitext(path.basename(self.filename))[0]
         x_array, y_array = zip(*self.trace.chrom_data)
-        axes.plot(x_array, y_array, label=str(label))
-        axes.set_xlabel("Time [m]")
-        axes.set_ylabel("Intensity [au]")
-        handles, labels = axes.get_legend_handles_labels()
+        master.axes.plot(x_array, y_array, label=str(label))
+        master.axes.set_xlabel("Time [m]")
+        master.axes.set_ylabel("Intensity [au]")
+        handles, labels = master.axes.get_legend_handles_labels()
         master.fig.legend(handles, labels)
-        axes.get_xaxis().get_major_formatter().set_useOffset(False)
+        master.axes.get_xaxis().get_major_formatter().set_useOffset(False)
 
     def save_chrom(self, master):
         with open(self.filename, 'w') as fw:

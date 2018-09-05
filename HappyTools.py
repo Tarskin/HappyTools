@@ -24,11 +24,13 @@ from matplotlib.backends.backend_tkagg import (
 import tkinter as tk
 import tkinter.filedialog as filedialog
 import tkinter.messagebox as messagebox
+import logging
 from matplotlib import image, figure
 from os import path, getcwd
 
 # Custom libraries
 import HappyTools.plugins as plugins
+from HappyTools.util.peak_detection import PeakDetection
 from HappyTools.util.functions import Functions
 from HappyTools.util.output import Output
 
@@ -81,7 +83,12 @@ class HappyToolsGui(object):
 
         self.master = master
         self.counter = tk.IntVar(value=0)
-        self.functions = Functions(self)
+        self.logger = logging.basicConfig(filename='HappyTools.log',
+                                          format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                                          datefmt='%Y-%m-%d %H:%M',
+                                          filemode='a',
+                                          level=logging.DEBUG)
+        self.functions = Functions(self) # Change functions from class to non
 
         # ACCESS CHECK
         self.directories = directories
@@ -98,7 +105,7 @@ class HappyToolsGui(object):
             self.settings.read_settings(self.settings)
 
         # CANVAS
-        self.fig = figure.Figure(figsize=(12, 6))
+        self.fig = figure.Figure(figsize=(12,6))
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
         self.toolbar = CustomToolbar(self.canvas, master)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=tk.YES)
@@ -115,11 +122,11 @@ class HappyToolsGui(object):
         if path.isfile(iconbitmap):
             master.iconbitmap(default=iconbitmap)
         if path.isfile(backgroundimage):
-            background_image = self.fig.add_subplot(111)
-            img = image.imread(backgroundimage)
-            background_image.axis('off')
+            self.axes = self.fig.add_subplot(111)
+            self.axes.axis('off')
             self.fig.set_tight_layout(True)
-            background_image.imshow(img)
+            img = image.imread(backgroundimage)
+            self.axes.imshow(img)
         self.progress = progressbar.SimpleProgressBar(self)
         self.progress.bar.pack(fill=tk.X)
 
@@ -189,7 +196,7 @@ class HappyToolsGui(object):
                 data.append(foo)
             self.data = data
 
-        self.fig.clear()
+        self.axes.clear()
         for chrom in self.data:
             chrom.plot_chrom(self)
         self.canvas.draw()
@@ -221,7 +228,7 @@ class HappyToolsGui(object):
             pass
         self.progress.fill_bar(self)
 
-        self.fig.clear()
+        self.axes.clear()
         for chrom in self.data:
             chrom.plot_chrom(self)
         self.canvas.draw()
@@ -235,7 +242,7 @@ class HappyToolsGui(object):
 
     def normalize_chromatogram(self):
         try:
-            self.fig.clear()
+            self.axes.clear()
             for chrom in self.data:
                 chrom.trace.norm_chrom(self)
                 chrom.plot_chrom(self)
@@ -268,7 +275,16 @@ class HappyToolsGui(object):
             pass
 
     def peak_detection(self):
-        self.functions.peak_detection(self)
+        #try:
+            self.axes.clear()
+            for self.chrom in self.data:
+                self.detected_peaks = PeakDetection(self)
+                self.detected_peaks.detect_peaks(self)
+                self.detected_peaks.plot_peaks(self)
+            self.chrom.plot_chrom(self)
+            self.canvas.draw()
+        #except AttributeError:
+            #pass
 
     def save_annotation(self):
         self.functions.save_annotation(self)
@@ -278,7 +294,7 @@ class HappyToolsGui(object):
 
     def smooth_chromatogram(self):
         try:
-            self.fig.clear()
+            self.axes.clear()
             for chrom in self.data:
                 chrom.trace.smooth_chrom(self)
                 chrom.plot_chrom(self)
@@ -287,15 +303,15 @@ class HappyToolsGui(object):
             pass
 
     def save_chromatogram(self):
-        #try:
+        try:
             for chrom in self.data:
                 chrom.save_chrom(self)
-        #except AttributeError:
-            #pass
+        except AttributeError:
+            pass
 
     def baseline_correction(self):
         try:
-            self.fig.clear()
+            self.axes.clear()
             for chrom in self.data:
                 chrom.trace.baseline_correction(self)
                 chrom.plot_chrom(self)
