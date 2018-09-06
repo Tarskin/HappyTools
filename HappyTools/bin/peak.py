@@ -1,9 +1,9 @@
 from HappyTools.util.fitting import Fitting
 from bisect import bisect_left, bisect_right
-from scipy.optimize import curve_fit
-from numpy import amax, argmax, array, exp, linspace, mean, std, where
-from sys import maxsize
 from math import sqrt, log
+from numpy import amax, argmax, array, exp, linspace, mean, std, where
+from scipy.optimize import curve_fit
+from sys import maxsize
 
 
 class Peak(object):

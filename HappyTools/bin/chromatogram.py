@@ -1,5 +1,5 @@
 from HappyTools.bin.trace import Trace
-from os import path
+from pathlib import PurePath
 
 
 class Chromatogram(object):
@@ -9,7 +9,7 @@ class Chromatogram(object):
         self.trace.open_chrom(self)
 
     def plot_chrom(self, master):
-        label = path.splitext(path.basename(self.filename))[0]
+        label = PurePath(self.filename).stem
         x_array, y_array = zip(*self.trace.chrom_data)
         master.axes.plot(x_array, y_array, label=str(label))
         master.axes.set_xlabel("Time [m]")

@@ -3,6 +3,8 @@ from HappyTools.bin.peak import Peak
 import logging
 from numpy import linspace
 from bisect import bisect_left, bisect_right
+from pathlib import Path
+
 
 class PeakDetection(object):
     def __init__(self, master):
@@ -68,8 +70,11 @@ class PeakDetection(object):
         self.chrom.trace.chrom_data = list(zip(orig_time, orig_intensity))
 
     def plot_peaks(self, master):
-        axes = master.fig.add_subplot(111)
         for index, peak in enumerate(self.detected_peaks):
             x_array, y_array = zip(*peak)
-            axes.fill_between(x_array, 0, y_array, alpha=0.5,
+            master.axes.fill_between(x_array, 0, y_array, alpha=0.5,
                               label="Peak "+str(index+1))
+
+    def write_peaks(self, master):
+        raise NotImplementedError
+        

@@ -1,6 +1,6 @@
 import HappyTools.gui.version as version
 from datetime import datetime
-from os import path
+from pathlib import Path
 
 class Output(object):
     def __init__(self, master):
@@ -61,7 +61,8 @@ class Output(object):
             self.write_retention_time_residual(self)
 
     def init_output_file(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'w') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('w') as fw:
             fw.write("HappyTools Settings\n")
             fw.write("Version:\t"+str(version.version)+"\n")
             fw.write("Build:\t"+str(version.build)+"\n")
@@ -78,7 +79,8 @@ class Output(object):
             fw.write("\n")
 
     def write_back_sub_abs_peak_area(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Peak Area (Background Subtracted)")
             fw.write(self.header)
             for i in master.results:
@@ -89,7 +91,8 @@ class Output(object):
             fw.write("\n")
 
     def write_back_sub_gauss_peak_area(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:       
             fw.write("Gaussian Area (Background Subtracted)")
             fw.write(self.header)
             for i in master.results:
@@ -100,7 +103,8 @@ class Output(object):
             fw.write("\n")
 
     def write_back_sub_rel_peak_area(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Relative Peak Area (TAN, Background Subtracted)")
             fw.write(self.header)
             for i in master.results:
@@ -117,7 +121,8 @@ class Output(object):
             fw.write("\n")
 
     def write_background(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Background")
             fw.write(self.header)
             for i in master.results:
@@ -128,7 +133,8 @@ class Output(object):
             fw.write("\n")
 
     def write_fwhm(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("FWHM")
             fw.write(self.header)
             for i in master.results:
@@ -139,7 +145,8 @@ class Output(object):
             fw.write("\n")
 
     def write_gaussian_pattern_quality(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("GPQ (Gaussian Peak Quality)")
             fw.write(self.header)
             for i in master.results:
@@ -150,7 +157,8 @@ class Output(object):
             fw.write("\n")
 
     def write_noise(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Noise")
             fw.write(self.header)
             for i in master.results:
@@ -161,7 +169,8 @@ class Output(object):
             fw.write("\n")
 
     def write_non_back_sub_abs_peak_area(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Peak Area")
             fw.write(self.header)
             for i in master.results:
@@ -172,7 +181,8 @@ class Output(object):
             fw.write("\n")
 
     def write_non_back_sub_gauss_peak_area(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Gaussian Area")
             fw.write(self.header)
             for i in master.results:
@@ -183,7 +193,8 @@ class Output(object):
             fw.write("\n")
 
     def write_non_back_sub_rel_peak_area(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Relative Peak Area (TAN)")
             fw.write(self.header)
             for i in master.results:
@@ -200,7 +211,8 @@ class Output(object):
             fw.write("\n")
 
     def write_peak_noise(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Peak Noise (Standard deviation of integration window)")
             fw.write(self.header)
             for i in master.results:
@@ -211,7 +223,8 @@ class Output(object):
             fw.write("\n")
 
     def write_retention_time(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Retention Time")
             fw.write(self.header)
             for i in master.results:
@@ -222,7 +235,8 @@ class Output(object):
             fw.write("\n")
 
     def write_retention_time_residual(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Retention Time Residual")
             fw.write(self.header)
             for i in master.results:
@@ -233,7 +247,8 @@ class Output(object):
             fw.write("\n")
 
     def write_signal_noise(self, master):
-        with open(path.join(master.batch_folder.get(), self.filename), 'a') as fw:
+        with Path(master.batch_folder.get() /
+                  Path(self.filename)).open('a') as fw:
             fw.write("Signal-to-Noise")
             fw.write(self.header)
             for i in master.results:

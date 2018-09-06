@@ -1,10 +1,5 @@
 from os import path, getcwd
-try:
-    # Python 2
-    import Tkinter as tk
-except ImportError:
-    # Python 3
-    import tkinter as tk
+import tkinter as tk
 
 
 class Settings(object):

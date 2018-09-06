@@ -21,12 +21,12 @@
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk
 )
+import logging
 import tkinter as tk
 import tkinter.filedialog as filedialog
 import tkinter.messagebox as messagebox
-import logging
 from matplotlib import image, figure
-from os import path, getcwd
+from pathlib import Path
 
 # Custom libraries
 import HappyTools.plugins as plugins
@@ -49,10 +49,10 @@ from HappyTools.bin.trace import Trace
 
 # Directories
 directories = [
-    path.join(getcwd(), "HappyTools", "plugins"),
-    path.join(getcwd(), "HappyTools", "gui"),
-    path.join(getcwd(), "HappyTools", "bin"),
-    path.join(getcwd(), "HappyTools", "util")
+    Path.cwd() / "HappyTools" / "plugins",
+    Path.cwd() / "HappyTools" / "gui",
+    Path.cwd() / "HappyTools" / "bin",
+    Path.cwd() / "HappyTools" / "util"
 ]
 
 
@@ -72,7 +72,7 @@ class HappyToolsGui(object):
 
     def __init__(self, master):
         self.output_window_open = tk.IntVar(value=0)
-        self.batch_folder = tk.StringVar(value=getcwd())
+        self.batch_folder = tk.StringVar(value=Path.cwd())
         self.abs_int = tk.IntVar(value=0)
         self.rel_int = tk.IntVar(value=0)
         self.gauss_int = tk.IntVar(value=0)
@@ -100,7 +100,7 @@ class HappyToolsGui(object):
 
         # SETTINGS
         self.settings = Settings(self)
-        if path.isfile(path.join(getcwd(), self.settings.settings)):
+        if (Path.cwd() / self.settings.settings).is_file:
             self.settings.read_settings(self.settings)
 
         # CANVAS
@@ -117,14 +117,12 @@ class HappyToolsGui(object):
         tk.Frame(master)
         master.title("HappyTools "+str(version.version) +
                      " (Build "+str(version.build)+")")
-        iconbitmap = path.join(getcwd(), "HappyTools", "gui", "assets",
-                               "Icon.ico")
-        backgroundimage = path.join(getcwd(), "HappyTools", "gui",
-                                    "assets", "UI.png")
-        if path.isfile(iconbitmap):
+        iconbitmap = Path.cwd() / "HappyTools" / "gui" / "assets" / "Icon.ico"
+        backgroundimage = Path.cwd() / "HappyTools" / "gui" / "assets" / "UI.png"
+        if iconbitmap.is_file():
             master.iconbitmap(default=iconbitmap)
-        if path.isfile(backgroundimage):
-            img = image.imread(backgroundimage)
+        if backgroundimage.is_file():
+            img = image.imread(str(backgroundimage))
             self.axes.imshow(img, aspect='auto')
         self.progress = progressbar.SimpleProgressBar(self)
         self.progress.bar.pack(fill=tk.X)
@@ -191,7 +189,7 @@ class HappyToolsGui(object):
         data = []
         if files:
             for file in files:
-                foo = Chromatogram(file)
+                foo = Chromatogram(Path(file))
                 data.append(foo)
             self.data = data
 
@@ -250,8 +248,9 @@ class HappyToolsGui(object):
             pass
 
     def quantify_chromatogram(self):
-        try:
+        #try:
             self.results = []
+            self.functions.batch_folder = self.batch_folder
             self.quant_file = filedialog.askopenfilename(
                 title="Select Quantitation File")
             self.reference = self.functions.read_peak_list(self.quant_file)
@@ -263,18 +262,18 @@ class HappyToolsGui(object):
                 self.counter.set(progress)
                 self.progress.update_progress_bar(self)
 
-                self.results.append({'file': path.basename(self.chrom.filename),
+                self.results.append({'file': Path(self.chrom.filename).name,
                                      'results': self.functions.quantify_chrom(self)})
 
             self.output = Output(self)
             self.output.init_output_file(self)
             self.output.build_output_file(self)
             self.progress.fill_bar(self)
-        except AttributeError:
-            pass
+        #except AttributeError:
+            #pass
 
     def peak_detection(self):
-        #try:
+        try:
             self.axes.clear()
             for self.chrom in self.data:
                 self.detected_peaks = PeakDetection(self)
@@ -282,11 +281,15 @@ class HappyToolsGui(object):
                 self.detected_peaks.plot_peaks(self)
             self.chrom.plot_chrom(self)
             self.canvas.draw()
-        #except AttributeError:
-            #pass
+        except AttributeError:
+            pass
 
     def save_annotation(self):
-        self.functions.save_annotation(self)
+        #try:
+            for self.chrom in self.data:
+                self.detected_peaks.write_peaks(self)
+        #except AttributeError:
+            #pass
 
     def save_calibrants(self):
         self.functions.save_calibrants(self)

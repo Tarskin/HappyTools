@@ -16,7 +16,7 @@ class Trace(object):
         """
         with open(master.filename, 'r') as fr:
             chrom_data = []
-            if master.filename.lower().endswith('txt'):
+            if master.filename.suffix.lower().endswith('txt'):
                 for line in fr:
                     if line[0].isdigit() is True:
                         line_chunks = line.strip().split()

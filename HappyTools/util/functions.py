@@ -6,14 +6,16 @@ from HappyTools.util.output import Output
 from HappyTools.bin.chromatogram import Chromatogram
 from HappyTools.bin.peak import Peak
 
-from datetime import datetime
-from scipy.interpolate import InterpolatedUnivariateSpline
-from scipy.signal import argrelextrema
-from numpy import greater, less, linspace, poly1d, polyfit
 from bisect import bisect_left, bisect_right
-from os import path, W_OK, access
+from datetime import datetime
 from glob import glob
 import logging
+from numpy import greater, less, linspace, poly1d, polyfit
+from os import W_OK, access
+from pathlib import Path
+from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.signal import argrelextrema
+
 
 class Functions(object):
     def __init__(self, master):
@@ -61,7 +63,7 @@ class Functions(object):
 
                 for index, chromatogram in enumerate(files):
                     self.chrom = Chromatogram(chromatogram)
-                    self.results.append({'file': path.basename(chromatogram),
+                    self.results.append({'file': Path(chromatogram).name,
                         'results': self.quantify_chrom(self)})
                     bar.update_progress_bar(bar.progressbar2,
                         bar.quantitation_percentage, index, len(files))
@@ -78,11 +80,13 @@ class Functions(object):
         if len(self.time_pairs) >= master.settings.min_peaks:
             self.function = self.determine_calibration_function(self)
             self.apply_calibration_function(self)
-            self.chrom.filename = path.join(master.batch_folder.get(),
-                "calibrated_"+path.basename(self.chrom.filename))
+            self.chrom.filename = (Path(master.batch_folder.get()) /
+                                   "_".join(["calibrated",
+                                   Path(self.chrom.filename).name]))
         else:
-            data.filename = path.join(master.batch_folder.get(),
-                "uncalibrated_"+path.basename(self.chrom.filename))
+            data.filename = (Path(master.batch_folder.get()) /
+                             "_".join(["uncalibrated",
+                             Path(self.chrom.filename).name]))
         self.write_data(master)
 
     def create_tooltip(self, master, widget, text):
@@ -175,10 +179,10 @@ class Functions(object):
         """
         calibration_files = []
         for files in master.settings.calibration_filetypes:
-            for file in glob(path.join(master.batch_folder.get(), files)):
+            for file in Path(master.batch_folder.get()).glob(files):
                 if file not in master.settings.exclusion_files:
-                    calibration_files.append(path.join(
-                        master.batch_folder.get(), file))
+                    calibration_files.append(Path(master.batch_folder.get()) /
+                                             file)
         return calibration_files
 
     def get_quantitation_files(self, master):
@@ -186,10 +190,10 @@ class Functions(object):
         """
         quantitation_files = []
         for files in master.settings.quantitation_filetypes:
-            for file in glob(path.join(master.batch_folder.get(), files)):
+            for file in Path(master.batch_folder.get()).glob(files):
                 if file not in master.settings.exclusion_files:
-                    quantitation_files.append(path.join(
-                        master.batch_folder.get(), file))
+                    quantitation_files.append(Path(master.batch_folder.get()) /
+                                              file)
         return quantitation_files
 
     def peak_detection(self, master):
@@ -371,5 +375,5 @@ class Functions(object):
                         format(data_point[1], '0.'+str(
                         master.settings.decimal_numbers)+'f'))+"\n")
         except IOError:
-            self.logger.error("File: "+str(path.basename(
-                              master.chrom.filename))+" could not be opened.")
+            self.logger.error("File: "+str(Path(master.chrom.filename).name)+
+                              " could not be opened.")
