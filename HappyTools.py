@@ -105,6 +105,9 @@ class HappyToolsGui(object):
 
         # CANVAS
         self.fig = figure.Figure(figsize=(12,6))
+        self.fig.set_tight_layout(True)
+        self.axes = self.fig.add_subplot(111)
+        self.axes.axis('off')
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
         self.toolbar = CustomToolbar(self.canvas, master)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=tk.YES)
@@ -121,11 +124,8 @@ class HappyToolsGui(object):
         if path.isfile(iconbitmap):
             master.iconbitmap(default=iconbitmap)
         if path.isfile(backgroundimage):
-            self.axes = self.fig.add_subplot(111)
-            self.axes.axis('off')
-            self.fig.set_tight_layout(True)
             img = image.imread(backgroundimage)
-            self.axes.imshow(img)
+            self.axes.imshow(img, aspect='auto')
         self.progress = progressbar.SimpleProgressBar(self)
         self.progress.bar.pack(fill=tk.X)
 
