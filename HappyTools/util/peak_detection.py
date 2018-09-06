@@ -79,5 +79,5 @@ class PeakDetection(object):
     def write_peaks(self, master):
         save_file = filedialog.asksaveasfilename(title="Save Annotation File")
         with Path(save_file).open('w') as fw:
-            fw.write("foo")
-        
+            for peak in self.detected_peaks:
+                fw.write(str(peak[0])+"\n")

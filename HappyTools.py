@@ -45,7 +45,6 @@ import HappyTools.gui.version as version
 
 # Class imports
 from HappyTools.bin.chromatogram import Chromatogram
-from HappyTools.bin.trace import Trace
 
 # Directories
 directories = [
