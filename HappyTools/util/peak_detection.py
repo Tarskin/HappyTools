@@ -1,9 +1,10 @@
 from HappyTools.util.fitting import Fitting
 from HappyTools.bin.peak import Peak
 import logging
+import tkinter.filedialog as filedialog
 from numpy import linspace
-from bisect import bisect_left, bisect_right
 from pathlib import Path
+from bisect import bisect_left, bisect_right
 
 
 class PeakDetection(object):
@@ -76,5 +77,7 @@ class PeakDetection(object):
                               label="Peak "+str(index+1))
 
     def write_peaks(self, master):
-        raise NotImplementedError
+        save_file = filedialog.asksaveasfilename(title="Save Annotation File")
+        with Path(save_file).open('w') as fw:
+            fw.write("foo")
         

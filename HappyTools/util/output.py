@@ -92,7 +92,7 @@ class Output(object):
 
     def write_back_sub_gauss_peak_area(self, master):
         with Path(master.batch_folder.get() /
-                  Path(self.filename)).open('a') as fw:       
+                  Path(self.filename)).open('a') as fw:
             fw.write("Gaussian Area (Background Subtracted)")
             fw.write(self.header)
             for i in master.results:
