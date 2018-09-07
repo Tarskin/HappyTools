@@ -17,6 +17,9 @@
 # with this program; if not, see
 # http://www.apache.org/licenses/LICENSE-2.0
 
+# Compatability check
+import HappyTools.util.requirement_checker
+
 # General imports
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk
