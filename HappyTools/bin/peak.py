@@ -1,7 +1,7 @@
 from HappyTools.util.fitting import Fitting
 from bisect import bisect_left, bisect_right
 from math import sqrt, log
-from numpy import amax, argmax, array, exp, linspace, mean, std, where
+from numpy import amax, argmax, array, exp, linspace, mean, std
 from scipy.optimize import curve_fit
 from sys import maxsize
 
@@ -64,7 +64,7 @@ class Peak(object):
         elif self.settings.background_noise_method == 'MT':
             background = maxsize
             noise = 0
-            for index, i in enumerate(intensity[:-self.settings.slicepoints]):
+            for index, _ in enumerate(intensity[:-self.settings.slicepoints]):
                 buffer = intensity[index:index+self.settings.slicepoints]
                 if mean(buffer) < background:
                     background = mean(buffer)
@@ -81,7 +81,7 @@ class Peak(object):
     def determine_background_area(self, master):
         background_area = 0
         time, intensity = zip(*master.chrom.trace.chrom_data)
-        for index, j in enumerate(intensity[self.low:self.high]):
+        for index, _ in enumerate(intensity[self.low:self.high]):
             try:
                 background_area += max(self.background, 0) * (
                     time[self.low+index]-time[self.low+index-1])
@@ -107,11 +107,9 @@ class Peak(object):
         x_data, y_data = zip(*master.data_subset)
         peak = array(x_data)[y_data > exp(-0.5)*max(y_data)]
         guess_sigma = 0.5*(max(peak) - min(peak))
-        new_gauss_x = linspace(x_data[0], x_data[-1], 2500*(x_data[-1]-
-            x_data[0]))
         p0 = [amax(y_data), x_data[argmax(y_data)], guess_sigma]
         try:
-            coeff, var_matrix = curve_fit(Fitting().gauss_function, x_data, y_data,
+            coeff, _ = curve_fit(Fitting().gauss_function, x_data, y_data,
                 p0)
 
         except TypeError:
@@ -180,7 +178,7 @@ class Peak(object):
         self.residual = residual
 
     def determine_signal_noise(self, master):
-        time, intensity = zip(*master.chrom.trace.chrom_data)
+        _, intensity = zip(*master.chrom.trace.chrom_data)
         maximum_point = max(intensity[self.low:self.high])
         signal_noise = (maximum_point - self.background) / self.noise
 

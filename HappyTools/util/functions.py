@@ -1,15 +1,12 @@
 import HappyTools.gui.progress_bar as progressbar
-import HappyTools.gui.debug as debug
 from HappyTools.gui.tooltip import ToolTip
 from HappyTools.util.pdf import Pdf
 from HappyTools.util.output import Output
 from HappyTools.bin.chromatogram import Chromatogram
 from HappyTools.bin.peak import Peak
 
-from bisect import bisect_left, bisect_right
-from datetime import datetime
-from glob import glob
 import logging
+from bisect import bisect_left, bisect_right
 from numpy import greater, less, linspace, poly1d, polyfit
 from os import W_OK, access
 from pathlib import Path
@@ -211,7 +208,7 @@ class Functions(object):
 
         results = []
 
-        time, intensity = zip(*master.chrom.trace.chrom_data)
+        time, _ = zip(*master.chrom.trace.chrom_data)
 
         # Initialize PDF and plot overview
         if master.settings.create_figure == 'True' and bisect_left(
@@ -344,7 +341,7 @@ class Functions(object):
 
         # Regions between breaks[x] and breaks[x+1]
         try:
-            for index, j in enumerate(master.breaks):
+            for index, _ in enumerate(master.breaks):
                 if max(new_y[master.breaks[index]:master.breaks[index+1]]) > max_point:
                     max_point = max(new_y[master.breaks[index]:
                         master.breaks[index+1]])
