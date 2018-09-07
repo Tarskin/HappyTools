@@ -18,7 +18,8 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 
 # Compatability check
-import HappyTools.util.requirement_checker
+import HappyTools.util.requirement_checker as req_check
+req_check.check_requirements()
 
 # General imports
 from matplotlib.backends.backend_tkagg import (
