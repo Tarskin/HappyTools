@@ -1,2 +1,2 @@
-version = '0.0.2'
+version = '0.1-alpha1'
 build = '180907f'
