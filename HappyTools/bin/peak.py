@@ -1,7 +1,7 @@
 from HappyTools.util.fitting import Fitting
 from bisect import bisect_left, bisect_right
 from math import sqrt, log
-from numpy import amax, argmax, array, exp, linspace, mean, std
+from numpy import amax, argmax, array, exp, mean, std
 from scipy.optimize import curve_fit
 from sys import maxsize
 
@@ -94,7 +94,7 @@ class Peak(object):
         time, intensity = zip(*master.chrom.trace.chrom_data)
         gaussian_area = 0.
 
-        for index, j in enumerate(intensity[self.low:self.high]):
+        for index, _ in enumerate(intensity[self.low:self.high]):
             gaussian_area += max(Fitting().gauss_function(time[self.low+index],
                 *self.coeff), 0) * (time[self.low+index]-
                 time[self.low+index-1])
