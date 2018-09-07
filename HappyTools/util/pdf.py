@@ -12,26 +12,26 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 
 class Pdf(object):
     def __init__(self, master):
-        pdf_file = str(PurePath(master.chrom.filename).stem)+".pdf"
+        pdf_file = str(PurePath(master.chrom.filename).stem)+'.pdf'
         self.pdf = PdfPages(master.batch_folder.get() / Path(pdf_file))
 
     def plot_overview(self, master):
         time, intensity = zip(*master.chrom.trace.chrom_data)
         d = self.pdf.infodict()
-        d['Title'] = "PDF Report for: "+str(PurePath(
+        d['Title'] = 'PDF Report for: '+str(PurePath(
                                             master.chrom.filename).stem)
-        d['Author'] = ("HappyTools version: "+str(version.version)+
-                       " build: "+str(version.build))
+        d['Author'] = ('HappyTools version: '+str(version.version)+
+                       ' build: '+str(version.build))
         d['CreationDate'] = datetime.now()
         low = bisect_left(time, master.settings.start)
         high = bisect_right(time, master.settings.end)
         fig = plt.figure(figsize=(8, 6))
         ax = fig.add_subplot(111)
-        plt.plot(time[low:high], intensity[low:high], "b-")
+        plt.plot(time[low:high], intensity[low:high], 'b-')
         plt.legend(['Raw Data'], loc='best')
         plt.title(str(PurePath(master.chrom.filename).stem))
-        plt.xlabel("Retention Time [m]")
-        plt.ylabel("Intensity [au]")
+        plt.xlabel('Retention Time [m]')
+        plt.ylabel('Intensity [au]')
         for i in master.reference:
             low = bisect_left(time, i[1]-i[2])
             high = bisect_right(time, i[1]+i[2])
@@ -78,12 +78,12 @@ class Pdf(object):
                   master.peak.height),color='red',linestyle='dashed')
         plt.legend(['Raw Data','Background','Noise','Univariate Spline',
                     'Gaussian Fit ('+str(int(master.peak.residual*100))+
-                    '%)','Signal (S/N '+"{0:.2f}".format(
-                    master.peak.signal_noise)+")","FWHM: "+"{0:.2f}".format(
+                    '%)','Signal (S/N '+'{0:.2f}'.format(
+                    master.peak.signal_noise)+')','FWHM: '+'{0:.2f}'.format(
                     master.peak.fwhm)], loc='best')
-        plt.title("Detail view: "+str(master.peak.peak))
-        plt.xlabel("Retention Time [m]")
-        plt.ylabel("Intensity [au]")
+        plt.title('Detail view: '+str(master.peak.peak))
+        plt.xlabel('Retention Time [m]')
+        plt.ylabel('Intensity [au]')
         self.pdf.savefig(fig)
         plt.close(fig)
 

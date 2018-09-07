@@ -7,13 +7,13 @@ import numpy as np
 
 class Trace(object):
     def __init__(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
         self.chrom_data = None
 
     def open_chrom(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
         with open(master.filename, 'r') as fr:
             chrom_data = []
             if master.filename.suffix.lower().endswith('txt'):
@@ -42,7 +42,7 @@ class Trace(object):
                             chrom_data.append((float(line_chunks[0]),
                                                float(line_chunks[-1])))
                         except UnicodeEncodeError:
-                            print("Omitting line: "+str(line))
+                            print('Omitting line: '+str(line))
             elif master.filename.lower().endswith('arw'):
                 for line in fr:
                     lines = line.split('\r')
@@ -58,13 +58,13 @@ class Trace(object):
                     except IndexError:
                         pass
             else:
-                print("Incorrect inputfile format, please upload a raw " +
-                      "data 'txt' or 'arw' file.")
+                print('Incorrect inputfile format, please upload a raw ' +
+                      'data \'.txt\' or \'.arw\' file.')
         self.chrom_data = chrom_data
 
     def baseline_correction(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
 
         # Background determination
         background = []
@@ -94,16 +94,16 @@ class Trace(object):
                                [x+offset for x in new_chrom_intensity]))
 
     def smooth_chrom(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
         # Apply Savitzky-Golay filter
         time, intensity = zip(*self.chrom_data)
         new = savgol_filter(intensity, 21, 3)
         self.chrom_data = list(zip(time, new))
 
     def norm_chrom(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
         time, intensity = zip(*self.chrom_data)
 
         # Normalize to maximum intensity

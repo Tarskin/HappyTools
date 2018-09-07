@@ -2,6 +2,7 @@ from HappyTools.util.fitting import Fitting
 from HappyTools.bin.peak import Peak
 import logging
 import tkinter.filedialog as filedialog
+from math import sqrt, log
 from numpy import linspace
 from pathlib import Path
 from bisect import bisect_left, bisect_right
@@ -65,19 +66,37 @@ class PeakDetection(object):
                                                        *self.peak.coeff)
 
             # Store detected peak
-            self.detected_peaks.append(zip(gauss_time, gauss_intensity))
+            self.detected_peaks.append({'data':list(zip(gauss_time,
+                                        gauss_intensity)),
+                                        'coeff': self.peak.coeff})
 
         # Restore original data
         self.chrom.trace.chrom_data = list(zip(orig_time, orig_intensity))
 
     def plot_peaks(self, master):
         for index, peak in enumerate(self.detected_peaks):
-            x_array, y_array = zip(*peak)
+            x_array, y_array = zip(*peak['data'])
             master.axes.fill_between(x_array, 0, y_array, alpha=0.5,
-                              label="Peak "+str(index+1))
+                              label='Peak '+str(index+1))
 
     def write_peaks(self, master):
-        save_file = filedialog.asksaveasfilename(title="Save Annotation File")
+        save_file = filedialog.asksaveasfilename(title='Save Annotation File')
         with Path(save_file).open('w') as fw:
-            for peak in self.detected_peaks:
-                fw.write(str(peak[0])+"\n")
+            fw.write('Index\tTime\tWindow\n')
+            for index, peak in enumerate(self.detected_peaks):
+                time, intensity = zip(*peak['data'])
+                max_intensity_index = intensity.index(max(intensity))
+
+                peak_maximum = time[max_intensity_index]
+                if self.settings.peak_detection_edge == 'Sigma':
+                    window = (self.settings.peak_detection_edge_value *
+                             peak['coeff'][2])
+                elif self.settings.peak_detection_edge == 'FWHM':
+                    window = abs(2*peak['coeff'][2]*sqrt(2*log(2)))
+                else:
+                    window = None
+
+                fw.write(str(index+1)+'\t'+str(format(peak_maximum, '0.'+str(
+                         self.settings.decimal_numbers)+'f'))+'\t'+
+                         str(format(window, '0.'+str(
+                         self.settings.decimal_numbers)+'f'))+'\n')

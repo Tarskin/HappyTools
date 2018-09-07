@@ -23,8 +23,8 @@ class Functions(object):
         self.master = master
 
     def apply_calibration_function(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
         time, intensity = zip(*master.chrom.trace.chrom_data)
         master.chrom.trace.chrom_data = list(zip(master.function(time), intensity))
 
@@ -81,16 +81,16 @@ class Functions(object):
             self.function = self.determine_calibration_function(self)
             self.apply_calibration_function(self)
             self.chrom.filename = (Path(master.batch_folder.get()) /
-                                   "_".join(["calibrated",
+                                   '_'.join(['calibrated',
                                    Path(self.chrom.filename).name]))
         else:
             data.filename = (Path(master.batch_folder.get()) /
-                             "_".join(["uncalibrated",
+                             '_'.join(['uncalibrated',
                              Path(self.chrom.filename).name]))
         self.write_data(master)
 
     def create_tooltip(self, master, widget, text):
-        """Create a tooltip.
+        '''Create a tooltip.
 
         This function will create a tooltip and assign it to the widget that
         was handed to this function. The widget will then show the provided
@@ -99,7 +99,7 @@ class Functions(object):
         Keyword arguments:
         widget -- tkinter object
         text -- string
-        """
+        '''
         toolTip = ToolTip(widget)
 
         def enter(event):
@@ -139,17 +139,17 @@ class Functions(object):
 
     def determine_calibration_function(self, master):
         expected, observed = zip(*master.time_pairs)
-        if master.settings.use_UPC == "False":
+        if master.settings.use_UPC == 'False':
             z = polyfit(observed, expected, 2)
             function = poly1d(z)
-        elif master.settings.use_UPC == "True":
-            raise NotImplementedError("Ultra performance calibration has not "+
-                "been implemented in the refactoring yet.")
+        elif master.settings.use_UPC == 'True':
+            raise NotImplementedError('Ultra performance calibration has not '+
+                'been implemented in the refactoring yet.')
         return function
 
     def find_peak(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
         self.settings = master.settings
         self.chrom = master.chrom
         time_pairs = []
@@ -175,8 +175,8 @@ class Functions(object):
         return time_pairs
 
     def get_calibration_files(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
         calibration_files = []
         for files in master.settings.calibration_filetypes:
             for file in Path(master.batch_folder.get()).glob(files):
@@ -186,8 +186,8 @@ class Functions(object):
         return calibration_files
 
     def get_quantitation_files(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
         quantitation_files = []
         for files in master.settings.quantitation_filetypes:
             for file in Path(master.batch_folder.get()).glob(files):
@@ -197,12 +197,12 @@ class Functions(object):
         return quantitation_files
 
     def peak_detection(self, master):
-        raise NotImplementedError("This feature is not implemented in the " +
-                                  "refactor yet.")
+        raise NotImplementedError('This feature is not implemented in the ' +
+                                  'refactor yet.')
 
     def quantify_chrom(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
 
         self.master = master
         self.reference = master.reference
@@ -214,7 +214,7 @@ class Functions(object):
         time, intensity = zip(*master.chrom.trace.chrom_data)
 
         # Initialize PDF and plot overview
-        if master.settings.create_figure == "True" and bisect_left(
+        if master.settings.create_figure == 'True' and bisect_left(
             time, master.settings.start) and bisect_right(time,
             master.settings.end):
 
@@ -257,7 +257,7 @@ class Functions(object):
             self.peak.determine_residual(self)
 
             # Add individual peak to PDF
-            if master.settings.create_figure == "True":
+            if master.settings.create_figure == 'True':
                 self.pdf.plot_individual(self)
 
             # Results
@@ -277,13 +277,13 @@ class Functions(object):
             })
 
         # Close PDF
-        if master.settings.create_figure == "True":
+        if master.settings.create_figure == 'True':
             self.pdf.close(self)
 
         return results
 
     def read_peak_list(self, file_name):
-        """Read and parse the peak file and return a list of peaks.
+        '''Read and parse the peak file and return a list of peaks.
 
         This function opens the file that is specified in 'fileName', and
         reads it on a line per line basis. The function will split each
@@ -293,30 +293,30 @@ class Functions(object):
 
         Keyword argments:
         fileName -- string
-        """
+        '''
         peaks = []
         try:
             with open(file_name, 'r') as fr:
                 for line in fr:
-                    line = line.rstrip("\n").split("\t")
+                    line = line.rstrip('\n').split('\t')
                     try:
                         peaks.append((str(line[0]), float(line[1]),
                             float(line[2])))
                     except ValueError:
-                        self.logger.info("Ignoring line: "+str(line)+" from "+
-                                         "file: "+str(file_name))
+                        self.logger.info('Ignoring line: '+str(line)+' from '+
+                                         'file: '+str(file_name))
         except IOError:
-            self.logger.error("The selected reference file "+str(file_name)+
-                              " could not be opened.")
+            self.logger.error('The selected reference file '+str(file_name)+
+                              ' could not be opened.')
         return peaks
 
     def save_calibrants(self, master):
-        raise NotImplementedError("This feature is not implemented in the " +
-                                  "refactor yet.")
+        raise NotImplementedError('This feature is not implemented in the ' +
+                                  'refactor yet.')
 
     def save_annotation(self, master):
-        raise NotImplementedError("This feature is not implemented in the " +
-                                  "refactor yet.")
+        raise NotImplementedError('This feature is not implemented in the ' +
+                                  'refactor yet.')
 
     def subset_data(self, master):
 
@@ -365,15 +365,15 @@ class Functions(object):
         return list(zip(x_data, y_data))
 
     def write_data(self, master):
-        """ TODO
-        """
+        ''' TODO
+        '''
         try:
             with open(master.chrom.filename, 'w') as fw:
                 for data_point in master.chrom.trace.chrom_data:
                     fw.write(str(format(data_point[0], '0.'+str(
-                        master.settings.decimal_numbers)+'f'))+"\t"+str(
+                        master.settings.decimal_numbers)+'f'))+'\t'+str(
                         format(data_point[1], '0.'+str(
-                        master.settings.decimal_numbers)+'f'))+"\n")
+                        master.settings.decimal_numbers)+'f'))+'\n')
         except IOError:
-            self.logger.error("File: "+str(Path(master.chrom.filename).name)+
-                              " could not be opened.")
+            self.logger.error('File: '+str(Path(master.chrom.filename).name)+
+                              ' could not be opened.')

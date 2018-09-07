@@ -57,20 +57,20 @@ class Peak(object):
         _, intensity = zip(*master.chrom.trace.chrom_data[self.low_background:
             self.high_background])
 
-        if self.settings.background_noise_method == "NOBAN":
-            raise NotImplementedError("This feature is not implemented in "+
-                "the refactor yet.")
+        if self.settings.background_noise_method == 'NOBAN':
+            raise NotImplementedError('This feature is not implemented in '+
+                'the refactor yet.')
 
-        elif self.settings.background_noise_method == "MT":
+        elif self.settings.background_noise_method == 'MT':
             background = maxsize
             noise = 0
             for index, i in enumerate(intensity[:-self.settings.slicepoints]):
                 buffer = intensity[index:index+self.settings.slicepoints]
                 if mean(buffer) < background:
                     background = mean(buffer)
-                    if self.settings.noise == "MM":
+                    if self.settings.noise == 'MM':
                         noise = max(buffer)-min(buffer)
-                    elif self.settings.noise == "RMS":
+                    elif self.settings.noise == 'RMS':
                         noise = std(buffer)
             if noise == 0:
                 noise = 1
@@ -115,17 +115,17 @@ class Peak(object):
                 p0)
 
         except TypeError:
-            self.logger.warn("Not enough data points to fit a Gaussian to "+
-                             "peak: "+str(self.peak))
+            self.logger.warn('Not enough data points to fit a Gaussian to '+
+                             'peak: '+str(self.peak))
 
         except RuntimeError:
-            self.logger.error("Unable to determine residuals for peak: "+
+            self.logger.error('Unable to determine residuals for peak: '+
                               str(self.peak))
 
         self.coeff = coeff
 
     def determine_gaussian_parameters(self, master):
-        """Calculate the FWHM.
+        '''Calculate the FWHM.
 
         This function will calculate the FWHM based on the following formula
         FWHM = 2*sigma*sqrt(2*ln(2)). The function will return a dictionary
@@ -134,7 +134,7 @@ class Peak(object):
 
         Keyword arguments:
         coeff -- coefficients as calculated by SciPy curve_fit
-        """
+        '''
         fwhm = abs(2*self.coeff[2]*sqrt(2*log(2)))
         width = 0.5*fwhm
         center = self.coeff[1]
