@@ -12,7 +12,7 @@ class Chromatogram(object):
         label = PurePath(self.filename).stem
         x_array, y_array = zip(*self.trace.chrom_data)
         master.axes.plot(x_array, y_array, label=str(label))
-       
+
     def save_chrom(self, master):
         with open(self.filename, 'w') as fw:
             for data_point in self.trace.chrom_data:
