@@ -36,7 +36,7 @@ class Output(object):
             elif master.bck_sub.get() == 1:
                 self.write_back_sub_abs_peak_area(self)
 
-        elif master.rel_int.get() == 1:
+        if master.rel_int.get() == 1:
             if master.bck_sub.get() == 0:
                 self.write_non_back_sub_rel_peak_area(self)
             elif master.bck_sub.get() == 1:
