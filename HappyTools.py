@@ -25,15 +25,15 @@ req_check.check_requirements()
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk
 )
+import importlib
 import logging
 import tkinter as tk
 import tkinter.filedialog as filedialog
 import tkinter.messagebox as messagebox
 from matplotlib import image, figure
-from pathlib import Path
+from pathlib import Path, PurePath
 
 # Custom libraries
-import HappyTools.plugins as plugins
 from HappyTools.util.peak_detection import PeakDetection
 from HappyTools.util.functions import Functions
 from HappyTools.util.output import Output
@@ -90,6 +90,7 @@ class HappyToolsGui(object):
                             format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                             datefmt='%Y-%m-%d %H:%M', filemode='a',
                             level=logging.DEBUG)
+        self.logger = logging.getLogger(__name__)
         self.functions = Functions(self) # Change functions from class to non
 
         # ACCESS CHECK
@@ -182,6 +183,27 @@ class HappyToolsGui(object):
         menu.add_cascade(label='About', menu=aboutmenu)
         aboutmenu.add_command(label='About HappyTools',
                               command=self.open_about_window)
+
+        if (Path.cwd() / 'HappyTools' / 'plugins').glob("*.py"):
+            pluginsmenu = tk.Menu(menu,tearoff=0)
+            menu.add_cascade(label="Plugins", menu=pluginsmenu)
+            for file in(Path.cwd() / 'HappyTools' / 'plugins').glob('*.py'):
+                if '__' in str(file):
+                    continue
+                module_name = PurePath(file).stem
+                module = "HappyTools.plugins."+str(module_name)
+                module = importlib.import_module(module)
+                pluginsmenu.add_command(label=module_name,
+                                        command=self.make_function(module))
+
+    @staticmethod
+    def make_function(module):
+        try:
+            def x():
+                return module.start()
+        except AttributeError as e:
+            self.logger.error('Problem with the plugin: '+str(e))
+        return x
 
     @classmethod
     def open_about_window(cls):
