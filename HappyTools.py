@@ -304,7 +304,7 @@ class HappyToolsGui(object):
         try:
             self.axes.clear()
             for self.chrom in self.data:
-                self.detected_peaks = PeakDetection(selfu)
+                self.detected_peaks = PeakDetection(self)
                 self.detected_peaks.detect_peaks(self)
                 self.detected_peaks.plot_peaks(self)
                 self.chrom.plot_chrom(self)
