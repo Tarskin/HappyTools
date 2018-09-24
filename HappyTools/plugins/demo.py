@@ -1,6 +1,6 @@
 import tkinter as tk
 
-def start():
+def start(master):
     def close():
         top.destroy()
 

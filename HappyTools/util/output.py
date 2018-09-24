@@ -4,6 +4,10 @@ from pathlib import Path
 
 class Output(object):
     def __init__(self, master):
+        try:
+            self.rt_to_gu_function  = master.rt_to_gu_function
+        except:
+            print("Wtf")
         self.abs_int = master.abs_int
         self.rel_int = master.rel_int
         self.gauss_int = master.gauss_int
@@ -18,17 +22,37 @@ class Output(object):
         s = utc_datetime.strftime(master.settings.date_format)
         self.filename = s + '_' + master.settings.output
 
-    def build_output_file(self, master):
+
+    def build_header(self, master):
         header = ''
         for i in master.results:
+
             for j in i['results']:
                 header = header + '\t'+str(j['peak'])
             header = header + '\n'
+
+            header = header + 'RT'
             for j in i['results']:
                 header = header + '\t'+str(j['time'])
             header = header + '\n'
+
+            # TODO: Find a way to implement these lines as a patch
+            """try:
+                if self.rt_to_gu_function:
+                    header = header + 'GU'
+                    for j in i['results']:
+                        header = header + '\t'+str(master.rt_to_gu_function(
+                                                   j['time']))
+                    header = header + '\n'
+            except:
+                pass
+            """
+
             break
         self.header = header
+
+    def build_output_file(self, master):
+        self.build_header(self)
 
         if master.abs_int.get() == 1:
             if master.bck_sub.get() == 0:

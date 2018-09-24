@@ -104,7 +104,7 @@ class HappyToolsGui(object):
 
         # SETTINGS
         self.settings = Settings(self)
-        if (Path.cwd() / self.settings.settings).is_file:
+        if (Path.cwd() / self.settings.settings).is_file():
             self.settings.read_settings(self.settings)
 
         # CANVAS
@@ -196,11 +196,10 @@ class HappyToolsGui(object):
                 pluginsmenu.add_command(label=module_name,
                                         command=self.make_function(module))
 
-    @staticmethod
-    def make_function(module):
+    def make_function(self, module):
         try:
             def x():
-                return module.start()
+                return module.start(self)
         except AttributeError as e:
             self.logger.error('Problem with the plugin: '+str(e))
         return x
