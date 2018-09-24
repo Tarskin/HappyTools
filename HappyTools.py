@@ -89,7 +89,7 @@ class HappyToolsGui(object):
         logging.basicConfig(filename='HappyTools.log',
                             format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                             datefmt='%Y-%m-%d %H:%M', filemode='a',
-                            level=logging.DEBUG)
+                            level=logging.WARNING)
         self.logger = logging.getLogger(__name__)
         self.functions = Functions(self) # Change functions from class to non
 
@@ -232,6 +232,8 @@ class HappyToolsGui(object):
         try:
             self.cal_file = filedialog.askopenfilename(
                 title='Select Calibration File')
+            if not self.cal_file:
+                self.cal_file = None
             self.reference = self.functions.read_peak_list(self.cal_file)
 
             self.progress.reset_bar(self)
@@ -245,8 +247,8 @@ class HappyToolsGui(object):
                 self.function = self.functions.determine_calibration_function(self)
                 self.functions.apply_calibration_function(self)
 
-        except AttributeError:
-            pass
+        except Exception as e:
+            self.logger.error(e)
         self.progress.fill_bar(self)
 
         self.axes.clear()
@@ -268,8 +270,8 @@ class HappyToolsGui(object):
                 chrom.trace.norm_chrom(self)
                 chrom.plot_chrom(self)
             finalize_plot(self)
-        except AttributeError:
-            pass
+        except Exception as e:
+            self.logger.error(e)
 
     def quantify_chromatogram(self):
         try:
@@ -277,6 +279,8 @@ class HappyToolsGui(object):
             self.functions.batch_folder = self.batch_folder
             self.quant_file = filedialog.askopenfilename(
                 title='Select Quantitation File')
+            if not self.quant_file:
+                self.quant_file = None
             self.reference = self.functions.read_peak_list(self.quant_file)
 
             self.progress.reset_bar(self)
@@ -293,27 +297,27 @@ class HappyToolsGui(object):
             self.output.init_output_file(self)
             self.output.build_output_file(self)
             self.progress.fill_bar(self)
-        except AttributeError:
-            pass
+        except Exception as e:
+            self.logger.error(e)
 
     def peak_detection(self):
         try:
             self.axes.clear()
             for self.chrom in self.data:
-                self.detected_peaks = PeakDetection(self)
+                self.detected_peaks = PeakDetection(selfu)
                 self.detected_peaks.detect_peaks(self)
                 self.detected_peaks.plot_peaks(self)
                 self.chrom.plot_chrom(self)
             finalize_plot(self)
-        except AttributeError:
-            pass
+        except Exception as e:
+            self.logger.error(e)
 
     def save_annotation(self):
         try:
             for self.chrom in self.data:
                 self.detected_peaks.write_peaks(self)
-        except AttributeError:
-            pass
+        except Exception as e:
+            self.logger.error(e)
 
     def save_calibrants(self):
         self.functions.save_calibrants(self)
@@ -325,15 +329,15 @@ class HappyToolsGui(object):
                 chrom.trace.smooth_chrom(self)
                 chrom.plot_chrom(self)
             finalize_plot(self)
-        except AttributeError:
-            pass
+        except Exception as e:
+            self.logger.error(e)
 
     def save_chromatogram(self):
         try:
             for chrom in self.data:
                 chrom.save_chrom(self)
-        except AttributeError:
-            pass
+        except Exception as e:
+            self.logger.error(e)
 
     def baseline_correction(self):
         try:
@@ -342,8 +346,8 @@ class HappyToolsGui(object):
                 chrom.trace.baseline_correction(self)
                 chrom.plot_chrom(self)
             finalize_plot(self)
-        except AttributeError:
-            pass
+        except Exception as e:
+            self.logger.error(e)
 
 # Call the main app
 if __name__ == '__main__':

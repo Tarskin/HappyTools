@@ -246,7 +246,7 @@ class Functions(object):
 
             # Gaussian fit
             self.peak.determine_gaussian_coefficients(self)
-            if self.peak.coeff.any():
+            if self.peak.coeff.size > 0:
                 self.peak.determine_gaussian_area(self)
                 self.peak.determine_gaussian_parameters(self)
                 self.peak.determine_height(self)

@@ -54,9 +54,11 @@ class Pdf(object):
         new_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
         new_y = f(new_x)
 
-        new_gauss_x = linspace(time[low], time[high], 2500*(
-                               time[high]-time[low]))
-        new_gauss_y = Fitting().gauss_function(new_gauss_x, *master.peak.coeff)
+        if master.peak.coeff.size > 0:
+            new_gauss_x = linspace(time[low], time[high], 2500*(
+                                   time[high]-time[low]))
+            new_gauss_y = Fitting().gauss_function(new_gauss_x,
+                                                   *master.peak.coeff)
 
         fig =  plt.figure(figsize=(8, 6))
         fig.add_subplot(111)
@@ -67,7 +69,9 @@ class Pdf(object):
                   master.peak.noise,master.peak.background+master.peak.noise),
                   color='green')
         plt.plot(new_x,new_y, color='blue',linestyle='dashed')
-        plt.plot(new_gauss_x, new_gauss_y, color='green',linestyle='dashed')
+        if master.peak.coeff.size > 0:
+            plt.plot(new_gauss_x, new_gauss_y, color='green',
+                     linestyle='dashed')
         plt.plot((time[intensity[low:high].index(max(intensity[low:high]))+low],
                 time[intensity[low:high].index(max(intensity[low:high]))+low]),
                 (master.peak.background,max(intensity[low:high])),

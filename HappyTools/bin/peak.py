@@ -28,7 +28,7 @@ class Peak(object):
         self.center = 0.
         self.actual_time = 0.
         self.total_area = 0.
-        self.coeff = 0.
+        self.coeff = array([])
 
         time, _ = zip(*master.chrom.trace.chrom_data)
         self.low = bisect_left(time, self.time-self.window)
@@ -102,7 +102,6 @@ class Peak(object):
         self.gaussian_area = gaussian_area
 
     def determine_gaussian_coefficients(self, master):
-        coeff = []
 
         x_data, y_data = zip(*master.data_subset)
         peak = array(x_data)[y_data > exp(-0.5)*max(y_data)]
@@ -111,6 +110,7 @@ class Peak(object):
         try:
             coeff, _ = curve_fit(Fitting().gauss_function, x_data, y_data,
                 p0)
+            self.coeff = coeff
 
         except TypeError:
             self.logger.warn('Not enough data points to fit a Gaussian to '+
@@ -119,8 +119,6 @@ class Peak(object):
         except RuntimeError:
             self.logger.error('Unable to determine residuals for peak: '+
                               str(self.peak))
-
-        self.coeff = coeff
 
     def determine_gaussian_parameters(self, master):
         '''Calculate the FWHM.
