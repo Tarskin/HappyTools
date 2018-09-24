@@ -4,10 +4,6 @@ from pathlib import Path
 
 class Output(object):
     def __init__(self, master):
-        try:
-            self.rt_to_gu_function  = master.rt_to_gu_function
-        except:
-            print("Wtf")
         self.abs_int = master.abs_int
         self.rel_int = master.rel_int
         self.gauss_int = master.gauss_int
@@ -35,18 +31,6 @@ class Output(object):
             for j in i['results']:
                 header = header + '\t'+str(j['time'])
             header = header + '\n'
-
-            # TODO: Find a way to implement these lines as a patch
-            """try:
-                if self.rt_to_gu_function:
-                    header = header + 'GU'
-                    for j in i['results']:
-                        header = header + '\t'+str(master.rt_to_gu_function(
-                                                   j['time']))
-                    header = header + '\n'
-            except:
-                pass
-            """
 
             break
         self.header = header
