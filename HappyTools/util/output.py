@@ -4,6 +4,7 @@ from pathlib import Path
 
 class Output(object):
     def __init__(self, master):
+        self.master = master
         self.abs_int = master.abs_int
         self.rel_int = master.rel_int
         self.gauss_int = master.gauss_int
