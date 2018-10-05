@@ -34,10 +34,10 @@ class batchWindow(object):
 
 
         top = tk.top = tk.Toplevel()
-        top.title("Batch Process")
-        top.protocol("WM_DELETE_WINDOW", self.close)
+        top.title('Batch Process')
+        top.protocol('WM_DELETE_WINDOW', self.close)
 
-        calibrationButton = tk.Button(top, text="Calibration File",
+        calibrationButton = tk.Button(top, text='Calibration File',
                                       width=20,
                                       command=self.set_calibration_file)
         calibrationButton.grid(row=1, column=0, sticky=tk.W)
@@ -45,7 +45,7 @@ class batchWindow(object):
                                     width=20)
         calibrationLabel.grid(row=1, column=1)
 
-        analyteButton = tk.Button(top, text="Analyte File",
+        analyteButton = tk.Button(top, text='Analyte File',
                                   width=20,
                                   command=self.set_analyte_file)
         analyteButton.grid(row=2, column=0, sticky=tk.W)
@@ -53,22 +53,22 @@ class batchWindow(object):
                                 width=20)
         analyteLabel.grid(row=2, column=1)
 
-        batchButton = tk.Button(tk.top, text="Batch Directory",
+        batchButton = tk.Button(tk.top, text='Batch Directory',
                                 width=20, command=self.set_batch_folder)
         batchButton.grid(row=3, column=0, sticky=tk.W)
         batchLabel = tk.Label(tk.top, textvariable=self.batch_folder,
                               width=20)
         batchLabel.grid(row=3, column=1, sticky=tk.W)
 
-        outputButton = tk.Button(tk.top, text="Output Options",
+        outputButton = tk.Button(tk.top, text='Output Options',
                                  command=self.open_output_window)
         outputButton.grid(row=4, column=0, columnspan=2,
                           sticky=tk.E+tk.W)
 
-        runButton = tk.Button(tk.top, text="Run", width=20,
+        runButton = tk.Button(tk.top, text='Run', width=20,
                               command=self.run)
         runButton.grid(row=5, column=0, sticky=tk.W)
-        closeButton = tk.Button(tk.top, text="Close", width=20,
+        closeButton = tk.Button(tk.top, text='Close', width=20,
                                 command=self.close)
         closeButton.grid(row=5, column=1, sticky=tk.E)
 
@@ -77,25 +77,25 @@ class batchWindow(object):
 
         # Tooltips
         self.functions.create_tooltip(
-            self, calibrationButton, "This button will allow you to select " +
-            "your calibration file, the program expects a tab separated " +
-            "text file where each line consists of a peak ID, peak RT and " +
-            "a RT window.")
+            self, calibrationButton, 'This button will allow you to select ' +
+            'your calibration file, the program expects a tab separated ' +
+            'text file where each line consists of a peak ID, peak RT and ' +
+            'a RT window.')
 
         self.functions.create_tooltip(
-            self, analyteButton, "This button will allow you to select your " +
-            "analyte file, the program expects a tab separated text file " +
-            "where each line consists of a peak ID, peak RT and a RT window.")
+            self, analyteButton, 'This button will allow you to select your ' +
+            'analyte file, the program expects a tab separated text file ' +
+            'where each line consists of a peak ID, peak RT and a RT window.')
 
         self.functions.create_tooltip(
-            self, batchButton, "This button will allow you to select the " +
-            "folder where the chromatograms are stored that HappyTools will " +
-            "process.")
+            self, batchButton, 'This button will allow you to select the ' +
+            'folder where the chromatograms are stored that HappyTools will ' +
+            'process.')
 
         self.functions.create_tooltip(
-            self, outputButton, "This button will open another window in " +
-            "which you can select which outputs you want HappyTools to show " +
-            "in the final summary.")
+            self, outputButton, 'This button will open another window in ' +
+            'which you can select which outputs you want HappyTools to show ' +
+            'in the final summary.')
 
     def close(self):
         """Close the batch processing pop-up.
@@ -114,18 +114,16 @@ class batchWindow(object):
         """Ask for the batch folder.
         """
         self.batch_folder.set(filedialog.askdirectory(
-            title="Batch Folder"))
+            title='Batch Folder'))
 
     def set_calibration_file(self):
         """Ask for the calibration file.
         """
         self.cal_file.set(filedialog.askopenfilename(
-            title="Calibration File"))
+            title='Calibration File'))
 
     def set_analyte_file(self):
         """Ask for the analyte file.
         """
         self.anal_file.set(filedialog.askopenfilename(
-            title="Analyte File"))
-
-
+            title='Analyte File'))

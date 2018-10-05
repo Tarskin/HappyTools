@@ -1,4 +1,5 @@
 import tkinter as tk
+name = "Demo"
 
 def start(master):
     def close():

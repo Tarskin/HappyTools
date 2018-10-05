@@ -193,6 +193,10 @@ class HappyToolsGui(object):
                 module_name = PurePath(file).stem
                 module = "HappyTools.plugins."+str(module_name)
                 module = importlib.import_module(module)
+                try:
+                    module_name = module.name
+                except:
+                    pass
                 pluginsmenu.add_command(label=module_name,
                                         command=self.make_function(module))
 
