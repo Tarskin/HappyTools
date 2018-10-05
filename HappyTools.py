@@ -76,12 +76,12 @@ class HappyToolsGui(object):
     def __init__(self, master):
         self.output_window_open = tk.IntVar(value=0)
         self.batch_folder = tk.StringVar(value=Path.cwd())
-        self.abs_int = tk.IntVar(value=0)
-        self.rel_int = tk.IntVar(value=0)
-        self.gauss_int = tk.IntVar(value=0)
-        self.bck_sub = tk.IntVar(value=0)
-        self.bck_noise = tk.IntVar(value=0)
-        self.peak_qual = tk.IntVar(value=0)
+        self.abs_int = tk.IntVar(value=1)
+        self.rel_int = tk.IntVar(value=1)
+        self.gauss_int = tk.IntVar(value=1)
+        self.bck_sub = tk.IntVar(value=1)
+        self.bck_noise = tk.IntVar(value=1)
+        self.peak_qual = tk.IntVar(value=1)
         self.create_figure = 'True'
 
         self.master = master

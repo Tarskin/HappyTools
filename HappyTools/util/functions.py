@@ -44,10 +44,13 @@ class Functions(object):
                 files = self.get_calibration_files(self)
 
                 for index, file in enumerate(files):
-                    self.chrom = Chromatogram(file)
-                    self.calibrate_chrom(self)
-                    bar.update_progress_bar(bar.progressbar,
-                        bar.calibration_percentage, index, len(files))
+                    try:
+                        self.chrom = Chromatogram(file)
+                        self.calibrate_chrom(self)
+                        bar.update_progress_bar(bar.progressbar,
+                            bar.calibration_percentage, index, len(files))
+                    except Exception as e:
+                        self.logger.error(e)
 
             bar.update_progress_bar(bar.progressbar,
                 bar.calibration_percentage, 1, 1)
@@ -59,11 +62,14 @@ class Functions(object):
                 files = self.get_quantitation_files(self)
 
                 for index, chromatogram in enumerate(files):
-                    self.chrom = Chromatogram(chromatogram)
-                    self.results.append({'file': Path(chromatogram).name,
-                        'results': self.quantify_chrom(self)})
-                    bar.update_progress_bar(bar.progressbar2,
-                        bar.quantitation_percentage, index, len(files))
+                    try:
+                        self.chrom = Chromatogram(chromatogram)
+                        self.results.append({'file': Path(chromatogram).name,
+                            'results': self.quantify_chrom(self)})
+                        bar.update_progress_bar(bar.progressbar2,
+                            bar.quantitation_percentage, index, len(files))
+                    except Excetion as e:
+                        self.logger.error(e)
 
                 self.output = Output(self)
                 self.output.init_output_file(self)
