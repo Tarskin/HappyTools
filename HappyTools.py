@@ -195,8 +195,8 @@ class HappyToolsGui(object):
                 module = importlib.import_module(module)
                 try:
                     module_name = module.name
-                except:
-                    pass
+                except Exception as e:
+                    self.logger.error(e)
                 pluginsmenu.add_command(label=module_name,
                                         command=self.make_function(module))
 

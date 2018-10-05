@@ -234,7 +234,7 @@ class Output(object):
     def write_retention_time(self, master):
         with Path(master.batch_folder.get() /
                   Path(self.filename)).open('a') as fw:
-            fw.write('Retention Time')
+            fw.write('Retention Time [min.]')
             fw.write(self.header)
             for i in master.results:
                 fw.write(i['file'])
@@ -246,7 +246,7 @@ class Output(object):
     def write_retention_time_residual(self, master):
         with Path(master.batch_folder.get() /
                   Path(self.filename)).open('a') as fw:
-            fw.write('Retention Time Residual')
+            fw.write('Retention Time Residual [min.]')
             fw.write(self.header)
             for i in master.results:
                 fw.write(i['file'])
