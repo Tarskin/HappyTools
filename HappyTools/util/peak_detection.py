@@ -68,7 +68,12 @@ class PeakDetection(object):
             # Store detected peak
             self.detected_peaks.append({'data':list(zip(gauss_time,
                                         gauss_intensity)),
-                                        'coeff': self.peak.coeff})
+                                        'coeff': self.peak.coeff,
+                                        'central_time': self.time})
+
+        # Sort by retention time
+        self.detected_peaks = sorted(self.detected_peaks, key=lambda x:
+                                     x['central_time'])
 
         # Restore original data
         self.chrom.trace.chrom_data = list(zip(orig_time, orig_intensity))
