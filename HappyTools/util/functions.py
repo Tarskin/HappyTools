@@ -68,7 +68,7 @@ class Functions(object):
                             'results': self.quantify_chrom(self)})
                         bar.update_progress_bar(bar.progressbar2,
                             bar.quantitation_percentage, index, len(files))
-                    except Excetion as e:
+                    except Exception as e:
                         self.logger.error(e)
 
                 self.output = Output(self)

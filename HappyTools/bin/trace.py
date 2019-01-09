@@ -43,7 +43,8 @@ class Trace(object):
                                                float(line_chunks[-1])))
                         except UnicodeEncodeError:
                             print('Omitting line: '+str(line))
-            elif master.filename.lower().endswith('arw'):
+
+            elif master.filename.suffix.lower().endswith('arw'):
                 for line in fr:
                     lines = line.split('\r')
                 for line in lines:
@@ -57,6 +58,17 @@ class Trace(object):
                                                float(line_chunks[1])))
                     except IndexError:
                         pass
+            elif master.filename.suffix.lower().endswith('csv'):
+                for line in fr:
+                    if line[0].isdigit() is True:
+                        line_chunks = line.strip().split()
+                        try:
+                            chrom_data.append((float(line_chunks[0]),
+                                              float(line_chunks[1])))
+                        except UnicodeEncodeError:
+                            print('Omitting line: ' + str(line))
+
+
             else:
                 print('Incorrect inputfile format, please upload a raw ' +
                       'data \'.txt\' or \'.arw\' file.')

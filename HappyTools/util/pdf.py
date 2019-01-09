@@ -40,7 +40,7 @@ class Pdf(object):
                                              intensity[low:high])
             new_intensity = f(new_time)
             ax.fill_between(time[low:high], 0, new_intensity, alpha=0.5)
-            ax.text(i[1], max(intensity[low:high]), i[0])
+            ax.text(i[1], max(intensity[low:high]), i[0], fontsize=6, rotation=90, ha='left', va='bottom')
         self.pdf.savefig(fig)
         plt.close(fig)
 
@@ -93,3 +93,4 @@ class Pdf(object):
 
     def close(self, master):
         self.pdf.close()
+
