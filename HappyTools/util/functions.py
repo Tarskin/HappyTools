@@ -233,6 +233,11 @@ class Functions(object):
 
             self.peak = Peak(self)
 
+            # ignore peaks outside the RT window as this will cause an error in the backgound detection.
+            if self.time < master.settings.start+master.settings.background_window \
+                    or self.time > master.settings.end-master.settings.background_window:
+                continue
+
             # Background correct
             self.peak.determine_background_and_noise(self)
             if self.peak.background < 0.:
