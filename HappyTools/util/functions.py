@@ -233,7 +233,7 @@ class Functions(object):
 
             self.peak = Peak(self)
 
-            # ignore peaks outside the RT window as this will cause an error in the backgound detection.
+            # Ignore peaks outside the Trace RT window
             if self.time < master.settings.start+master.settings.background_window \
                     or self.time > master.settings.end-master.settings.background_window:
                 continue

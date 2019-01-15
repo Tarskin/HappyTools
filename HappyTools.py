@@ -223,11 +223,9 @@ class HappyToolsGui(object):
             self.data = data
 
         self.axes.clear()
-
         for chrom in self.data:
             chrom.plot_chrom(self)
         finalize_plot(self)
-
 
     def open_output_window(self):
         OutputWindow(self)

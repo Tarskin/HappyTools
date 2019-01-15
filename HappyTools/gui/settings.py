@@ -34,7 +34,7 @@ class Settings(object):
 
         self.exclusion_files = ['LICENSE.txt', 'CHANGELOG.txt']
         self.calibration_filetypes = ['*.txt', '*.arw', '*.csv']
-        self.quantitation_filetypes = ['calibrated*.txt','calibrated*.csv']
+        self.quantitation_filetypes = ['calibrated*.txt']
 
     def read_settings(self, master):
         '''Read the settings file.

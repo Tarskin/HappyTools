@@ -54,7 +54,6 @@ class Peak(object):
         self.actual_time = time[max_intensity_index]
 
     def determine_background_and_noise(self, master):
-        # throws an Exception if a peak is outside the trace time window set in the Settings page.
         _, intensity = zip(*master.chrom.trace.chrom_data[self.low_background:
             self.high_background])
 

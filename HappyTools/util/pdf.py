@@ -93,4 +93,3 @@ class Pdf(object):
 
     def close(self, master):
         self.pdf.close()
-

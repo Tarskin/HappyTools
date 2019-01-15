@@ -58,6 +58,7 @@ class Trace(object):
                                                float(line_chunks[1])))
                     except IndexError:
                         pass
+
             elif master.filename.suffix.lower().endswith('csv'):
                 for line in fr:
                     if line[0].isdigit() is True:
@@ -67,7 +68,6 @@ class Trace(object):
                                               float(line_chunks[1])))
                         except UnicodeEncodeError:
                             print('Omitting line: ' + str(line))
-
 
             else:
                 print('Incorrect inputfile format, please upload a raw ' +
