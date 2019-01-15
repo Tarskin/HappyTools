@@ -33,7 +33,7 @@ class Settings(object):
         self.settings = 'HappyTools.ini'
 
         self.exclusion_files = ['LICENSE.txt', 'CHANGELOG.txt']
-        self.calibration_filetypes = ['*.txt', '*.arw']
+        self.calibration_filetypes = ['*.txt', '*.arw', '*.csv']
         self.quantitation_filetypes = ['calibrated*.txt']
 
     def read_settings(self, master):

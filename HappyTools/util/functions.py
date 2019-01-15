@@ -68,7 +68,7 @@ class Functions(object):
                             'results': self.quantify_chrom(self)})
                         bar.update_progress_bar(bar.progressbar2,
                             bar.quantitation_percentage, index, len(files))
-                    except Excetion as e:
+                    except Exception as e:
                         self.logger.error(e)
 
                 self.output = Output(self)
@@ -85,11 +85,11 @@ class Functions(object):
             self.apply_calibration_function(self)
             self.chrom.filename = (Path(master.batch_folder.get()) /
                                    '_'.join(['calibrated',
-                                   Path(self.chrom.filename).name]))
+                                   Path(self.chrom.filename).stem + '.txt']))
         else:
             data.filename = (Path(master.batch_folder.get()) /
                              '_'.join(['uncalibrated',
-                             Path(self.chrom.filename).name]))
+                             Path(self.chrom.filename).stem + '.txt']))
         self.write_data(master)
 
     def create_tooltip(self, master, widget, text):
@@ -232,6 +232,11 @@ class Functions(object):
             self.window = i[2]
 
             self.peak = Peak(self)
+
+            # Ignore peaks outside the Trace RT window
+            if self.time < master.settings.start+master.settings.background_window \
+                    or self.time > master.settings.end-master.settings.background_window:
+                continue
 
             # Background correct
             self.peak.determine_background_and_noise(self)
