@@ -85,11 +85,11 @@ class Functions(object):
             self.apply_calibration_function(self)
             self.chrom.filename = (Path(master.batch_folder.get()) /
                                    '_'.join(['calibrated',
-                                   Path(self.chrom.filename).name]))
+                                   Path(self.chrom.filename).stem + '.txt']))
         else:
             data.filename = (Path(master.batch_folder.get()) /
                              '_'.join(['uncalibrated',
-                             Path(self.chrom.filename).name]))
+                             Path(self.chrom.filename).stem + '.txt']))
         self.write_data(master)
 
     def create_tooltip(self, master, widget, text):
