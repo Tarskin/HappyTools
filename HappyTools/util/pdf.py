@@ -1,4 +1,4 @@
-from HappyTools.util.fitting import Fitting
+from HappyTools.util.fitting import gauss_function
 import HappyTools.gui.version as version
 import matplotlib.pyplot as plt
 
@@ -57,8 +57,7 @@ class Pdf(object):
         if master.peak.coeff.size > 0:
             new_gauss_x = linspace(time[low], time[high], 2500*(
                                    time[high]-time[low]))
-            new_gauss_y = Fitting().gauss_function(new_gauss_x,
-                                                   *master.peak.coeff)
+            new_gauss_y = gauss_function(new_gauss_x, *master.peak.coeff)
 
         fig =  plt.figure(figsize=(8, 6))
         fig.add_subplot(111)

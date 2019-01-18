@@ -1,14 +1,8 @@
 import HappyTools.gui.version as version
-try:
-    # Python 2
-    import Tkinter as tk
-except ImportError:
-    # Python 3
-    import tkinter as tk
+import tkinter as tk
 
 
 class AboutWindow(object):
-    # TODO: Get the version and build from HappyTools.py in here
     INFORMATION = ("HappyTools Version "+str(version.version)+" (build " +
                    str(version.build)+") by Bas Cornelis Jansen (bas.c." +
                    "jansen@gmail.com).\n\n This software is released under " +

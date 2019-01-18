@@ -1,4 +1,4 @@
-from HappyTools.util.fitting import Fitting
+from HappyTools.util.fitting import gauss_function
 from bisect import bisect_left, bisect_right
 from math import sqrt, log
 from numpy import amax, argmax, array, exp, mean, std
@@ -47,7 +47,7 @@ class Peak(object):
     def determine_actual_time(self, master):
         time, intensity = zip(*master.chrom.trace.chrom_data)
         if self.coeff.any():
-            intensity = Fitting().gauss_function(time, *self.coeff)
+            intensity = gauss_function(time, *self.coeff)
             intensity = intensity.tolist()
 
         max_intensity_index = intensity.index(max(intensity))
@@ -95,7 +95,7 @@ class Peak(object):
         gaussian_area = 0.
 
         for index, _ in enumerate(intensity[self.low:self.high]):
-            gaussian_area += max(Fitting().gauss_function(time[self.low+index],
+            gaussian_area += max(gauss_function(time[self.low+index],
                 *self.coeff), 0) * (time[self.low+index]-
                 time[self.low+index-1])
 
@@ -108,8 +108,7 @@ class Peak(object):
         guess_sigma = 0.5*(max(peak) - min(peak))
         p0 = [amax(y_data), x_data[argmax(y_data)], guess_sigma]
         try:
-            coeff, _ = curve_fit(Fitting().gauss_function, x_data, y_data,
-                p0)
+            coeff, _ = curve_fit(gauss_function, x_data, y_data, p0)
             self.coeff = coeff
 
         except TypeError:
@@ -141,7 +140,7 @@ class Peak(object):
 
     def determine_height(self, master):
         edge = self.center+self.width
-        height = Fitting().gauss_function(edge, *self.coeff)
+        height = gauss_function(edge, *self.coeff)
 
         self.height = height
 

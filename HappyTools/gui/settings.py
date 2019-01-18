@@ -1,11 +1,11 @@
 from os import path, getcwd
+from HappyTools.util.functions import create_tooltip
 import tkinter as tk
 
 
 class Settings(object):
     def __init__(self, master):
         self.master = master
-        self.functions = master.functions
 
         self.points = 100
         self.start = 10
@@ -36,7 +36,7 @@ class Settings(object):
         self.calibration_filetypes = ['*.txt', '*.arw', '*.csv']
         self.quantitation_filetypes = ['calibrated*.txt']
 
-    def read_settings(self, master):
+    def read_settings(self):
         '''Read the settings file.
 
         This function opens the settings file (default is HappyTools.ini),
@@ -47,35 +47,35 @@ class Settings(object):
         Keyword arguments:
         none
         '''
-        with open(path.join(getcwd(), master.settings), 'r') as fr:
+        with open(path.join(getcwd(), self.settings), 'r') as fr:
             for line in fr:
                 chunks = line.strip('\n').split('\t')
                 if chunks[0] == 'points:':
-                    master.points = int(chunks[1])
+                    self.points = int(chunks[1])
                 elif chunks[0] == 'start:':
-                    master.start = float(chunks[1])
+                    self.start = float(chunks[1])
                 elif chunks[0] == 'end:':
-                    master.end = float(chunks[1])
+                    self.end = float(chunks[1])
                 elif chunks[0] == 'baselineOrder:':
-                    master.baseline_order = int(chunks[1])
+                    self.baseline_order = int(chunks[1])
                 elif chunks[0] == 'backgroundWindow:':
-                    master.background_window = float(chunks[1])
+                    self.background_window = float(chunks[1])
                 elif chunks[0] == 'noise:':
-                    master.noise = str(chunks[1])
+                    self.noise = str(chunks[1])
                 elif chunks[0] == 'slicepoints:':
-                    master.slicepoints = int(chunks[1])
+                    self.slicepoints = int(chunks[1])
                 elif chunks[0] == 'createFigure:':
-                    master.create_figure = str(chunks[1])
+                    self.create_figure = str(chunks[1])
                 elif chunks[0] == 'minPeaks:':
-                    master.min_peaks = int(chunks[1])
+                    self.min_peaks = int(chunks[1])
                 elif chunks[0] == 'minPeakSN:':
-                    master.min_peak_SN = int(chunks[1])
+                    self.min_peak_SN = int(chunks[1])
                 elif chunks[0] == 'peakDetectionMin:':
-                    master.peak_detection_min = float(chunks[1])
+                    self.peak_detection_min = float(chunks[1])
                 elif chunks[0] == 'peakDetectionEdge:':
-                    master.peak_detection_edge = str(chunks[1])
+                    self.peak_detection_edge = str(chunks[1])
                 elif chunks[0] == 'peakDetectionEdgeValue:':
-                    master.peak_detection_edge_value = float(chunks[1])
+                    self.peak_detection_edge_value = float(chunks[1])
 
     def settings_popup(self, master):
         ''' TODO: Redesign settings window (it's f'ing ugly)
@@ -254,45 +254,45 @@ class Settings(object):
         close_button.grid(row=17, column=1, sticky=tk.E)
 
         # Tooltips
-        self.functions.create_tooltip(
-            self, points_label, 'The number of data points that is used to ' +
+        create_tooltip(
+            points_label, 'The number of data points that is used to ' +
             'determine the baseline. Specifically, this setting specifies ' +
             'how large each segment of the whole chromatogram will be to ' +
             'identify the lowest data point per window, i.e. a setting of ' +
             '100 means that the chromatogram is split into segments of 100 ' +
             'data points per segment.')
 
-        self.functions.create_tooltip(
-            self, start_label, 'This setting tells the program from which ' +
+        create_tooltip(
+            start_label, 'This setting tells the program from which ' +
             'time point it is supposed to begin processing, this setting ' +
             'should be set in such a way that it is before the analytes of ' +
             'interest but after any potential big increases or decrease in ' +
             'intensity.')
 
-        self.functions.create_tooltip(
-            self, end_label, 'This setting tells the program until which ' +
+        create_tooltip(
+            end_label, 'This setting tells the program until which ' +
             'time point it is supposed to begin processing, this setting ' +
             'should be set in such a way that it is after the analytes of ' +
             'interest but before any potential big increases or decrease ' +
             'in intensity.')
 
-        self.functions.create_tooltip(
-            self, baseline_order_label, 'This setting tells the program ' +
+        create_tooltip(
+            baseline_order_label, 'This setting tells the program ' +
             'what sort of function should be used to correct the baseline. ' +
             'A value of 1 refers to a linear function, while a value of 2 ' +
             'refers to a quadratic function. We advise to use a linear ' +
             'function as the need for any higher order function indicates ' +
             'an unexpected event in the chromatography.')
 
-        self.functions.create_tooltip(
-            self, background_window_label, 'This setting tells the program ' +
+        create_tooltip(
+            background_window_label, 'This setting tells the program ' +
             'the size of the region that will be examined to determine the ' +
             'background. A value of 1 means that the program will look ' +
             'from 20.0 to 21.0 minutes and 21.4 to 22.4 for an analyte that ' +
             'elutes from 21.0 to 21.4 minutes.')
 
-        self.functions.create_tooltip(
-            self, slicepoints_label, 'The number of conscutive data points ' +
+        create_tooltip(
+            slicepoints_label, 'The number of conscutive data points ' +
             'that will be used to determine the background and noise using ' +
             'the MT method. The MT method will scan all datapoints that ' +
             'fall within the background window (specified above) to find ' +
@@ -301,46 +301,46 @@ class Settings(object):
             'points is then used as background while the standard deviation ' +
             'of these data points is used as the noise.')
 
-        self.functions.create_tooltip(
-            self, figure_label, 'This setting specifies if HappyTools ' +
+        create_tooltip(
+            figure_label, 'This setting specifies if HappyTools ' +
             'should create a figure for each integrated peak, showing the ' +
             'raw datapoints, background, noise, S/N and GPQ values. This is ' +
             'a very performance intensive option and it is recommended to ' +
             'only use this on a subset of your samples (e.g. less than 25 ' +
             'samples).')
 
-        self.functions.create_tooltip(
-            self, min_peak_label, 'This setting specifies the minimum ' +
+        create_tooltip(
+            min_peak_label, 'This setting specifies the minimum ' +
             'number of calibrant peaks that have to pass the specified S/N ' +
             'value that must be present in a chromatogram. A chromatogram ' +
             'for which there are not enough calibrant peaks passing the ' +
             'specified criteria will not be calibrated and excluded from ' +
             'further quantitation.')
 
-        self.functions.create_tooltip(
-            self, min_peak_SN_label, 'This setting specifies the minimum ' +
+        create_tooltip(
+            min_peak_SN_label, 'This setting specifies the minimum ' +
             'S/N value a calibrant peak must surpass to be included in the ' +
             'calibration. The actual S/N value that is determined by ' +
             'HappyTools depends heavily on which method to determine signal ' +
             'and noise is used, the default method being rather conservative.')
 
-        self.functions.create_tooltip(
-            self, peak_detection_label, 'This setting specifies the minimum ' +
+        create_tooltip(
+            peak_detection_label, 'This setting specifies the minimum ' +
             'intensity, relative to the main peak in a chromatogram, that ' +
             'the peak detection algorithm will try to annotate. For ' +
             'example, a value of 0.01 means that the program will attempt ' +
             'to annotate peaks until the next highest peak is below 1% of ' +
             'the intensity of the main peak in the chromatogram.')
 
-        self.functions.create_tooltip(
-            self, peak_detection_edge_label, 'This setting specifies if ' +
+        create_tooltip(
+            peak_detection_edge_label, 'This setting specifies if ' +
             'HappyTools will determine the integration window using either ' +
             'the full width at half maximum (FWHM) or a specified sigma ' +
             'value. The Sigma value has to be specified in the field below ' +
             'if Sigma is the selected method.')
 
-        self.functions.create_tooltip(
-            self, peak_detection_edge_value_label, 'This setting specifies ' +
+        create_tooltip(
+            peak_detection_edge_value_label, 'This setting specifies ' +
             'the Sigma value that will be used for determining the border ' +
             'of the integration window. A value of 1.0 means that ' +
             'HappyTools will set the integration window so that 68.3% of ' +
@@ -349,8 +349,8 @@ class Settings(object):
             'how complex the chromatogram is, for instance a low sigma will ' +
             'yield better results in a complex chromatogram.')
 
-        self.functions.create_tooltip(
-            self, ultra_performance_calibration_label, 'This setting ' +
+        create_tooltip(
+            ultra_performance_calibration_label, 'This setting ' +
             'specifies if HappyTools will use the standard calibration ' +
             'method using a second degree polynomial (False) or if ' +
             'HappyTools is allowed to use the experimental ' +

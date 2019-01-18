@@ -1,11 +1,5 @@
-try:
-    # Python 2
-    import Tkinter as tk
-    import ttk
-except ImportError:
-    # Python 3
-    import tkinter as tk
-    import tkinter.ttk as ttk
+import tkinter as tk
+import tkinter.ttk as ttk
 
 
 class ProgressBar(object):
