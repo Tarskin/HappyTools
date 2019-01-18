@@ -6,7 +6,7 @@ def start(master):
         top.destroy()
 
     top = tk.Tk()
-    top.protocol("WM_DELETE_WINDOW", lambda: close())
+    top.protocol("WM_DELETE_WINDOW", close)
     top.title("Plugin Demo")
     information = ("This is a demonstration of HappyTools plugin "+
                    "functionality. Please add a single python file "+

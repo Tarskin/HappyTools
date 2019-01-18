@@ -107,7 +107,7 @@ class HappyToolsGui(object):
         # SETTINGS
         self.settings = Settings(self)
         if (Path.cwd() / self.settings.settings).is_file():
-            self.settings.read_settings(self.settings)
+            self.settings.read_settings()
 
         # CANVAS
         self.fig = figure.Figure(figsize=(12,6))

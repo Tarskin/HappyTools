@@ -36,7 +36,7 @@ class Settings(object):
         self.calibration_filetypes = ['*.txt', '*.arw', '*.csv']
         self.quantitation_filetypes = ['calibrated*.txt']
 
-    def read_settings(self, master):
+    def read_settings(self):
         '''Read the settings file.
 
         This function opens the settings file (default is HappyTools.ini),
@@ -47,35 +47,35 @@ class Settings(object):
         Keyword arguments:
         none
         '''
-        with open(path.join(getcwd(), master.settings), 'r') as fr:
+        with open(path.join(getcwd(), self.settings), 'r') as fr:
             for line in fr:
                 chunks = line.strip('\n').split('\t')
                 if chunks[0] == 'points:':
-                    master.points = int(chunks[1])
+                    self.points = int(chunks[1])
                 elif chunks[0] == 'start:':
-                    master.start = float(chunks[1])
+                    self.start = float(chunks[1])
                 elif chunks[0] == 'end:':
-                    master.end = float(chunks[1])
+                    self.end = float(chunks[1])
                 elif chunks[0] == 'baselineOrder:':
-                    master.baseline_order = int(chunks[1])
+                    self.baseline_order = int(chunks[1])
                 elif chunks[0] == 'backgroundWindow:':
-                    master.background_window = float(chunks[1])
+                    self.background_window = float(chunks[1])
                 elif chunks[0] == 'noise:':
-                    master.noise = str(chunks[1])
+                    self.noise = str(chunks[1])
                 elif chunks[0] == 'slicepoints:':
-                    master.slicepoints = int(chunks[1])
+                    self.slicepoints = int(chunks[1])
                 elif chunks[0] == 'createFigure:':
-                    master.create_figure = str(chunks[1])
+                    self.create_figure = str(chunks[1])
                 elif chunks[0] == 'minPeaks:':
-                    master.min_peaks = int(chunks[1])
+                    self.min_peaks = int(chunks[1])
                 elif chunks[0] == 'minPeakSN:':
-                    master.min_peak_SN = int(chunks[1])
+                    self.min_peak_SN = int(chunks[1])
                 elif chunks[0] == 'peakDetectionMin:':
-                    master.peak_detection_min = float(chunks[1])
+                    self.peak_detection_min = float(chunks[1])
                 elif chunks[0] == 'peakDetectionEdge:':
-                    master.peak_detection_edge = str(chunks[1])
+                    self.peak_detection_edge = str(chunks[1])
                 elif chunks[0] == 'peakDetectionEdgeValue:':
-                    master.peak_detection_edge_value = float(chunks[1])
+                    self.peak_detection_edge_value = float(chunks[1])
 
     def settings_popup(self, master):
         ''' TODO: Redesign settings window (it's f'ing ugly)
