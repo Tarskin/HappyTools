@@ -35,7 +35,9 @@ from pathlib import Path, PurePath
 
 # Custom libraries
 from HappyTools.util.peak_detection import PeakDetection
-from HappyTools.util.functions import Functions
+from HappyTools.util.functions import (Functions, check_disk_access,
+                                       determine_calibration_function,
+                                       apply_calibration_function)
 from HappyTools.util.output import Output
 
 # Gui elements
@@ -95,7 +97,7 @@ class HappyToolsGui(object):
 
         # ACCESS CHECK
         self.directories = directories
-        if not self.functions.check_disk_access(self):
+        if not check_disk_access(self):
             messagebox.showinfo(
                 'Access Error', 'HappyTools does ' +
                 'not have sufficient disk access rights. Please close ' +
@@ -249,8 +251,8 @@ class HappyToolsGui(object):
                 self.progress.update_progress_bar(self)
 
                 self.time_pairs = self.functions.find_peak(self)
-                self.function = self.functions.determine_calibration_function(self)
-                self.functions.apply_calibration_function(self)
+                self.function = determine_calibration_function(self)
+                apply_calibration_function(self)
 
         except Exception as e:
             self.logger.error(e)

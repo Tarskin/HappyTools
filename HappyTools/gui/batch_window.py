@@ -1,4 +1,5 @@
 from HappyTools.gui.output_window import OutputWindow
+from HappyTools.util.functions import create_tooltip
 import tkinter as tk
 import tkinter.filedialog as filedialog
 
@@ -76,24 +77,24 @@ class batchWindow(object):
         self.top = top
 
         # Tooltips
-        self.functions.create_tooltip(
-            self, calibrationButton, 'This button will allow you to select ' +
+        create_tooltip(
+            calibrationButton, 'This button will allow you to select ' +
             'your calibration file, the program expects a tab separated ' +
             'text file where each line consists of a peak ID, peak RT and ' +
             'a RT window.')
 
-        self.functions.create_tooltip(
-            self, analyteButton, 'This button will allow you to select your ' +
+        create_tooltip(
+            analyteButton, 'This button will allow you to select your ' +
             'analyte file, the program expects a tab separated text file ' +
             'where each line consists of a peak ID, peak RT and a RT window.')
 
-        self.functions.create_tooltip(
-            self, batchButton, 'This button will allow you to select the ' +
+        create_tooltip(
+            batchButton, 'This button will allow you to select the ' +
             'folder where the chromatograms are stored that HappyTools will ' +
             'process.')
 
-        self.functions.create_tooltip(
-            self, outputButton, 'This button will open another window in ' +
+        create_tooltip(
+            outputButton, 'This button will open another window in ' +
             'which you can select which outputs you want HappyTools to show ' +
             'in the final summary.')
 

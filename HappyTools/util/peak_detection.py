@@ -1,9 +1,10 @@
-from HappyTools.util.fitting import Fitting
+from HappyTools.util.fitting import gauss_function
+from HappyTools.util.functions import determine_breakpoints, subset_data
 from HappyTools.bin.peak import Peak
 import logging
 import tkinter.filedialog as filedialog
 from math import sqrt, log
-from numpy import linspace
+from numpy import linspace, exp
 from pathlib import Path
 from bisect import bisect_left, bisect_right
 
@@ -12,7 +13,6 @@ class PeakDetection(object):
     def __init__(self, master):
         self.settings = master.settings
         self.logger = logging.getLogger(__name__)
-        self.functions = master.functions
         self.chrom = master.chrom
         self.detected_peaks = []
 
@@ -33,8 +33,8 @@ class PeakDetection(object):
             self.time = self.window + self.settings.start
 
             # Determine breaks and get subset of data
-            self.breaks = self.functions.determine_breakpoints(self)
-            self.data_subset = self.functions.subset_data(self)
+            self.breaks = determine_breakpoints(self)
+            self.data_subset = subset_data(self)
 
             # Get time and intensity lists
             x_data, _ = zip(*self.data_subset)
@@ -50,7 +50,7 @@ class PeakDetection(object):
             if self.peak.coeff.any():
                 new_intensity = []
                 for index, i in enumerate(curr_intensity):
-                    new_intensity.append(i - Fitting().gauss_function(
+                    new_intensity.append(i - gauss_function(
                                          orig_time[index], *self.peak.coeff))
                 curr_intensity = new_intensity
 
@@ -62,8 +62,7 @@ class PeakDetection(object):
             gauss_end = self.time+3*self.peak.coeff[2]
             gauss_time = linspace(gauss_start, gauss_end, (gauss_end-
                                   gauss_start)*1000)
-            gauss_intensity = Fitting().gauss_function(gauss_time,
-                                                       *self.peak.coeff)
+            gauss_intensity = gauss_function(gauss_time, *self.peak.coeff)
 
             # Store detected peak
             self.detected_peaks.append({'data':list(zip(gauss_time,

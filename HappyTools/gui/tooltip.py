@@ -1,10 +1,5 @@
 # Based on http://www.voidspace.org.uk/python/weblog/arch_d7_2006_07_01.shtml
-try:
-    # Python 2
-    import Tkinter as tk
-except ImportError:
-    # Python 3
-    import tkinter as tk
+import tkinter as tk
 
 
 class ToolTip(object):
