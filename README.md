@@ -1,5 +1,5 @@
 # HappyTools
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/b49bbfd1739f40b99dad45418b42e31e)](https://www.codacy.com/project/Tarskin/HappyTools/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Tarskin/HappyTools&amp;utm_campaign=Badge_Grade_Dashboard)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/39e4f3541ff9440a85d8596069139c2c)](https://www.codacy.com/app/Tarskin/HappyTools?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Tarskin/HappyTools&amp;utm_campaign=Badge_Grade)
 
 HappyTools is open-source software for researchers focussing on chromatography. It includes modules for retention time calibration, peak integration, quality control, automated curation and more. The tool was first described in a 2018 PLOS One article, located at http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0200280
 
