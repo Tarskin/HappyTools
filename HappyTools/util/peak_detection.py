@@ -4,7 +4,7 @@ from HappyTools.bin.peak import Peak
 import logging
 import tkinter.filedialog as filedialog
 from math import sqrt, log
-from numpy import linspace, exp
+from numpy import linspace
 from pathlib import Path
 from bisect import bisect_left, bisect_right
 
