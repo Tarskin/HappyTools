@@ -87,7 +87,6 @@ class HappyToolsGui(object):
         self.create_figure = 'True'
 
         self.master = master
-        #self.counter = tk.IntVar(value=0)
         self.counter = tk.DoubleVar(value=0.0)
         logging.basicConfig(filename='HappyTools.log',
                             format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',

@@ -38,9 +38,8 @@ class ProgressBar(object):
                                             mode='determinate')
         self.progressbar2.grid(row=3, columnspan=2, sticky="")
 
-    def update_progress_bar(self, bar, variable, index, length):
-        """ TODO
-        """
+    @staticmethod
+    def update_progress_bar(bar, variable, index, length):
         variable.set(str(int((float(index)/float(length))*100))+"%")
         bar["value"] = int((float(index)/float(length))*100)
         bar.update()
