@@ -87,13 +87,14 @@ class HappyToolsGui(object):
         self.create_figure = 'True'
 
         self.master = master
-        self.counter = tk.IntVar(value=0)
+        #self.counter = tk.IntVar(value=0)
+        self.counter = tk.DoubleVar(value=0.0)
         logging.basicConfig(filename='HappyTools.log',
                             format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                             datefmt='%Y-%m-%d %H:%M', filemode='a',
                             level=logging.WARNING)
         self.logger = logging.getLogger(__name__)
-        self.functions = Functions(self) # Change functions from class to non
+        self.functions = Functions(self)
 
         # ACCESS CHECK
         self.directories = directories
@@ -243,12 +244,12 @@ class HappyToolsGui(object):
                 self.cal_file = None
             self.reference = self.functions.read_peak_list(self.cal_file)
 
-            self.progress.reset_bar(self)
+            self.progress.reset_bar()
             for index, self.chrom in enumerate(self.data):
 
                 progress = (float(index) / len(self.data))*100
                 self.counter.set(progress)
-                self.progress.update_progress_bar(self)
+                self.progress.update_progress_bar()
 
                 self.time_pairs = self.functions.find_peak(self)
                 self.function = determine_calibration_function(self)
@@ -256,7 +257,7 @@ class HappyToolsGui(object):
 
         except Exception as e:
             self.logger.error(e)
-        self.progress.fill_bar(self)
+        self.progress.fill_bar()
 
         self.axes.clear()
         for chrom in self.data:
@@ -290,12 +291,12 @@ class HappyToolsGui(object):
                 self.quant_file = None
             self.reference = self.functions.read_peak_list(self.quant_file)
 
-            self.progress.reset_bar(self)
+            self.progress.reset_bar()
             for index, self.chrom in enumerate(self.data):
 
                 progress = (float(index) / len(self.data))*100
                 self.counter.set(progress)
-                self.progress.update_progress_bar(self)
+                self.progress.update_progress_bar()
 
                 self.results.append({'file': Path(self.chrom.filename).name,
                                      'results': self.functions.quantify_chrom(self)})
@@ -303,7 +304,7 @@ class HappyToolsGui(object):
             self.output = Output(self)
             self.output.init_output_file(self)
             self.output.build_output_file(self)
-            self.progress.fill_bar(self)
+            self.progress.fill_bar()
         except Exception as e:
             self.logger.error(e)
 

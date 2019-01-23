@@ -1,2 +1,2 @@
-version = '0.1-alpha1'
-build = '190118b'
+version = '0.1-beta1'
+build = '190123a'
