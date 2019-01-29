@@ -53,11 +53,11 @@ class SimpleProgressBar(object):
         self.master = master
 
         style = ttk.Style(master.master)
-        style.layout('text.Horizontal.TProgressbar', 
+        style.layout('text.Horizontal.TProgressbar',
                      [('Horizontal.Progressbar.trough',
                       {'children': [('Horizontal.Progressbar.pbar',
                                     {'side': 'left', 'sticky': 'ns'})],
-                       'sticky': 'nswe'}), 
+                       'sticky': 'nswe'}),
                      ('Horizontal.Progressbar.label', {'sticky': ''})])
         style.configure('text.Horizontal.TProgressbar', text='0 %')
 
@@ -73,7 +73,7 @@ class SimpleProgressBar(object):
         self.bar.update()
 
     def update_progress_counter(self):
-        self.style.configure('text.Horizontal.TProgressbar', 
+        self.style.configure('text.Horizontal.TProgressbar',
                              text='{:g} %'.format(self.master.counter.get()))
 
     def reset_bar(self):
