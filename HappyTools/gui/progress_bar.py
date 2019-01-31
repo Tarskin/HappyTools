@@ -78,6 +78,7 @@ class SimpleProgressBar(object):
 
     def reset_bar(self):
         self.master.counter.set(0)
+        self.update_progress_counter()
         self.bar.update()
 
     def fill_bar(self):
