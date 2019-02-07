@@ -27,11 +27,17 @@ from matplotlib.backends.backend_tkagg import (
 )
 import importlib
 import logging
+import os
 import tkinter as tk
 import tkinter.filedialog as filedialog
 import tkinter.messagebox as messagebox
 from matplotlib import image, figure
 from pathlib import Path, PurePath
+
+# Platform specific bits
+if os.name == 'posix':
+    import matplotlib
+    matplotlib.use('TkAgg')
 
 # Custom libraries
 from HappyTools.util.peak_detection import PeakDetection
@@ -125,8 +131,10 @@ class HappyToolsGui(object):
                      ' (Build '+str(version.build)+')')
         iconbitmap = Path.cwd() / 'HappyTools' / 'gui' / 'assets' / 'Icon.ico'
         backgroundimage = Path.cwd() / 'HappyTools' / 'gui' / 'assets' / 'UI.png'
-        if iconbitmap.is_file():
+        try:
             master.iconbitmap(default=iconbitmap)
+        except tk.TclError as e:
+            self.logger.warn(e)
         if backgroundimage.is_file():
             img = image.imread(str(backgroundimage))
             self.axes.imshow(img)
