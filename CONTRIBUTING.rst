@@ -5,7 +5,7 @@ Pull requests are always welcome, and we the HappyTools community will appreciat
 
 When submitting a pull request, we ask you check the following:
 
-1. The submitted code can be united test
+1. The submitted code can be unit tested
 2. The submitted code comes with full documentation in a docstring
 3. The submitted code follows the HappyTools code style (PEP8 and Codacy)
 
