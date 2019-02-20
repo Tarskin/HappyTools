@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright 2017-2018 Bas C. Jansen
+# Copyright 2017-2019 Bas C. Jansen
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -35,8 +35,10 @@ import matplotlib
 from matplotlib import image, figure
 from pathlib import Path, PurePath
 
-# Matplotlb backend
-matplotlib.use('Agg')
+# Platform specific bits
+if os.name == 'posix':
+    import matplotlib
+    matplotlib.use('TkAgg')
 
 # Custom libraries
 from HappyTools.util.peak_detection import PeakDetection
@@ -116,7 +118,7 @@ class HappyToolsGui(object):
 
         # CANVAS
         self.fig = figure.Figure(figsize=(12,6))
-        self.fig.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)
+        #self.fig.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)
         self.axes = self.fig.add_subplot(111)
         self.axes.axis('off')
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
