@@ -82,6 +82,7 @@ class HappyToolsGui(object):
         root.mainloop()
 
     def __init__(self, master):
+        # Move this to parameters file or so
         self.output_window_open = tk.IntVar(value=0)
         self.batch_folder = tk.StringVar(value=Path.cwd())
         self.abs_int = tk.IntVar(value=1)
@@ -92,14 +93,18 @@ class HappyToolsGui(object):
         self.peak_qual = tk.IntVar(value=1)
         self.create_figure = 'True'
 
+        # Inherit Tk() root object
         self.master = master
-        self.counter = tk.DoubleVar(value=0.0)
+
+        # Define task_label for progress bar functionality
+        task_label = tk.StringVar()
+        task_label.set('Idle')
+
+        # LOGGING
         logging.basicConfig(filename='HappyTools.log',
                             format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                             datefmt='%Y-%m-%d %H:%M', filemode='a',
                             level=logging.WARNING)
-        self.logger = logging.getLogger(__name__)
-        self.functions = Functions(self)
 
         # ACCESS CHECK
         self.directories = directories
@@ -111,19 +116,18 @@ class HappyToolsGui(object):
                 'write access to all folders in the Happytools folder.')
 
         # SETTINGS
-        self.settings = Settings(self)
-        if (Path.cwd() / self.settings.settings).is_file():
-            self.settings.read_settings()
+        settings = Settings(self)
+        if (Path.cwd() / settings.settings).is_file():
+            settings.read_settings()
 
         # CANVAS
-        self.fig = figure.Figure(figsize=(12,6))
-        #self.fig.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)
-        self.axes = self.fig.add_subplot(111)
-        self.axes.axis('off')
-        self.canvas = FigureCanvasTkAgg(self.fig, master=master)
-        self.toolbar = CustomToolbar(self.canvas, master)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=tk.YES)
-        self.canvas.draw()
+        fig = figure.Figure(figsize=(12,6))
+        axes = fig.add_subplot(111)
+        axes.axis('off')
+        canvas = FigureCanvasTkAgg(fig, master=master)
+        toolbar = CustomToolbar(canvas, master)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=tk.YES)
+        canvas.draw()
 
         # FRAME
         tk.Frame(master)
@@ -134,13 +138,15 @@ class HappyToolsGui(object):
         try:
             master.iconbitmap(default=iconbitmap)
         except tk.TclError as e:
-            self.logger.warn(e)
+            logging.getLogger(__name__).warn(e)
         if backgroundimage.is_file():
             img = image.imread(str(backgroundimage))
-            self.axes.imshow(img)
-            self.axes.set_aspect('auto')
-        self.progress = progressbar.SimpleProgressBar(self)
-        self.progress.bar.pack(fill=tk.X)
+            axes.imshow(img)
+            axes.set_aspect('auto')
+        task  = tk.Label(master, textvariable=task_label, width=20)
+        task.pack()
+        progress = progressbar.SimpleProgressBar(self)
+        progress.bar.pack(fill=tk.X)
 
         # QUIT
         master.protocol('WM_DELETE_WINDOW', self.close)
@@ -211,6 +217,15 @@ class HappyToolsGui(object):
                 pluginsmenu.add_command(label=module_name,
                                         command=self.make_function(module))
 
+        # INHERITANCE
+        self.logger = logging.getLogger(__name__)
+        self.functions = Functions(self)
+        self.settings = settings
+        self.axes = axes
+        self.canvas = canvas
+        self.progress = progress
+        self.task_label = task_label
+
     def make_function(self, module):
         try:
             def x():
@@ -226,11 +241,19 @@ class HappyToolsGui(object):
     def open_chromatogram_window(self):
         files = filedialog.askopenfilenames(title='Open Chromatogram File(s)')
         data = []
+
         if files:
-            for file in files:
+            self.task_label.set('Opening Chromatograms')
+            self.progress.reset_bar()
+            for index, file in enumerate(files):
+                self.progress.counter.set((float(index) /
+                        len(files))*100)
+                self.progress.update_progress_bar()
                 foo = Chromatogram(Path(file))
                 data.append(foo)
             self.data = data
+            self.task_label.set('Idle')
+            self.progress.fill_bar()
 
         self.axes.clear()
         for chrom in self.data:
@@ -252,24 +275,34 @@ class HappyToolsGui(object):
             self.reference = self.functions.read_peak_list(self.cal_file)
 
             self.progress.reset_bar()
+            self.task_label.set('Calibrating Chromatograms')
             for index, self.chrom in enumerate(self.data):
-
-                progress = (float(index) / len(self.data))*100
-                self.counter.set(progress)
+                self.progress.counter.set((float(index) /
+                        len(self.data))*100)
                 self.progress.update_progress_bar()
 
                 self.time_pairs = self.functions.find_peak(self)
                 self.function = determine_calibration_function(self)
                 apply_calibration_function(self)
+            self.task_label.set('Idle')
+            self.progress.fill_bar()
 
         except Exception as e:
             self.logger.error(e)
         self.progress.fill_bar()
 
         self.axes.clear()
-        for chrom in self.data:
+        self.progress.reset_bar()
+        self.task_label.set('Plotting Chromatograms')
+        for index, chrom in enumerate(self.data):
+            self.progress.counter.set((float(index) /
+                    len(self.data))*100)
+            self.progress.update_progress_bar()
             chrom.plot_chrom(self)
         finalize_plot(self)
+        self.task_label.set('Idle')
+        self.progress.fill_bar()
+
 
     def close(self):
         self.master.destroy()
@@ -280,11 +313,18 @@ class HappyToolsGui(object):
 
     def normalize_chromatogram(self):
         try:
+            self.task_label.set('Normalizing Chromatograms')
+            self.progress.reset_bar()
             self.axes.clear()
-            for chrom in self.data:
+            for index, chrom in enumerate(self.data):
+                self.progress.counter.set((float(index) /
+                        len(self.data))*100)
+                self.progress.update_progress_bar()
                 chrom.trace.norm_chrom(self)
                 chrom.plot_chrom(self)
             finalize_plot(self)
+            self.task_label.set('Idle')
+            self.progress.fill_bar()
         except Exception as e:
             self.logger.error(e)
 
@@ -299,19 +339,21 @@ class HappyToolsGui(object):
             self.reference = self.functions.read_peak_list(self.quant_file)
 
             self.progress.reset_bar()
+            self.task_label.set('Quantifying Chromatograms')
             for index, self.chrom in enumerate(self.data):
-
-                progress = (float(index) / len(self.data))*100
-                self.counter.set(progress)
+                self.progress.counter.set((float(index) /
+                        len(self.data))*100)
                 self.progress.update_progress_bar()
 
                 self.results.append({'file': Path(self.chrom.filename).name,
                                      'results': self.functions.quantify_chrom(self)})
+            self.task_label.set('Idle')
+            self.progress.fill_bar()
 
             self.output = Output(self)
             self.output.init_output_file(self)
             self.output.build_output_file(self)
-            self.progress.fill_bar()
+
         except Exception as e:
             self.logger.error(e)
 
@@ -339,11 +381,18 @@ class HappyToolsGui(object):
 
     def smooth_chromatogram(self):
         try:
+            self.task_label.set('Smoothing Chromatograms')
+            self.progress.reset_bar()
             self.axes.clear()
-            for chrom in self.data:
+            for index, chrom in enumerate(self.data):
+                self.progress.counter.set((float(index) /
+                        len(self.data))*100)
+                self.progress.update_progress_bar()
                 chrom.trace.smooth_chrom(self)
                 chrom.plot_chrom(self)
             finalize_plot(self)
+            self.task_label.set('Idle')
+            self.progress.fill_bar()
         except Exception as e:
             self.logger.error(e)
 
@@ -356,11 +405,18 @@ class HappyToolsGui(object):
 
     def baseline_correction(self):
         try:
+            self.task_label.set('Baseline Correcting')
+            self.progress.reset_bar()
             self.axes.clear()
-            for chrom in self.data:
+            for index, chrom in enumerate(self.data):
+                self.progress.counter.set((float(index) /
+                        len(self.data))*100)
+                self.progress.update_progress_bar()
                 chrom.trace.baseline_correction(self)
                 chrom.plot_chrom(self)
             finalize_plot(self)
+            self.task_label.set('Idle')
+            self.progress.fill_bar()
         except Exception as e:
             self.logger.error(e)
 
