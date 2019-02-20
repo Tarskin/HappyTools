@@ -31,13 +31,12 @@ import os
 import tkinter as tk
 import tkinter.filedialog as filedialog
 import tkinter.messagebox as messagebox
+import matplotlib
 from matplotlib import image, figure
 from pathlib import Path, PurePath
 
-# Platform specific bits
-if os.name == 'posix':
-    import matplotlib
-    matplotlib.use('TkAgg')
+# Matplotlb backend
+matplotlib.use('Agg')
 
 # Custom libraries
 from HappyTools.util.peak_detection import PeakDetection
