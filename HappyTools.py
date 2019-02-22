@@ -125,7 +125,7 @@ class HappyToolsGui(object):
         axes = fig.add_subplot(111)
         axes.axis('off')
         canvas = FigureCanvasTkAgg(fig, master=master)
-        toolbar = CustomToolbar(canvas, master)
+        CustomToolbar(canvas, master)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=tk.YES)
         canvas.draw()
 
@@ -213,7 +213,7 @@ class HappyToolsGui(object):
                 try:
                     module_name = module.name
                 except Exception as e:
-                    self.logger.error(e)
+                    logging.getLogger(__name__).error(e)
                 pluginsmenu.add_command(label=module_name,
                                         command=self.make_function(module))
 
