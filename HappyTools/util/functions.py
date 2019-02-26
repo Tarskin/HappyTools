@@ -121,13 +121,14 @@ class Functions(object):
         self.reference = master.reference
         self.chrom = master.chrom
         self.settings = master.settings
+        self.output_parameters = master.output_parameters
 
         results = []
 
         time, _ = zip(*master.chrom.trace.chrom_data)
 
         # Initialize PDF and plot overview
-        if master.settings.create_figure == 'True' and bisect_left(
+        if self.output_parameters.pdf_report.get() == True and bisect_left(
             time, master.settings.start) and bisect_right(time,
             master.settings.end):
 
@@ -175,7 +176,7 @@ class Functions(object):
             self.peak.determine_residual(self)
 
             # Add individual peak to PDF
-            if master.settings.create_figure == 'True':
+            if self.output_parameters.pdf_report.get() == True:
                 self.pdf.plot_individual(self)
 
             # Results
@@ -195,7 +196,7 @@ class Functions(object):
             })
 
         # Close PDF
-        if master.settings.create_figure == 'True':
+        if self.output_parameters.pdf_report.get() == True:
             self.pdf.close(self)
 
         return results

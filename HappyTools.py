@@ -50,13 +50,15 @@ from HappyTools.util.output import Output
 from HappyTools.gui.custom_toolbar import CustomToolbar
 from HappyTools.gui.about_window import AboutWindow
 from HappyTools.gui.batch_window import batchWindow
-from HappyTools.gui.settings import Settings
+from HappyTools.gui.settings_window import SettingsWindow
 from HappyTools.gui.output_window import OutputWindow
 import HappyTools.gui.progress_bar as progressbar
 import HappyTools.gui.version as version
 
 # Class imports
 from HappyTools.bin.chromatogram import Chromatogram, finalize_plot
+from HappyTools.bin.output_parameters import OutputParameters
+from HappyTools.bin.settings import Settings
 
 # Directories
 directories = [
@@ -65,7 +67,6 @@ directories = [
     Path.cwd() / 'HappyTools' / 'bin',
     Path.cwd() / 'HappyTools' / 'util'
 ]
-
 
 # Function overwrites
 def dynamic_update(foo):
@@ -85,13 +86,6 @@ class HappyToolsGui(object):
         # Move this to parameters file or so
         self.output_window_open = tk.IntVar(value=0)
         self.batch_folder = tk.StringVar(value=Path.cwd())
-        self.abs_int = tk.IntVar(value=1)
-        self.rel_int = tk.IntVar(value=1)
-        self.gauss_int = tk.IntVar(value=1)
-        self.bck_sub = tk.IntVar(value=1)
-        self.bck_noise = tk.IntVar(value=1)
-        self.peak_qual = tk.IntVar(value=1)
-        self.create_figure = 'True'
 
         # Inherit Tk() root object
         self.master = master
@@ -114,11 +108,6 @@ class HappyToolsGui(object):
                 'not have sufficient disk access rights. Please close ' +
                 'HappyTools and check if the current user has read/' +
                 'write access to all folders in the Happytools folder.')
-
-        # SETTINGS
-        settings = Settings(self)
-        if (Path.cwd() / settings.settings).is_file():
-            settings.read_settings()
 
         # CANVAS
         fig = figure.Figure(figsize=(12,6))
@@ -194,7 +183,7 @@ class HappyToolsGui(object):
         settingsmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label='Settings', menu=settingsmenu)
         settingsmenu.add_command(label='Settings',
-                                 command=self.open_settings_window)
+                                 command=self.settings_window)
 
         aboutmenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label='About', menu=aboutmenu)
@@ -220,7 +209,8 @@ class HappyToolsGui(object):
         # INHERITANCE
         self.logger = logging.getLogger(__name__)
         self.functions = Functions(self)
-        self.settings = settings
+        self.settings = Settings(self)
+        self.output_parameters = OutputParameters(self)
         self.axes = axes
         self.canvas = canvas
         self.progress = progress
@@ -329,7 +319,7 @@ class HappyToolsGui(object):
             self.logger.error(e)
 
     def quantify_chromatogram(self):
-        try:
+        #try:
             self.results = []
             self.functions.batch_folder = self.batch_folder
             self.quant_file = filedialog.askopenfilename(
@@ -351,11 +341,11 @@ class HappyToolsGui(object):
             self.progress.fill_bar()
 
             self.output = Output(self)
-            self.output.init_output_file(self)
-            self.output.build_output_file(self)
+            self.output.init_output_file()
+            self.output.build_output_file()
 
-        except Exception as e:
-            self.logger.error(e)
+        #except Exception as e:
+            #self.logger.error(e)
 
     def peak_detection(self):
         try:
@@ -400,6 +390,12 @@ class HappyToolsGui(object):
         try:
             for chrom in self.data:
                 chrom.save_chrom(self)
+        except Exception as e:
+            self.logger.error(e)
+
+    def settings_window(self):
+        try:
+            SettingsWindow(self)
         except Exception as e:
             self.logger.error(e)
 
