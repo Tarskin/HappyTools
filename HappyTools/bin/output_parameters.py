@@ -8,7 +8,7 @@ class OutputParameters(object):
     def __init__(self, master):
         self.config = configparser.ConfigParser()
         self.logger = logging.getLogger(__name__)
-      
+
         self.absolute_intensity = tk.IntVar()
         self.relative_intensity = tk.IntVar()
         self.gaussian_intensity = tk.IntVar()

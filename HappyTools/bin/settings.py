@@ -14,7 +14,7 @@ class Settings(object):
         self.points = 100
         self.baseline_order = 1
         self.background_window = 1
-        
+
         # Peak Detection Settings
         self.peak_detection_min = 0.05
         self.peak_detection_edge = 'Sigma'

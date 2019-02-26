@@ -133,7 +133,7 @@ class Functions(object):
             master.settings.end):
 
                 self.pdf = Pdf(self)
-                self.pdf.plot_overview(self)
+                self.pdf.plot_overview()
 
         # Iterate over peaks
         for i in self.reference:
@@ -177,7 +177,7 @@ class Functions(object):
 
             # Add individual peak to PDF
             if self.output_parameters.pdf_report.get() == True:
-                self.pdf.plot_individual(self)
+                self.pdf.plot_individual()
 
             # Results
             results.append({
@@ -197,7 +197,7 @@ class Functions(object):
 
         # Close PDF
         if self.output_parameters.pdf_report.get() == True:
-            self.pdf.close(self)
+            self.pdf.close()
 
         return results
 

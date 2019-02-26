@@ -57,6 +57,7 @@ import HappyTools.gui.version as version
 
 # Class imports
 from HappyTools.bin.chromatogram import Chromatogram, finalize_plot
+from HappyTools.bin.process_parameters import ProcessParameters
 from HappyTools.bin.output_parameters import OutputParameters
 from HappyTools.bin.settings import Settings
 
@@ -85,7 +86,6 @@ class HappyToolsGui(object):
     def __init__(self, master):
         # Move this to parameters file or so
         self.output_window_open = tk.IntVar(value=0)
-        self.batch_folder = tk.StringVar(value=Path.cwd())
 
         # Inherit Tk() root object
         self.master = master
@@ -211,6 +211,7 @@ class HappyToolsGui(object):
         self.functions = Functions(self)
         self.settings = Settings(self)
         self.output_parameters = OutputParameters(self)
+        self.process_parameters = ProcessParameters(self)
         self.axes = axes
         self.canvas = canvas
         self.progress = progress
@@ -258,11 +259,14 @@ class HappyToolsGui(object):
 
     def calibrate_chromatogram(self):
         try:
-            self.cal_file = filedialog.askopenfilename(
+            self.process_parameters.calibration = True
+            self.process_parameters.calibration_file = filedialog.askopenfilename(
                 title='Select Calibration File')
-            if not self.cal_file:
-                self.cal_file = None
-            self.reference = self.functions.read_peak_list(self.cal_file)
+            if not self.process_parameters.calibration_file:
+                self.process_parameters.quantitation = False
+                return
+            self.reference = self.functions.read_peak_list(
+                    self.process_parameters.calibration_file)
 
             self.progress.reset_bar()
             self.task_label.set('Calibrating Chromatograms')
@@ -276,6 +280,8 @@ class HappyToolsGui(object):
                 apply_calibration_function(self)
             self.task_label.set('Idle')
             self.progress.fill_bar()
+
+            self.process_parameters.quantitation = False
 
         except Exception as e:
             self.logger.error(e)
@@ -319,14 +325,16 @@ class HappyToolsGui(object):
             self.logger.error(e)
 
     def quantify_chromatogram(self):
-        #try:
+        try:
             self.results = []
-            self.functions.batch_folder = self.batch_folder
-            self.quant_file = filedialog.askopenfilename(
+            self.process_parameters.quantitation = True
+            self.process_parameters.quanititation_file = filedialog.askopenfilename(
                 title='Select Quantitation File')
-            if not self.quant_file:
-                self.quant_file = None
-            self.reference = self.functions.read_peak_list(self.quant_file)
+            if not self.process_parameters.quanititation_file:
+                self.process_parameters.quantitation = False
+                return
+            self.reference = self.functions.read_peak_list(
+                    self.process_parameters.quanititation_file)
 
             self.progress.reset_bar()
             self.task_label.set('Quantifying Chromatograms')
@@ -344,8 +352,10 @@ class HappyToolsGui(object):
             self.output.init_output_file()
             self.output.build_output_file()
 
-        #except Exception as e:
-            #self.logger.error(e)
+            self.process_parameters.quantitation = False
+
+        except Exception as e:
+            self.logger.error(e)
 
     def peak_detection(self):
         try:

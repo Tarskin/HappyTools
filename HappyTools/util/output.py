@@ -8,7 +8,7 @@ class Output(object):
         self.settings = master.settings
         self.results = master.results
         self.output_parameters = master.output_parameters
-        self.batch_folder = master.batch_folder
+        self.process_parameters = master.process_parameters
 
         utc_datetime = datetime.utcnow()
         s = utc_datetime.strftime(master.settings.date_format)
@@ -64,7 +64,7 @@ class Output(object):
             self.write_retention_time_residual()
 
     def init_output_file(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('w') as fw:
             fw.write('HappyTools Settings\n')
             fw.write('Version:\t'+str(version.version)+'\n')
@@ -82,7 +82,7 @@ class Output(object):
             fw.write('\n')
 
     def write_back_sub_abs_peak_area(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Peak Area (Background Subtracted)')
             fw.write(self.header)
@@ -94,7 +94,7 @@ class Output(object):
             fw.write('\n')
 
     def write_back_sub_gauss_peak_area(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Gaussian Area (Background Subtracted)')
             fw.write(self.header)
@@ -106,7 +106,7 @@ class Output(object):
             fw.write('\n')
 
     def write_back_sub_rel_peak_area(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Relative Peak Area (TAN, Background Subtracted)')
             fw.write(self.header)
@@ -124,7 +124,7 @@ class Output(object):
             fw.write('\n')
 
     def write_background(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Background')
             fw.write(self.header)
@@ -136,7 +136,7 @@ class Output(object):
             fw.write('\n')
 
     def write_fwhm(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('FWHM')
             fw.write(self.header)
@@ -148,7 +148,7 @@ class Output(object):
             fw.write('\n')
 
     def write_gaussian_pattern_quality(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('GPQ (Gaussian Peak Quality)')
             fw.write(self.header)
@@ -160,7 +160,7 @@ class Output(object):
             fw.write('\n')
 
     def write_noise(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Noise')
             fw.write(self.header)
@@ -172,7 +172,7 @@ class Output(object):
             fw.write('\n')
 
     def write_non_back_sub_abs_peak_area(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Peak Area')
             fw.write(self.header)
@@ -184,7 +184,7 @@ class Output(object):
             fw.write('\n')
 
     def write_non_back_sub_gauss_peak_area(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Gaussian Area')
             fw.write(self.header)
@@ -196,7 +196,7 @@ class Output(object):
             fw.write('\n')
 
     def write_non_back_sub_rel_peak_area(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Relative Peak Area (TAN)')
             fw.write(self.header)
@@ -214,7 +214,7 @@ class Output(object):
             fw.write('\n')
 
     def write_peak_noise(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Peak Noise (Standard deviation of integration window)')
             fw.write(self.header)
@@ -226,7 +226,7 @@ class Output(object):
             fw.write('\n')
 
     def write_retention_time(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Retention Time [min.]')
             fw.write(self.header)
@@ -238,7 +238,7 @@ class Output(object):
             fw.write('\n')
 
     def write_retention_time_residual(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Retention Time Residual [min.]')
             fw.write(self.header)
@@ -250,7 +250,7 @@ class Output(object):
             fw.write('\n')
 
     def write_signal_noise(self):
-        with Path(self.batch_folder.get() /
+        with Path(self.process_parameters.data_folder /
                   Path(self.filename)).open('a') as fw:
             fw.write('Signal-to-Noise')
             fw.write(self.header)
