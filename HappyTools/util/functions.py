@@ -20,21 +20,17 @@ class Functions(object):
         self.master = master
 
     def batch_process(self, master):
-        if master.batch_folder.get():
+        self.process_parameters = master.process_parameters
+        self.output_parameters = master.output_parameters
 
-            self.abs_int = master.abs_int
-            self.rel_int = master.rel_int
-            self.gauss_int = master.gauss_int
-            self.bck_sub = master.rel_int
-            self.bck_noise = master.rel_int
-            self.peak_qual = master.rel_int
-            self.settings = master.settings
-            self.batch_folder = master.batch_folder
+        if self.process_parameters.data_folder:
+
             bar = progressbar.ProgressBar(self)
 
-            if master.cal_file.get():
+            if self.process_parameters.calibration_file:
 
-                self.reference = self.read_peak_list(master.cal_file.get())
+                self.reference = self.read_peak_list(
+                        self.process_parameters.calibration_file)
                 files = get_calibration_files(self)
 
                 for index, file in enumerate(files):
@@ -49,10 +45,11 @@ class Functions(object):
             bar.update_progress_bar(bar.progressbar,
                 bar.calibration_percentage, 1, 1)
 
-            if master.anal_file.get():
+            if self.process_parameters.quantitation_file:
 
                 self.results = []
-                self.reference = self.read_peak_list(master.anal_file.get())
+                self.reference = self.read_peak_list(
+                        self.process_parameters.quantitation_file)
                 files = get_quantitation_files(self)
 
                 for index, chromatogram in enumerate(files):

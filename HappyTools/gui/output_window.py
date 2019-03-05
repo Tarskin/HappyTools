@@ -13,10 +13,6 @@ class OutputWindow(object):
         Keyword arguments:
         none
         """
-        if master.output_window_open.get() == 1:
-            return
-        master.output_window_open.set(1)
-
         top = tk.Toplevel()
         top.protocol('WM_DELETE_WINDOW', self.close_output_settings)
         top.title('Output Options')
@@ -86,7 +82,6 @@ class OutputWindow(object):
         self.top = top
 
     def close_output_settings(self):
-        self.master.output_window_open.set(0)
         self.top.destroy()
 
     def save_output_settings(self):

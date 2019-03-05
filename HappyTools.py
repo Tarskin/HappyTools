@@ -84,9 +84,6 @@ class HappyToolsGui(object):
         root.mainloop()
 
     def __init__(self, master):
-        # Move this to parameters file or so
-        self.output_window_open = tk.IntVar(value=0)
-
         # Inherit Tk() root object
         self.master = master
 
@@ -298,7 +295,6 @@ class HappyToolsGui(object):
         finalize_plot(self)
         self.task_label.set('Idle')
         self.progress.fill_bar()
-
 
     def close(self):
         self.master.destroy()

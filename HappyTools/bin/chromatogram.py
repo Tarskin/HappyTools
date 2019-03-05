@@ -5,22 +5,24 @@ from pathlib import PurePath
 class Chromatogram(object):
     def __init__(self, filename):
         self.filename = filename
+        self.settings = master.settings
+        self.axes = master.axes
         self.trace = Trace(self)
         self.trace.open_chrom(self)
 
-    def plot_chrom(self, master):
+    def plot_chrom(self):
         label = PurePath(self.filename).stem
         x_array, y_array = zip(*self.trace.chrom_data)
-        master.axes.plot(x_array, y_array, label=str(label))
+        self.axes.plot(x_array, y_array, label=str(label))
 
-    def save_chrom(self, master):
+    def save_chrom(self):
         with open(self.filename, 'w') as fw:
             for data_point in self.trace.chrom_data:
                 fw.write(
                     str(format(data_point[0], '0.' +
-                        str(master.settings.decimal_numbers)+'f'))+'\t' +
+                        str(self.settings.decimal_numbers)+'f'))+'\t' +
                     str(format(data_point[1], '0.' +
-                        str(master.settings.decimal_numbers)+'f'))+'\n')
+                        str(self.settings.decimal_numbers)+'f'))+'\n')
 
 def finalize_plot(master):
     master.axes.set_xlabel('Time [m]')
