@@ -1,5 +1,5 @@
 from HappyTools.gui.output_window import OutputWindow
-from HappyTools.util.functions import create_tooltip
+from HappyTools.gui.tooltip import create_tooltip
 import tkinter as tk
 import tkinter.filedialog as filedialog
 from pathlib import Path

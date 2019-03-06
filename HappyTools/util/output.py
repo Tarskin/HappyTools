@@ -6,7 +6,6 @@ class Output(object):
     def __init__(self, master):
         self.master = master
         self.settings = master.settings
-        self.results = master.results
         self.output_parameters = master.output_parameters
         self.process_parameters = master.process_parameters
 
@@ -16,15 +15,15 @@ class Output(object):
 
     def build_header(self):
         header = ''
-        for i in self.results:
+        for chromatogram in self.master.data:
 
-            for j in i['results']:
-                header = header + '\t'+str(j['peak'])
+            for peak in chromatogram.peaks:
+                header = header + '\t' + str(peak.peak)
             header = header + '\n'
 
             header = header + 'RT'
-            for j in i['results']:
-                header = header + '\t'+str(j['time'])
+            for peak in chromatogram.peaks:
+                header = header + '\t' + str(peak.time)
             header = header + '\n'
 
             break
@@ -86,10 +85,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Peak Area (Background Subtracted)')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(j['peak_area']-j['background_area']))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(peak.peak_area-peak.background_area))
                 fw.write('\n')
             fw.write('\n')
 
@@ -98,10 +97,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Gaussian Area (Background Subtracted)')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(j['gaussian_area']-j['background_area']))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(peak.gaussian_area-peak.background_area))
                 fw.write('\n')
             fw.write('\n')
 
@@ -110,14 +109,14 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Relative Peak Area (TAN, Background Subtracted)')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
                 total = 0.
-                for j in i['results']:
-                    total += max(j['peak_area']-j['background_area'],0)
-                for j in i['results']:
+                for peak in chromatogram.peaks:
+                    total += max(peak.peak_area-peak.background_area,0)
+                for peak in chromatogram.peaks:
                     try:
-                        fw.write('\t'+str(max(j['peak_area']-j['background_area'],0)/total))
+                        fw.write('\t'+str(max(peak.peak_area-peak.background_area,0)/total))
                     except ZeroDivisionError:
                         fw.write('\t'+str(0.0))
                 fw.write('\n')
@@ -128,10 +127,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Background')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(j['background']))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(peak.background))
                 fw.write('\n')
             fw.write('\n')
 
@@ -140,10 +139,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('FWHM')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(j['fwhm']))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(peak.fwhm))
                 fw.write('\n')
             fw.write('\n')
 
@@ -152,10 +151,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('GPQ (Gaussian Peak Quality)')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(j['residual']))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(peak.residual))
                 fw.write('\n')
             fw.write('\n')
 
@@ -164,10 +163,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Noise')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(j['noise']))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(peak.noise))
                 fw.write('\n')
             fw.write('\n')
 
@@ -176,10 +175,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Peak Area')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(j['peak_area']))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(peak.peak_area))
                 fw.write('\n')
             fw.write('\n')
 
@@ -188,10 +187,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Gaussian Area')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(j['gaussian_area']))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(peak.gaussian_area))
                 fw.write('\n')
             fw.write('\n')
 
@@ -200,14 +199,14 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Relative Peak Area (TAN)')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
                 total = 0.
-                for j in i['results']:
-                    total += j['peak_area']
-                for j in i['results']:
+                for peak in chromatogram.peaks:
+                    total += peak.peak_area
+                for peak in chromatogram.peaks:
                     try:
-                        fw.write('\t'+str(j['peak_area']/total))
+                        fw.write('\t'+str(peak.peak_area/total))
                     except ZeroDivisionError:
                         fw.write('\t'+str(0.0))
                 fw.write('\n')
@@ -218,10 +217,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Peak Noise (Standard deviation of integration window)')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(j['peak_noise']))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(peak.peak_noise))
                 fw.write('\n')
             fw.write('\n')
 
@@ -230,10 +229,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Retention Time [min.]')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(float(j['actual_time'])))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(float(peak.actual_time)))
                 fw.write('\n')
             fw.write('\n')
 
@@ -242,10 +241,10 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Retention Time Residual [min.]')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(abs(j['actual_time'] - j['time'])))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(abs(peak.actual_time-peak.time)))
                 fw.write('\n')
             fw.write('\n')
 
@@ -254,9 +253,9 @@ class Output(object):
                   Path(self.filename)).open('a') as fw:
             fw.write('Signal-to-Noise')
             fw.write(self.header)
-            for i in self.results:
-                fw.write(i['file'])
-                for j in i['results']:
-                    fw.write('\t'+str(j['signal_noise']))
+            for chromatogram in self.master.data:
+                fw.write(chromatogram.filename.stem)
+                for peak in chromatogram.peaks:
+                    fw.write('\t'+str(peak.signal_noise))
                 fw.write('\n')
             fw.write('\n')

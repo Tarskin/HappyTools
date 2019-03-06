@@ -41,9 +41,8 @@ if os.name == 'posix':
 
 # Custom libraries
 from HappyTools.util.peak_detection import PeakDetection
-from HappyTools.util.functions import (Functions, check_disk_access,
-                                       determine_calibration_function,
-                                       apply_calibration_function)
+from HappyTools.util.functions import (check_disk_access,
+                                       save_calibrants, read_peak_list)
 from HappyTools.util.output import Output
 
 # Gui elements
@@ -205,7 +204,6 @@ class HappyToolsGui(object):
 
         # INHERITANCE
         self.logger = logging.getLogger(__name__)
-        self.functions = Functions(self)
         self.settings = Settings(self)
         self.output_parameters = OutputParameters(self)
         self.process_parameters = ProcessParameters(self)
@@ -233,19 +231,21 @@ class HappyToolsGui(object):
         if files:
             self.task_label.set('Opening Chromatograms')
             self.progress.reset_bar()
-            for index, file in enumerate(files):
+            for index, filename in enumerate(files):
                 self.progress.counter.set((float(index) /
                         len(files))*100)
                 self.progress.update_progress_bar()
-                foo = Chromatogram(Path(file))
-                data.append(foo)
+                self.filename = Path(filename)
+                chromatogram = Chromatogram(self)
+                chromatogram.open_chrom()
+                data.append(chromatogram)
             self.data = data
             self.task_label.set('Idle')
             self.progress.fill_bar()
 
         self.axes.clear()
         for chrom in self.data:
-            chrom.plot_chrom(self)
+            chrom.plot_chrom()
         finalize_plot(self)
 
     def open_output_window(self):
@@ -262,7 +262,7 @@ class HappyToolsGui(object):
             if not self.process_parameters.calibration_file:
                 self.process_parameters.quantitation = False
                 return
-            self.reference = self.functions.read_peak_list(
+            self.reference = read_peak_list(
                     self.process_parameters.calibration_file)
 
             self.progress.reset_bar()
@@ -272,9 +272,9 @@ class HappyToolsGui(object):
                         len(self.data))*100)
                 self.progress.update_progress_bar()
 
-                self.time_pairs = self.functions.find_peak(self)
-                self.function = determine_calibration_function(self)
-                apply_calibration_function(self)
+                self.chrom.determine_calibration_timepairs()
+                self.chrom.determine_calibration_function()
+                self.chrom.calibrate_chromatogram()
             self.task_label.set('Idle')
             self.progress.fill_bar()
 
@@ -291,7 +291,7 @@ class HappyToolsGui(object):
             self.progress.counter.set((float(index) /
                     len(self.data))*100)
             self.progress.update_progress_bar()
-            chrom.plot_chrom(self)
+            chrom.plot_chrom()
         finalize_plot(self)
         self.task_label.set('Idle')
         self.progress.fill_bar()
@@ -312,8 +312,8 @@ class HappyToolsGui(object):
                 self.progress.counter.set((float(index) /
                         len(self.data))*100)
                 self.progress.update_progress_bar()
-                chrom.trace.norm_chrom(self)
-                chrom.plot_chrom(self)
+                chrom.norm_chrom()
+                chrom.plot_chrom()
             finalize_plot(self)
             self.task_label.set('Idle')
             self.progress.fill_bar()
@@ -322,25 +322,22 @@ class HappyToolsGui(object):
 
     def quantify_chromatogram(self):
         try:
-            self.results = []
             self.process_parameters.quantitation = True
             self.process_parameters.quanititation_file = filedialog.askopenfilename(
                 title='Select Quantitation File')
             if not self.process_parameters.quanititation_file:
                 self.process_parameters.quantitation = False
                 return
-            self.reference = self.functions.read_peak_list(
+            self.reference = read_peak_list(
                     self.process_parameters.quanititation_file)
 
             self.progress.reset_bar()
             self.task_label.set('Quantifying Chromatograms')
-            for index, self.chrom in enumerate(self.data):
+            for index, chrom in enumerate(self.data):
                 self.progress.counter.set((float(index) /
                         len(self.data))*100)
                 self.progress.update_progress_bar()
-
-                self.results.append({'file': Path(self.chrom.filename).name,
-                                     'results': self.functions.quantify_chrom(self)})
+                chrom.quantify_chrom()
             self.task_label.set('Idle')
             self.progress.fill_bar()
 
@@ -358,9 +355,9 @@ class HappyToolsGui(object):
             self.axes.clear()
             for self.chrom in self.data:
                 self.detected_peaks = PeakDetection(self)
-                self.detected_peaks.detect_peaks(self)
-                self.detected_peaks.plot_peaks(self)
-                self.chrom.plot_chrom(self)
+                self.detected_peaks.detect_peaks()
+                self.detected_peaks.plot_peaks()
+                self.chrom.plot_chrom()
             finalize_plot(self)
         except Exception as e:
             self.logger.error(e)
@@ -368,12 +365,12 @@ class HappyToolsGui(object):
     def save_annotation(self):
         try:
             for self.chrom in self.data:
-                self.detected_peaks.write_peaks(self)
+                self.detected_peaks.write_peaks()
         except Exception as e:
             self.logger.error(e)
 
     def save_calibrants(self):
-        self.functions.save_calibrants(self)
+        save_calibrants(self)
 
     def smooth_chromatogram(self):
         try:
@@ -384,8 +381,8 @@ class HappyToolsGui(object):
                 self.progress.counter.set((float(index) /
                         len(self.data))*100)
                 self.progress.update_progress_bar()
-                chrom.trace.smooth_chrom(self)
-                chrom.plot_chrom(self)
+                chrom.smooth_chrom()
+                chrom.plot_chrom()
             finalize_plot(self)
             self.task_label.set('Idle')
             self.progress.fill_bar()
@@ -414,8 +411,8 @@ class HappyToolsGui(object):
                 self.progress.counter.set((float(index) /
                         len(self.data))*100)
                 self.progress.update_progress_bar()
-                chrom.trace.baseline_correction(self)
-                chrom.plot_chrom(self)
+                chrom.baseline_correction()
+                chrom.plot_chrom()
             finalize_plot(self)
             self.task_label.set('Idle')
             self.progress.fill_bar()

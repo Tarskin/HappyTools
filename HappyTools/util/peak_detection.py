@@ -13,12 +13,14 @@ class PeakDetection(object):
     def __init__(self, master):
         self.settings = master.settings
         self.logger = logging.getLogger(__name__)
-        self.chrom = master.chrom
+        self.master = master
+        # Artifact because data_subset and determine_breakpoints are not part of the Chromatogram class yet
+        self.chrom_data = master.chrom.chrom_data
         self.detected_peaks = []
 
-    def detect_peaks(self, master):
+    def detect_peaks(self):
 
-        orig_time, orig_intensity = zip(*self.chrom.trace.chrom_data)
+        orig_time, orig_intensity = zip(*self.master.chrom.chrom_data)
         curr_intensity = orig_intensity
 
         time_start = bisect_left(orig_time, self.settings.start)
@@ -46,7 +48,7 @@ class PeakDetection(object):
             self.peak = Peak(self)
 
             # Gaussian fit
-            self.peak.determine_gaussian_coefficients(self)
+            self.peak.determine_gaussian_coefficients()
             if self.peak.coeff.any():
                 new_intensity = []
                 for index, i in enumerate(curr_intensity):
@@ -55,7 +57,7 @@ class PeakDetection(object):
                 curr_intensity = new_intensity
 
             # Subtract Gaussian intensity from the current intensity
-            self.chrom.trace.chrom_data = list(zip(orig_time, curr_intensity))
+            self.chrom_data = list(zip(orig_time, curr_intensity))
 
             # Create Gaussian data at 3 sigma width
             gauss_start = self.time-3*self.peak.coeff[2]
@@ -75,15 +77,15 @@ class PeakDetection(object):
                                      x['central_time'])
 
         # Restore original data
-        self.chrom.trace.chrom_data = list(zip(orig_time, orig_intensity))
+        self.master.chrom.chrom_data = list(zip(orig_time, orig_intensity))
 
-    def plot_peaks(self, master):
+    def plot_peaks(self):
         for index, peak in enumerate(self.detected_peaks):
             x_array, y_array = zip(*peak['data'])
-            master.axes.fill_between(x_array, 0, y_array, alpha=0.5,
+            self.master.axes.fill_between(x_array, 0, y_array, alpha=0.5,
                               label='Peak '+str(index+1))
 
-    def write_peaks(self, master):
+    def write_peaks(self):
         save_file = filedialog.asksaveasfilename(title='Save Annotation File')
         with Path(save_file).open('w') as fw:
             fw.write('Index\tTime\tWindow\n')

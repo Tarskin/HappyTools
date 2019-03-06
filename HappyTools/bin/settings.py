@@ -51,44 +51,44 @@ class Settings(object):
 
             # General Settings
             try:
-                self.start = self.config.get(
-                        'General', 'Start time')
+                self.start = float(self.config.get(
+                        'General', 'Start time'))
             except (configparser.NoSectionError,
                     configparser.NoOptionError):
                 pass
 
             try:
-                self.end = self.config.get(
-                        'General', 'End time')
+                self.end = float(self.config.get(
+                        'General', 'End time'))
             except (configparser.NoSectionError,
                     configparser.NoOptionError):
                 pass
 
             try:
-                self.points = self.config.get(
-                        'General', 'Points for baseline')
+                self.points = int(self.config.get(
+                        'General', 'Points for baseline'))
             except (configparser.NoSectionError,
                     configparser.NoOptionError):
                 pass
 
             try:
-                self.baseline_order = self.config.get(
-                        'General', 'Baseline function order')
+                self.baseline_order = int(self.config.get(
+                        'General', 'Baseline function order'))
             except (configparser.NoSectionError,
                     configparser.NoOptionError):
                 pass
 
             try:
-                self.background_window = self.config.get(
-                        'General', 'Background window')
+                self.background_window = float(self.config.get(
+                        'General', 'Background window'))
             except (configparser.NoSectionError,
                     configparser.NoOptionError):
                 pass
 
             # Peak Detection Settings
             try:
-                self.peak_detection_min = self.config.get(
-                        'Peak Detection', 'Minimum peak intensity')
+                self.peak_detection_min = float(self.config.get(
+                        'Peak Detection', 'Minimum peak intensity'))
             except (configparser.NoSectionError,
                     configparser.NoOptionError):
                 pass
@@ -101,23 +101,23 @@ class Settings(object):
                 pass
 
             try:
-                self.peak_detection_edge_value = self.config.get(
-                        'Peak Detection', 'Edge value')
+                self.peak_detection_edge_value = float(self.config.get(
+                        'Peak Detection', 'Edge value'))
             except (configparser.NoSectionError,
                     configparser.NoOptionError):
                 pass
 
             # Calibration Settings
             try:
-                self.min_peaks = self.config.get(
-                        'Calibration', 'Minimum number of peaks')
+                self.min_peaks = int(self.config.get(
+                        'Calibration', 'Minimum number of peaks'))
             except (configparser.NoSectionError,
                     configparser.NoOptionError):
                 pass
 
             try:
-                self.min_peak_SN = self.config.get(
-                        'Calibration', 'Minimum sn for calibration')
+                self.min_peak_SN = float(self.config.get(
+                        'Calibration', 'Minimum sn for calibration'))
             except (configparser.NoSectionError,
                     configparser.NoOptionError):
                 pass

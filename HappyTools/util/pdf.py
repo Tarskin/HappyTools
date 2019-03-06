@@ -1,6 +1,6 @@
 from HappyTools.util.fitting import gauss_function
-import HappyTools.gui.version as version
 from matplotlib.figure import Figure
+import HappyTools.gui.version as version
 
 from bisect import bisect_left, bisect_right
 from datetime import datetime
@@ -12,8 +12,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 
 class Pdf(object):
     def __init__(self, master):
-        pdf_file = str(PurePath(master.chrom.filename).stem)+'.pdf'
-        # This needs to change when functions are removed from functions
+        pdf_file = str(PurePath(master.filename).stem)+'.pdf'
         pdf = PdfPages(master.master.process_parameters.data_folder /
                        Path(pdf_file))
 
@@ -29,10 +28,10 @@ class Pdf(object):
         self.pdf = pdf
 
     def plot_overview(self):
-        time, intensity = zip(*self.master.chrom.trace.chrom_data)
+        time, intensity = zip(*self.master.chrom_data)
         d = self.pdf.infodict()
         d['Title'] = 'PDF Report for: '+str(
-                PurePath(self.master.chrom.filename).stem)
+                PurePath(self.master.filename).stem)
         d['Author'] = ('HappyTools version: '+str(version.version)+
                        ' build: '+str(version.build))
         d['CreationDate'] = datetime.now()
@@ -43,8 +42,8 @@ class Pdf(object):
         self.axes.plot(time[low:high], intensity[low:high], 'b-')
         self.axes.legend(['Raw Data'], loc='best')
         self.axes.set_title(str(
-                PurePath(self.master.chrom.filename).stem))
-        for i in self.master.reference:
+                PurePath(self.master.filename).stem))
+        for i in self.master.master.reference:
             low = bisect_left(time, i[1]-i[2])
             high = bisect_right(time, i[1]+i[2])
             new_time = linspace(time[low], time[high],
@@ -60,7 +59,7 @@ class Pdf(object):
         self.pdf.savefig(self.fig)
 
     def plot_individual(self):
-        time, intensity = zip(*self.master.chrom.trace.chrom_data)
+        time, intensity = zip(*self.master.chrom_data)
         low = bisect_left(time, self.master.time-self.master.window)
         high = bisect_right(time, self.master.time+self.master.window)
 
