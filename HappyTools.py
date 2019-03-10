@@ -237,7 +237,7 @@ class HappyToolsGui(object):
                 self.progress.update_progress_bar()
                 self.filename = Path(filename)
                 chromatogram = Chromatogram(self)
-                chromatogram.open_chrom()
+                chromatogram.open_chromatogram()
                 data.append(chromatogram)
             self.data = data
             self.task_label.set('Idle')
@@ -245,7 +245,7 @@ class HappyToolsGui(object):
 
         self.axes.clear()
         for chrom in self.data:
-            chrom.plot_chrom()
+            chrom.plot_chromatogram()
         finalize_plot(self)
 
     def open_output_window(self):
@@ -273,6 +273,7 @@ class HappyToolsGui(object):
                 self.progress.update_progress_bar()
 
                 self.chrom.determine_calibration_timepairs()
+                # Still need to include a check against number of calibrants
                 self.chrom.determine_calibration_function()
                 self.chrom.calibrate_chromatogram()
             self.task_label.set('Idle')
@@ -291,7 +292,7 @@ class HappyToolsGui(object):
             self.progress.counter.set((float(index) /
                     len(self.data))*100)
             self.progress.update_progress_bar()
-            chrom.plot_chrom()
+            chrom.plot_chromatogram()
         finalize_plot(self)
         self.task_label.set('Idle')
         self.progress.fill_bar()
@@ -312,8 +313,8 @@ class HappyToolsGui(object):
                 self.progress.counter.set((float(index) /
                         len(self.data))*100)
                 self.progress.update_progress_bar()
-                chrom.norm_chrom()
-                chrom.plot_chrom()
+                chrom.normalize_chromatogram()
+                chrom.plot_chromatogram()
             finalize_plot(self)
             self.task_label.set('Idle')
             self.progress.fill_bar()
@@ -337,7 +338,7 @@ class HappyToolsGui(object):
                 self.progress.counter.set((float(index) /
                         len(self.data))*100)
                 self.progress.update_progress_bar()
-                chrom.quantify_chrom()
+                chrom.quantify_chromatogram()
             self.task_label.set('Idle')
             self.progress.fill_bar()
 
@@ -357,7 +358,7 @@ class HappyToolsGui(object):
                 self.detected_peaks = PeakDetection(self)
                 self.detected_peaks.detect_peaks()
                 self.detected_peaks.plot_peaks()
-                self.chrom.plot_chrom()
+                self.chrom.plot_chromatogram()
             finalize_plot(self)
         except Exception as e:
             self.logger.error(e)
@@ -381,8 +382,8 @@ class HappyToolsGui(object):
                 self.progress.counter.set((float(index) /
                         len(self.data))*100)
                 self.progress.update_progress_bar()
-                chrom.smooth_chrom()
-                chrom.plot_chrom()
+                chrom.smooth_chromatogram()
+                chrom.plot_chromatogram()
             finalize_plot(self)
             self.task_label.set('Idle')
             self.progress.fill_bar()
@@ -392,7 +393,7 @@ class HappyToolsGui(object):
     def save_chromatogram(self):
         try:
             for chrom in self.data:
-                chrom.save_chrom(self)
+                chrom.save_chromatogram(self)
         except Exception as e:
             self.logger.error(e)
 
@@ -412,7 +413,7 @@ class HappyToolsGui(object):
                         len(self.data))*100)
                 self.progress.update_progress_bar()
                 chrom.baseline_correction()
-                chrom.plot_chrom()
+                chrom.plot_chromatogram()
             finalize_plot(self)
             self.task_label.set('Idle')
             self.progress.fill_bar()

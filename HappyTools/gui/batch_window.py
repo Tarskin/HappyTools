@@ -1,5 +1,6 @@
 from HappyTools.gui.output_window import OutputWindow
 from HappyTools.gui.tooltip import create_tooltip
+from HappyTools.util.batch_process import BatchProcess
 import tkinter as tk
 import tkinter.filedialog as filedialog
 from pathlib import Path
@@ -19,10 +20,11 @@ class batchWindow(object):
         none
         """
         self.master = master
-        self.functions = master.functions
         self.settings = master.settings
         self.output_parameters = master.output_parameters
         self.process_parameters = master.process_parameters
+        self.logger = master.logger
+        self.axes = master.axes
 
         data_folder_var = tk.StringVar()
         data_folder_var.set(
@@ -112,7 +114,8 @@ class batchWindow(object):
     def run(self):
         """Start the batch process.
         """
-        self.functions.batch_process(self)
+        batch_process = BatchProcess(self)
+        batch_process.batch_process()
 
     def set_batch_folder(self):
         """Ask for the batch folder.

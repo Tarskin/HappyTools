@@ -1,18 +1,15 @@
 from HappyTools.bin.peak import Peak
 from HappyTools.util.pdf import Pdf
 from HappyTools.util.functions import determine_breakpoints, subset_data
+from HappyTools.util.file_parser import file_parser
 from bisect import bisect_left, bisect_right
 from pathlib import PurePath
 from numpy import polyfit, poly1d
 from scipy.signal import savgol_filter
-import re
 import operator
 
 
 class Chromatogram(object):
-    # TODO: Get rid of Trace class and implement it here, according
-    # to Chromatogram -> Analyte structure (to mimic MT, minus the
-    # Isotope class)
     def __init__(self, master):
         self.filename = master.filename
         self.settings = master.settings
@@ -80,7 +77,7 @@ class Chromatogram(object):
         z = polyfit(observed, expected, 2)
         self.calibration_function = poly1d(z)
 
-    def norm_chrom(self):
+    def normalize_chromatogram(self):
         time, intensity = zip(*self.chrom_data)
 
         # Normalize to maximum intensity
@@ -91,73 +88,15 @@ class Chromatogram(object):
 
         self.chrom_data = list(zip(time, normalized_intensity))
 
-    def open_chrom(self):
-        with open(self.filename, 'r') as fr:
-            chrom_data = []
-            if self.filename.suffix.lower().endswith('txt'):
-                for line in fr:
-                    if line[0].isdigit() is True:
-                        line_chunks = line.strip().split()
+    def open_chromatogram(self):
+        file_parser(self)
 
-                        time_sep = re.sub(r'-?\d', '', line_chunks[0],
-                                          flags=re.U)
-                        for sep in time_sep[:-1]:
-                            line_chunks[0] = line_chunks[0].replace(sep, '')
-                        if time_sep:
-                            line_chunks[0] = line_chunks[0].replace(
-                                time_sep[-1], '.')
-
-                        int_sep = re.sub(r'-?\d', '', line_chunks[-1],
-                                         flags=re.U)
-                        for sep in int_sep[:-1]:
-                            line_chunks[-1] = line_chunks[-1].replace(
-                                sep[-1], '')
-                        if int_sep:
-                            line_chunks[-1] = line_chunks[-1].replace(
-                                int_sep[-1], '.')
-
-                        try:
-                            chrom_data.append((float(line_chunks[0]),
-                                               float(line_chunks[-1])))
-                        except UnicodeEncodeError as e:
-                            self.logger.warn(e)
-
-            elif self.filename.suffix.lower().endswith('arw'):
-                for line in fr:
-                    lines = line.split('\r')
-                for line in lines:
-                    try:
-                        if line[0][0].isdigit() is False:
-                            pass
-                        else:
-                            line_chunks = line.rstrip()
-                            line_chunks = line_chunks.split()
-                            chrom_data.append((float(line_chunks[0]),
-                                               float(line_chunks[1])))
-                    except IndexError:
-                        pass
-
-            elif self.filename.suffix.lower().endswith('csv'):
-                for line in fr:
-                    if line[0].isdigit() is True:
-                        line_chunks = line.strip().split()
-                        try:
-                            chrom_data.append((float(line_chunks[0]),
-                                              float(line_chunks[1])))
-                        except UnicodeEncodeError:
-                            print('Omitting line: ' + str(line))
-
-            else:
-                print('Incorrect inputfile format, please upload a raw ' +
-                      'data \'.txt\' or \'.arw\' file.')
-        self.chrom_data = chrom_data
-
-    def plot_chrom(self):
+    def plot_chromatogram(self):
         label = PurePath(self.filename).stem
         time, intensity = zip(*self.chrom_data)
         self.axes.plot(time, intensity, label=str(label))
 
-    def quantify_chrom(self):
+    def quantify_chromatogram(self):
         results = []
         time, _ = zip(*self.chrom_data)
 
@@ -220,14 +159,14 @@ class Chromatogram(object):
         if self.master.output_parameters.pdf_report.get() == True:
             self.pdf.close()
 
-    def smooth_chrom(self):
+    def smooth_chromatogram(self):
         # Apply Savitzky-Golay filter
         # TODO: Allow user to specify Smoothing method
         time, intensity = zip(*self.chrom_data)
         new = savgol_filter(intensity, 21, 3)
         self.chrom_data = list(zip(time, new))
 
-    def save_chrom(self):
+    def save_chromatogram(self):
         with open(self.filename, 'w') as fw:
             for data_point in self.trace.chrom_data:
                 fw.write(
