@@ -1,7 +1,6 @@
 from bisect import bisect_left, bisect_right
-from numpy import greater, less, linspace, poly1d, polyfit
+from numpy import greater, less, linspace
 from os import W_OK, access
-from pathlib import Path
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.signal import argrelextrema
 import logging
@@ -60,7 +59,7 @@ def read_peak_list(file_name):
         logger.error('The selected reference file '+str(file_name)+
                           ' could not be opened.')
     return peaks
-        
+
 def subset_data(master):
 
     max_point = 0

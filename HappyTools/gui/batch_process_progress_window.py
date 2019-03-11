@@ -1,6 +1,5 @@
 from HappyTools.gui.progress_bar import ProgressBar
 import tkinter as tk
-import tkinter.ttk as ttk
 
 
 class BatchProcessProgressWindow(object):

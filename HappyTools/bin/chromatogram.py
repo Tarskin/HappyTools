@@ -97,7 +97,6 @@ class Chromatogram(object):
         self.axes.plot(time, intensity, label=str(label))
 
     def quantify_chromatogram(self):
-        results = []
         time, _ = zip(*self.chrom_data)
 
         # Initialize PDF and plot overview
