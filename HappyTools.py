@@ -51,7 +51,7 @@ from HappyTools.gui.about_window import AboutWindow
 from HappyTools.gui.batch_window import batchWindow
 from HappyTools.gui.settings_window import SettingsWindow
 from HappyTools.gui.output_window import OutputWindow
-import HappyTools.gui.progress_bar as progressbar
+from HappyTools.gui.progress_bar import ProgressBar
 import HappyTools.gui.version as version
 
 # Class imports
@@ -130,7 +130,7 @@ class HappyToolsGui(object):
             axes.set_aspect('auto')
         task  = tk.Label(master, textvariable=task_label, width=20)
         task.pack()
-        progress = progressbar.SimpleProgressBar(self)
+        progress = ProgressBar(self.master)
         progress.bar.pack(fill=tk.X)
 
         # QUIT

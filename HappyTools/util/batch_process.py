@@ -1,5 +1,6 @@
 from HappyTools.util.functions import read_peak_list
-from HappyTools.gui.progress_bar import ProgressBar
+from HappyTools.gui.batch_process_progress_window import \
+        BatchProcessProgressWindow
 from HappyTools.bin.chromatogram import Chromatogram
 from HappyTools.util.output import Output
 from pathlib import Path
@@ -7,6 +8,7 @@ import logging
 
 class BatchProcess(object):
     def __init__(self, master):
+        self.master = master
         self.process_parameters = master.process_parameters
         self.output_parameters = master.output_parameters
         self.settings = master.settings
@@ -14,8 +16,10 @@ class BatchProcess(object):
         self.logger = master.logger
 
     def batch_process(self):
+        # Implement logging around these modules
         if self.process_parameters.data_folder:
-            process_window = ProgressBar(self)
+            self.process_window = BatchProcessProgressWindow(self)
+            self.process_window.create_window()
 
             # Calibration
             if self.process_parameters.calibration_file:
@@ -27,18 +31,16 @@ class BatchProcess(object):
                 self.read_data()
 
                 # Perform calibration
+                progress = self.process_window.calibration_progress_bar
                 for index, self.chrom in enumerate(self.data):
+                    progress.counter.set(
+                            (float(index) / len(self.data))*100)
+                    progress.update_progress_bar()
                     self.chrom.determine_calibration_timepairs()
                     # Still need to include a check against number of calibrants
                     self.chrom.determine_calibration_function()
                     self.chrom.calibrate_chromatogram()
-                    process_window.update_progress_bar(
-                            process_window.progressbar,
-                            process_window.calibration_percentage,
-                            index, len(self.data))
-                process_window.update_progress_bar(
-                        process_window.progressbar,
-                        process_window.calibration_percentage, 1, 1)
+                progress.fill_bar()
 
             # Quantitation
             if self.process_parameters.quantitation_file:
@@ -51,31 +53,32 @@ class BatchProcess(object):
                     self.data = self.read_data()
 
                 # Perform quantitation
+                progress = self.process_window.quantitation_progress_bar
                 for index, self.chrom in enumerate(self.data):
+                    progress.counter.set(
+                            (float(index) / len(self.data))*100)
+                    progress.update_progress_bar()
                     self.chrom.quantify_chromatogram()
-                    process_window.update_progress_bar(
-                            process_window.progressbar2,
-                            process_window.quantitation_percentage,
-                            index, len(self.data))
+                progress.fill_bar()
 
                 # Generate summary file
                 output = Output(self)
                 output.init_output_file()
                 output.build_output_file()
 
-                process_window.update_progress_bar(
-                        process_window.progressbar2,
-                        process_window.quantitation_percentage, 1, 1)
-
     def read_data(self):
         data = []
+        progress = self.process_window.reading_progress_bar
         for index, filename in enumerate(self.files):
+            progress.counter.set((float(index) / len(self.files))*100)
+            progress.update_progress_bar()
             self.filename = Path(filename)
             chromatogram = Chromatogram(self)
             chromatogram.open_chromatogram()
             data.append(chromatogram)
+        progress.fill_bar()
         self.data = data
-        
+
     def get_calibration_files(self):
         calibration_files = []
         for files in self.settings.calibration_filetypes:
