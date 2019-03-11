@@ -1,17 +1,21 @@
 from pathlib import Path
+import csv
 import logging
 import re
 
 # Controller function
 def file_parser(master):
-    if master.filename.suffix.lower().endswith('txt'):
-        text_file_parser(master)
-    elif master.filename.suffix.lower().endswith('arw'):
-        arw_file_parser(master)
-    elif master.filename.suffix.lower().endswith('csv'):
-        csv_file_parser(master)
-    else:
-        logging.getLogger(__name__).warn('Unsopported filetype for '+str(master.filename))
+    try:
+        if master.filename.suffix.lower().endswith('txt'):
+            text_file_parser(master)
+        elif master.filename.suffix.lower().endswith('arw'):
+            arw_file_parser(master)
+        elif master.filename.suffix.lower().endswith('csv'):
+            csv_file_parser(master)
+        else:
+            logging.getLogger(__name__).warn('Unsopported filetype for '+str(master.filename))
+    except Exception as e:
+        logging.getLogger(__name__).error(e)
 
 # Individual file format functions
 def arw_file_parser(master):
@@ -20,29 +24,22 @@ def arw_file_parser(master):
         for line in fr:
             lines = line.split('\r')
             for line in lines:
-                try:
-                    if line[0][0].isdigit() is False:
-                        pass
-                    else:
-                        line_chunks = line.rstrip()
-                        line_chunks = line_chunks.split()
-                        chrom_data.append((float(line_chunks[0]),
-                                           float(line_chunks[1])))
-                except IndexError:
+                if line[0][0].isdigit() is False:
                     pass
+                else:
+                    line_chunks = line.rstrip()
+                    line_chunks = line_chunks.split()
+                    chrom_data.append((float(line_chunks[0]),
+                                       float(line_chunks[1])))
     master.chrom_data = chrom_data
 
-def csv_file_reader(master):
+def csv_file_parser(master):
     chrom_data = []
     with Path(master.filename).open() as fr:
-        for line in fr:
-            if line[0].isdigit() is True:
-                line_chunks = line.strip().split()
-                try:
-                    chrom_data.append((float(line_chunks[0]),
-                                      float(line_chunks[1])))
-                except UnicodeEncodeError as e:
-                    logging.getLogger(__name__).warn(e)
+        csv_reader = csv.reader(fr)
+        for row in csv_reader:
+            chrom_data.append((float(row[0]), float(row[-1])))
+
     master.chrom_data = chrom_data
 
 def text_file_parser(master):
@@ -69,9 +66,6 @@ def text_file_parser(master):
                     line_chunks[-1] = line_chunks[-1].replace(
                         int_sep[-1], '.')
 
-                try:
-                    chrom_data.append((float(line_chunks[0]),
-                                       float(line_chunks[-1])))
-                except UnicodeEncodeError as e:
-                    logging.getLogger(__name__).warn(e)
+                chrom_data.append((float(line_chunks[0]),
+                                   float(line_chunks[-1])))
     master.chrom_data = chrom_data
