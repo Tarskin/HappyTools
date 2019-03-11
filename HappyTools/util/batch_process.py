@@ -4,7 +4,7 @@ from HappyTools.gui.batch_process_progress_window import \
 from HappyTools.bin.chromatogram import Chromatogram
 from HappyTools.util.output import Output
 from pathlib import Path
-import logging
+
 
 class BatchProcess(object):
     def __init__(self, master):
@@ -16,7 +16,6 @@ class BatchProcess(object):
         self.logger = master.logger
 
     def batch_process(self):
-        # Implement logging around these modules
         if self.process_parameters.data_folder:
             self.process_window = BatchProcessProgressWindow(self)
             self.process_window.create_window()
@@ -82,7 +81,8 @@ class BatchProcess(object):
     def get_calibration_files(self):
         calibration_files = []
         for files in self.settings.calibration_filetypes:
-            for file in Path(self.process_parameters.data_folder).glob(files):
+            for file in Path(
+                    self.process_parameters.data_folder).glob(files):
                 if file not in self.settings.exclusion_files:
                     calibration_files.append(Path(
                             self.process_parameters.data_folder) /

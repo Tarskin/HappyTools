@@ -114,8 +114,11 @@ class batchWindow(object):
     def run(self):
         """Start the batch process.
         """
-        batch_process = BatchProcess(self)
-        batch_process.batch_process()
+        try:
+            batch_process = BatchProcess(self)
+            batch_process.batch_process()
+        except Exception as e:
+            self.logger.error(e)
 
     def set_batch_folder(self):
         """Ask for the batch folder.

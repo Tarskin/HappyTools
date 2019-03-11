@@ -14,7 +14,8 @@ class BatchProcessProgressWindow(object):
         top.protocol('WM_DELETE_WINDOW', self.close)
         top.title("Batch Process Progress Window")
 
-        if self.process_parameters.calibration_file or self.process.quantitation_file:
+        if self.process_parameters.calibration_file or \
+                self.process.quantitation_file:
             reading_label = tk.Label(top, text='Data Reading')
             reading_label.pack(fill="both", expand=True)
             reading_progress_bar = ProgressBar(top)
