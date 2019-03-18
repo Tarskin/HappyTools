@@ -78,8 +78,6 @@ class Chromatogram(object):
         self.calibration_function = poly1d(z)
 
     def generate_pdf_report(self):
-        time, _ = zip(*self.chrom_data)
-
         pdf = Pdf(self)
         pdf.plot_overview()
         for self.peak in self.peaks:
@@ -107,6 +105,7 @@ class Chromatogram(object):
 
     def quantify_chromatogram(self):
         time, _ = zip(*self.chrom_data)
+        self.peaks = []
 
         # Iterate over peaks
         for i in self.master.reference:
@@ -145,7 +144,6 @@ class Chromatogram(object):
                 self.peak.determine_gaussian_area()
                 self.peak.determine_gaussian_parameters()
                 self.peak.determine_height()
-                print (self.peak.time, self.peak.center)
             self.peak.determine_actual_time()
             self.peak.determine_residual()
 
