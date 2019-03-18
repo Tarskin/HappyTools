@@ -301,7 +301,7 @@ class HappyToolsGui(object):
         self.master.destroy()
         self.master.quit()
 
-    def generate_pdf_reports():
+    def generate_pdf_reports(self):
         self.progress.reset_bar()
         self.task_label.set('Generating PDF reports')
         for index, chrom in enumerate(self.data):
