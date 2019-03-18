@@ -30,7 +30,7 @@ def determine_breakpoints(master):
     breaks = sorted(breaks)
 
     return breaks
-    
+
 def read_peak_list(file_name):
     '''Read and parse the peak file and return a list of peaks.
 

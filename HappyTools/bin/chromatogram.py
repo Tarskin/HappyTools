@@ -77,6 +77,15 @@ class Chromatogram(object):
         z = polyfit(observed, expected, 2)
         self.calibration_function = poly1d(z)
 
+    def generate_pdf_report(self):
+        time, _ = zip(*self.chrom_data)
+
+        pdf = Pdf(self)
+        pdf.plot_overview()
+        for self.peak in self.peaks:
+            pdf.plot_individual()
+        pdf.close()
+
     def normalize_chromatogram(self):
         time, intensity = zip(*self.chrom_data)
 
@@ -98,14 +107,6 @@ class Chromatogram(object):
 
     def quantify_chromatogram(self):
         time, _ = zip(*self.chrom_data)
-
-        # Initialize PDF and plot overview
-        if self.master.output_parameters.pdf_report.get() == True and bisect_left(
-            time, self.settings.start) and bisect_right(time,
-            self.settings.end):
-
-                self.pdf = Pdf(self)
-                self.pdf.plot_overview()
 
         # Iterate over peaks
         for i in self.master.reference:
@@ -144,19 +145,12 @@ class Chromatogram(object):
                 self.peak.determine_gaussian_area()
                 self.peak.determine_gaussian_parameters()
                 self.peak.determine_height()
+                print (self.peak.time, self.peak.center)
             self.peak.determine_actual_time()
             self.peak.determine_residual()
 
-            # Add individual peak to PDF
-            if self.master.output_parameters.pdf_report.get() == True:
-                self.pdf.plot_individual()
-
             # Results
             self.peaks.append(self.peak)
-
-        # Close PDF
-        if self.master.output_parameters.pdf_report.get() == True:
-            self.pdf.close()
 
     def smooth_chromatogram(self):
         # Apply Savitzky-Golay filter

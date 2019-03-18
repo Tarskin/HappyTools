@@ -60,8 +60,10 @@ class Pdf(object):
 
     def plot_individual(self):
         time, intensity = zip(*self.master.chrom_data)
-        low = bisect_left(time, self.master.time-self.master.window)
-        high = bisect_right(time, self.master.time+self.master.window)
+        low = bisect_left(time, self.master.peak.time-
+                          self.master.peak.window)
+        high = bisect_right(time, self.master.peak.time+
+                            self.master.peak.window)
 
         f = InterpolatedUnivariateSpline(time[low:high],
                                          intensity[low:high])
