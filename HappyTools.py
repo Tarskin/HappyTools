@@ -301,6 +301,17 @@ class HappyToolsGui(object):
         self.master.destroy()
         self.master.quit()
 
+    def generate_pdf_reports():
+        self.progress.reset_bar()
+        self.task_label.set('Generating PDF reports')
+        for index, chrom in enumerate(self.data):
+            self.progress.counter.set((float(index) /
+                    len(self.data))*100)
+            self.progress.update_progress_bar()
+            chrom.generate_pdf_report()
+        self.task_label.set('Idle')
+        self.progress.fill_bar()
+
     def open_batch_window(self):
         batchWindow(self)
 
@@ -342,15 +353,8 @@ class HappyToolsGui(object):
             self.task_label.set('Idle')
             self.progress.fill_bar()
 
-            self.progress.reset_bar()
-            self.task_label.set('Generating PDF reports')
-            for index, chrom in enumerate(self.data):
-                self.progress.counter.set((float(index) /
-                        len(self.data))*100)
-                self.progress.update_progress_bar()
-                chrom.generate_pdf_report()
-            self.task_label.set('Idle')
-            self.progress.fill_bar()
+            if self.output_parameters.pdf_report.get() == True:
+                self.generate_pdf_reports()
 
             self.output = Output(self)
             self.output.init_output_file()
