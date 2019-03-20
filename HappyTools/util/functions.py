@@ -1,8 +1,4 @@
-from bisect import bisect_left, bisect_right
-from numpy import greater, less, linspace
 from os import W_OK, access
-from scipy.interpolate import InterpolatedUnivariateSpline
-from scipy.signal import argrelextrema
 import logging
 
 def check_disk_access(master):
