@@ -1,6 +1,5 @@
 from HappyTools.bin.peak import Peak
 from HappyTools.util.pdf import Pdf
-from HappyTools.util.functions import determine_breakpoints, subset_data
 from HappyTools.util.file_parser import file_parser
 from bisect import bisect_left, bisect_right
 from pathlib import PurePath
@@ -54,23 +53,23 @@ class Chromatogram(object):
 
     def determine_calibration_timepairs(self):
         self.calibration_time_pairs = []
-        time, intensity = zip(*self.chrom_data)
 
         for i in self.master.reference:
 
-            self.peak = i[0]
-            self.time = i[1]
-            self.window = i[2]
+            self.peak_name = i[0]
+            self.peak_time = i[1]
+            self.peak_window = i[2]
 
             self.peak = Peak(self)
             self.peak.determine_background_and_noise()
             self.peak.determine_signal_noise()
 
-            max_value = max(intensity[self.peak.low:self.peak.high])
-            max_index = intensity[self.peak.low:self.peak.high].index(max_value)
+            time, intensity = zip(*self.peak.peak_data[self.peak.low:self.peak.high])
+            max_value = max(intensity)
+            max_index = intensity.index(max_value)
 
             if self.peak.signal_noise >= self.settings.min_peak_SN:
-                self.calibration_time_pairs.append((i[1], time[self.peak.low+max_index]))
+                self.calibration_time_pairs.append((i[1], time[max_index]))
 
     def determine_calibration_function(self):
         expected, observed = zip(*self.calibration_time_pairs)
@@ -110,15 +109,15 @@ class Chromatogram(object):
         # Iterate over peaks
         for i in self.master.reference:
 
-            self.peak = i[0]
-            self.time = i[1]
-            self.window = i[2]
+            self.peak_name = i[0]
+            self.peak_time = i[1]
+            self.peak_window = i[2]
 
             self.peak = Peak(self)
 
             # Ignore peaks outside the Trace RT window
-            if self.time < self.settings.start+self.settings.background_window \
-                    or self.time > self.settings.end-self.settings.background_window:
+            if self.peak_time < self.settings.start+self.settings.background_window \
+                    or self.peak_time > self.settings.end-self.settings.background_window:
                 continue
 
             # Background correct
@@ -135,8 +134,9 @@ class Chromatogram(object):
             self.peak.determine_total_area()
 
             # Data Subset (based on second derivative)
-            self.breaks = determine_breakpoints(self)
-            self.data_subset = subset_data(self)
+            self.peak.determine_spline_and_derivative()
+            self.peak.determine_breakpoints()
+            self.peak.subset_data()
 
             # Gaussian fit
             self.peak.determine_gaussian_coefficients()

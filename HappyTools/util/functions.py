@@ -12,25 +12,6 @@ def check_disk_access(master):
             disk_access = False
     return disk_access
 
-def determine_breakpoints(master):
-    time, intensity = zip(*master.chrom_data)
-    low = bisect_left(time, master.time-master.window)
-    high = bisect_right(time, master.time+master.window)
-
-    f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
-    f_prime = f.derivative()
-
-    new_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
-    new_prime_y = f_prime(new_x)
-
-    maxm = argrelextrema(new_prime_y, greater)
-    minm = argrelextrema(new_prime_y, less)
-
-    breaks = maxm[0].tolist() + minm[0].tolist()
-    breaks = sorted(breaks)
-
-    return breaks
-
 def read_peak_list(file_name):
     '''Read and parse the peak file and return a list of peaks.
 
@@ -59,52 +40,6 @@ def read_peak_list(file_name):
         logger.error('The selected reference file '+str(file_name)+
                           ' could not be opened.')
     return peaks
-
-def subset_data(master):
-
-    max_point = 0
-    time, intensity = zip(*master.chrom_data)
-    low = bisect_left(time, master.time-master.window)
-    high = bisect_right(time, master.time+master.window)
-
-    f = InterpolatedUnivariateSpline(time[low:high], intensity[low:high])
-    new_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
-    new_y = f(new_x)
-
-    x_data = new_x
-    y_data = new_y
-
-    # Subset the data
-    # Region from newY[0] to breaks[0]
-    try:
-        if max(new_y[0:master.breaks[0]]) > max_point:
-            max_point = max(new_y[0:master.breaks[0]])
-            x_data = new_x[0:master.breaks[0]]
-            y_data = new_y[0:master.breaks[0]]
-    except IndexError:
-        pass
-
-    # Regions between breaks[x] and breaks[x+1]
-    try:
-        for index, _ in enumerate(master.breaks):
-            if max(new_y[master.breaks[index]:master.breaks[index+1]]) > max_point:
-                max_point = max(new_y[master.breaks[index]:
-                    master.breaks[index+1]])
-                x_data = new_x[master.breaks[index]:master.breaks[index+1]]
-                y_data = new_y[master.breaks[index]:master.breaks[index+1]]
-    except IndexError:
-        pass
-
-    # Region from break[-1] to newY[-1]
-    try:
-        if max(new_y[master.breaks[-1]:-1]) > max_point:
-            max_point = max(new_y[master.breaks[-1]:-1])
-            x_data = new_x[master.breaks[-1]:-1]
-            y_data = new_y[master.breaks[-1]:-1]
-    except IndexError:
-        pass
-
-    return list(zip(x_data, y_data))
 
 def save_calibrants(master):
     # TODO: Remove this function once this is implemented elsewhere

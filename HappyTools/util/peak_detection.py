@@ -31,8 +31,8 @@ class PeakDetection(object):
                self.settings.peak_detection_min * max(
                orig_intensity[time_start:time_end])):
 
-            self.window = (self.settings.end - self.settings.start) / 2
-            self.time = self.window + self.settings.start
+            self.peak_window = (self.settings.end - self.settings.start) / 2
+            self.peak_time = self.peak_window + self.settings.start
 
             # Determine breaks and get subset of data
             self.breaks = determine_breakpoints(self)
@@ -42,9 +42,9 @@ class PeakDetection(object):
             x_data, _ = zip(*self.data_subset)
 
             # Create Peak() object
-            self.peak = None
-            self.window = (x_data[-1] - x_data[0]) / 2
-            self.time = self.window + x_data[0]
+            self.peak_name = None
+            self.peak_window = (x_data[-1] - x_data[0]) / 2
+            self.peak_time = self.peak_window + x_data[0]
             self.peak = Peak(self)
 
             # Gaussian fit
@@ -60,8 +60,8 @@ class PeakDetection(object):
             self.chrom_data = list(zip(orig_time, curr_intensity))
 
             # Create Gaussian data at 3 sigma width
-            gauss_start = self.time-3*self.peak.coeff[2]
-            gauss_end = self.time+3*self.peak.coeff[2]
+            gauss_start = self.peak_time-3*self.peak.coeff[2]
+            gauss_end = self.peak_time+3*self.peak.coeff[2]
             gauss_time = linspace(gauss_start, gauss_end, (gauss_end-
                                   gauss_start)*1000)
             gauss_intensity = gauss_function(gauss_time, *self.peak.coeff)
@@ -70,7 +70,7 @@ class PeakDetection(object):
             self.detected_peaks.append({'data':list(zip(gauss_time,
                                         gauss_intensity)),
                                         'coeff': self.peak.coeff,
-                                        'central_time': self.time})
+                                        'central_time': self.peak_time})
 
         # Sort by retention time
         self.detected_peaks = sorted(self.detected_peaks, key=lambda x:
