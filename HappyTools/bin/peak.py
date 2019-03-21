@@ -43,9 +43,11 @@ class Peak(object):
         time, _ = zip(*master.chrom_data)
 
         low_background = bisect_left(time, max(
-            self.peak_time-self.settings.background_window, self.settings.start))
+            self.peak_time-max(self.settings.background_window,
+            self.peak_window), self.settings.start))
         high_background = bisect_right(time, min(
-            self.peak_time+self.settings.background_window, self.settings.end))
+            self.peak_time+max(self.settings.background_window,
+            self.peak_window), self.settings.end))
 
         # Inherit only the required data (based on background window)
         time, intensity = zip(*master.chrom_data[low_background:high_background])
@@ -127,7 +129,6 @@ class Peak(object):
         self.gaussian_area = gaussian_area
 
     def determine_gaussian_coefficients(self):
-
         x_data, y_data = zip(*self.peak_maximum_data)
         peak = array(x_data)[y_data > exp(-0.5)*max(y_data)]
         guess_sigma = 0.5*(max(peak) - min(peak))
@@ -210,6 +211,10 @@ class Peak(object):
         time, intensity = zip(*self.peak_data)
         low = bisect_left(time, self.peak_time-self.peak_window)
         high = bisect_right(time, self.peak_time+self.peak_window)
+
+        # Failsafe
+        if high == len(time):
+            high =- 1
 
         new_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
 
