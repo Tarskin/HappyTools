@@ -1,8 +1,11 @@
 from HappyTools.util.fitting import gauss_function
-from bisect import bisect_left, bisect_right
+from bisect import bisect_left, bisect_right, bisect
 from math import sqrt, log
-from numpy import amax, argmax, array, exp, mean, std
+from numpy import (amax, argmax, array, exp, greater, less, linspace,
+                   mean, std)
+from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
+from scipy.signal import argrelextrema
 from sys import maxsize
 
 
@@ -12,9 +15,9 @@ class Peak(object):
         self.settings = master.settings
         self.logger = master.logger
 
-        self.peak = master.peak
-        self.time = master.time
-        self.window = master.window
+        self.peak_name = master.peak_name
+        self.peak_time = master.peak_time
+        self.peak_window = master.peak_window
         self.peak_area = 0.
         self.gaussian_area = 0.
         self.signal_noise = 0.
@@ -30,23 +33,37 @@ class Peak(object):
         self.actual_time = 0.
         self.total_area = 0.
         self.coeff = array([])
+        self.peak_data = None
+        self.first_derivative_data = None
+        self.univariate_spline_data = None
+        self.breaks = []
+        self.peak_maximum_data = None
 
+        # Inherit full data
         time, _ = zip(*master.chrom_data)
-        self.low = bisect_left(time, self.time-self.window)
-        self.high = bisect_right(time, self.time+self.window)
 
-        self.low_background = bisect_left(time, max(
-            self.time-self.settings.background_window, self.settings.start))
-        self.high_background = bisect_right(time, min(
-            self.time+self.settings.background_window, self.settings.end))
+        low_background = bisect_left(time, max(
+            self.peak_time-max(self.settings.background_window,
+            self.peak_window), self.settings.start))
+        high_background = bisect_right(time, min(
+            self.peak_time+max(self.settings.background_window,
+            self.peak_window), self.settings.end))
+
+        # Inherit only the required data (based on background window)
+        time, intensity = zip(*master.chrom_data[low_background:high_background])
+
+        self.low = bisect_left(time, self.peak_time-self.peak_window)
+        self.high = bisect_right(time, self.peak_time+self.peak_window)
+
+        self.peak_data = list(zip(time, intensity))
 
     def background_correct(self):
-        time, intensity = zip(*self.master.chrom_data)
-        intensity = [x+abs(self.background) for x in intensity]
-        self.master.chrom_data = list(zip(time, intensity))
+        time, intensity = zip(*self.peak_data)
+        intensity = [x-self.background for x in intensity]
+        self.peak_data = list(zip(time, intensity))
 
     def determine_actual_time(self):
-        time, intensity = zip(*self.master.chrom_data)
+        time, intensity = zip(*self.peak_data)
         if self.coeff.any():
             intensity = gauss_function(time, *self.coeff)
             intensity = intensity.tolist()
@@ -55,8 +72,7 @@ class Peak(object):
         self.actual_time = time[max_intensity_index]
 
     def determine_background_and_noise(self):
-        _, intensity = zip(*self.master.chrom_data[self.low_background:
-            self.high_background])
+        _, intensity = zip(*self.peak_data)
 
         if self.settings.background_noise_method == 'NOBAN':
             raise NotImplementedError('This feature is not implemented in '+
@@ -79,9 +95,19 @@ class Peak(object):
         self.background = background
         self.noise = noise
 
+    def determine_breakpoints(self):
+        time, intensity = zip(*self.first_derivative_data)
+
+        maxm = argrelextrema(array(intensity), greater)
+        minm = argrelextrema(array(intensity), less)
+
+        breaks = maxm[0].tolist() + minm[0].tolist()
+        breaks = sorted(breaks)
+        self.breaks = breaks
+
     def determine_background_area(self):
         background_area = 0
-        time, intensity = zip(*self.master.chrom_data)
+        time, intensity = zip(*self.peak_data)
         for index, _ in enumerate(intensity[self.low:self.high]):
             try:
                 background_area += max(self.background, 0) * (
@@ -92,7 +118,7 @@ class Peak(object):
         self.background_area = background_area
 
     def determine_gaussian_area(self):
-        time, intensity = zip(*self.master.chrom_data)
+        time, intensity = zip(*self.peak_data)
         gaussian_area = 0.
 
         for index, _ in enumerate(intensity[self.low:self.high]):
@@ -103,8 +129,7 @@ class Peak(object):
         self.gaussian_area = gaussian_area
 
     def determine_gaussian_coefficients(self):
-
-        x_data, y_data = zip(*self.master.data_subset)
+        x_data, y_data = zip(*self.peak_maximum_data)
         peak = array(x_data)[y_data > exp(-0.5)*max(y_data)]
         guess_sigma = 0.5*(max(peak) - min(peak))
         p0 = [amax(y_data), x_data[argmax(y_data)], guess_sigma]
@@ -147,19 +172,19 @@ class Peak(object):
 
     def determine_peak_area(self):
         peak_area = 0.
-        time, intensity = zip(*self.master.chrom_data)
+        time, intensity = zip(*self.peak_data)
 
         for index, j in enumerate(intensity[self.low:self.high]):
             try:
-                peak_area += max(j, 0) * (time[self.low+index]-time[
-                    self.low+index-1])
+                peak_area += max(j, 0) * (time[self.low+index]-
+                    time[self.low+index-1])
             except IndexError:
                 continue
 
         self.peak_area = peak_area
 
     def determine_peak_noise(self):
-        _, intensity = zip(*self.master.chrom_data)
+        _, intensity = zip(*self.peak_data)
         peak_noise = std(intensity[self.low:self.high])
 
         self.peak_noise = peak_noise
@@ -176,18 +201,60 @@ class Peak(object):
         self.residual = residual
 
     def determine_signal_noise(self):
-        _, intensity = zip(*self.master.chrom_data)
+        _, intensity = zip(*self.peak_data)
         maximum_point = max(intensity[self.low:self.high])
         signal_noise = (maximum_point - self.background) / self.noise
 
         self.signal_noise = signal_noise
 
+    def determine_spline_and_derivative(self):
+        time, intensity = zip(*self.peak_data)
+        low = bisect_left(time, self.peak_time-self.peak_window)
+        high = bisect_right(time, self.peak_time+self.peak_window)
+
+        # Failsafe
+        if high == len(time):
+            high =- 1
+
+        new_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
+
+        f = InterpolatedUnivariateSpline(time[low:high],
+                                         intensity[low:high])
+        f_prime = f.derivative()
+
+        self.univariate_spline_data = list (zip(new_x, f(new_x)))
+        self.first_derivative_data = list(zip(new_x, f_prime(new_x)))
+
     def determine_total_area(self):
         total_area = 0.
-        time, intensity = zip(*self.master.chrom_data)
+        time, intensity = zip(*self.peak_data)
 
         for index, j in enumerate(intensity[self.low:self.high]):
             total_area += max(j-self.background, 0) * (time[self.low+index]-
                 time[self.low+index-1])
 
         self.total_area = total_area
+
+    def subset_data(self):
+        # Todo, use bisect_left and bisect_right here for consistency
+        time, intensity = zip(*self.univariate_spline_data)
+
+        max_intensity = max(intensity)
+        max_value = intensity.index(max_intensity)
+
+        insert = bisect(self.breaks, max_value)
+
+        if insert == 0:
+            start = 0
+        else:
+            start = self.breaks[insert-1]
+
+        try:
+            end = self.breaks[insert]
+        except IndexError:
+            end = None
+
+        time = time[start:end]
+        intensity = intensity[start:end]
+
+        self.peak_maximum_data = list(zip(time, intensity))

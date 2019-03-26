@@ -65,6 +65,16 @@ class BatchProcess(object):
                 output.init_output_file()
                 output.build_output_file()
 
+            # Report generation
+            if self.output_parameters.pdf_report.get() == True:
+                progress = self.process_window.report_progress_bar
+                for index, self.chrom in enumerate(self.data):
+                    progress.counter.set(
+                            (float(index) / len(self.data))*100)
+                    progress.update_progress_bar()
+                    self.chrom.generate_pdf_report()
+                progress.fill_bar()
+
     def read_data(self):
         data = []
         progress = self.process_window.reading_progress_bar

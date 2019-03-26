@@ -1,6 +1,5 @@
 from HappyTools.bin.peak import Peak
 from HappyTools.util.pdf import Pdf
-from HappyTools.util.functions import determine_breakpoints, subset_data
 from HappyTools.util.file_parser import file_parser
 from bisect import bisect_left, bisect_right
 from pathlib import PurePath
@@ -54,28 +53,35 @@ class Chromatogram(object):
 
     def determine_calibration_timepairs(self):
         self.calibration_time_pairs = []
-        time, intensity = zip(*self.chrom_data)
 
         for i in self.master.reference:
 
-            self.peak = i[0]
-            self.time = i[1]
-            self.window = i[2]
+            self.peak_name = i[0]
+            self.peak_time = i[1]
+            self.peak_window = i[2]
 
             self.peak = Peak(self)
             self.peak.determine_background_and_noise()
             self.peak.determine_signal_noise()
 
-            max_value = max(intensity[self.peak.low:self.peak.high])
-            max_index = intensity[self.peak.low:self.peak.high].index(max_value)
+            time, intensity = zip(*self.peak.peak_data[self.peak.low:self.peak.high])
+            max_value = max(intensity)
+            max_index = intensity.index(max_value)
 
             if self.peak.signal_noise >= self.settings.min_peak_SN:
-                self.calibration_time_pairs.append((i[1], time[self.peak.low+max_index]))
+                self.calibration_time_pairs.append((i[1], time[max_index]))
 
     def determine_calibration_function(self):
         expected, observed = zip(*self.calibration_time_pairs)
         z = polyfit(observed, expected, 2)
         self.calibration_function = poly1d(z)
+
+    def generate_pdf_report(self):
+        pdf = Pdf(self)
+        pdf.plot_overview()
+        for self.peak in self.peaks:
+            pdf.plot_individual()
+        pdf.close()
 
     def normalize_chromatogram(self):
         time, intensity = zip(*self.chrom_data)
@@ -98,27 +104,20 @@ class Chromatogram(object):
 
     def quantify_chromatogram(self):
         time, _ = zip(*self.chrom_data)
-
-        # Initialize PDF and plot overview
-        if self.master.output_parameters.pdf_report.get() == True and bisect_left(
-            time, self.settings.start) and bisect_right(time,
-            self.settings.end):
-
-                self.pdf = Pdf(self)
-                self.pdf.plot_overview()
+        self.peaks = []
 
         # Iterate over peaks
         for i in self.master.reference:
 
-            self.peak = i[0]
-            self.time = i[1]
-            self.window = i[2]
+            self.peak_name = i[0]
+            self.peak_time = i[1]
+            self.peak_window = i[2]
 
             self.peak = Peak(self)
 
             # Ignore peaks outside the Trace RT window
-            if self.time < self.settings.start+self.settings.background_window \
-                    or self.time > self.settings.end-self.settings.background_window:
+            if self.peak_time < self.settings.start+self.settings.background_window \
+                    or self.peak_time > self.settings.end-self.settings.background_window:
                 continue
 
             # Background correct
@@ -135,8 +134,9 @@ class Chromatogram(object):
             self.peak.determine_total_area()
 
             # Data Subset (based on second derivative)
-            self.breaks = determine_breakpoints(self)
-            self.data_subset = subset_data(self)
+            self.peak.determine_spline_and_derivative()
+            self.peak.determine_breakpoints()
+            self.peak.subset_data()
 
             # Gaussian fit
             self.peak.determine_gaussian_coefficients()
@@ -147,16 +147,8 @@ class Chromatogram(object):
             self.peak.determine_actual_time()
             self.peak.determine_residual()
 
-            # Add individual peak to PDF
-            if self.master.output_parameters.pdf_report.get() == True:
-                self.pdf.plot_individual()
-
             # Results
             self.peaks.append(self.peak)
-
-        # Close PDF
-        if self.master.output_parameters.pdf_report.get() == True:
-            self.pdf.close()
 
     def smooth_chromatogram(self):
         # Apply Savitzky-Golay filter

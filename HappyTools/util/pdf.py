@@ -59,25 +59,23 @@ class Pdf(object):
         self.pdf.savefig(self.fig)
 
     def plot_individual(self):
-        time, intensity = zip(*self.master.chrom_data)
-        low = bisect_left(time, self.master.time-self.master.window)
-        high = bisect_right(time, self.master.time+self.master.window)
+        time, intensity = zip(*self.master.peak.peak_data
+                [self.master.peak.low:self.master.peak.high])
 
-        f = InterpolatedUnivariateSpline(time[low:high],
-                                         intensity[low:high])
+        f = InterpolatedUnivariateSpline(time, intensity)
 
-        new_x = linspace(time[low], time[high],
-                         2500*(time[high]-time[low]))
+        new_x = linspace(time[0], time[-1],
+                         2500*(time[-1]-time[0]))
         new_y = f(new_x)
 
         if self.master.peak.coeff.size > 0:
-            new_gauss_x = linspace(time[low], time[high], 2500*(
-                                   time[high]-time[low]))
+            new_gauss_x = linspace(time[0], time[-1], 2500*(
+                                   time[-1]-time[0]))
             new_gauss_y = gauss_function(new_gauss_x,
                                          *self.master.peak.coeff)
 
         self.axes.clear()
-        self.axes.plot(time[low:high], intensity[low:high], 'b*')
+        self.axes.plot(time, intensity, 'b*')
         self.axes.plot(
                 (new_x[0], new_x[-1]),(self.master.peak.background,
                 self.master.peak.background), 'red')
@@ -90,9 +88,9 @@ class Pdf(object):
             self.axes.plot(new_gauss_x, new_gauss_y, color='green',
                            linestyle='dashed')
         self.axes.plot(
-                (time[intensity[low:high].index(max(intensity[low:high]))+low],
-                time[intensity[low:high].index(max(intensity[low:high]))+low]),
-                (self.master.peak.background,max(intensity[low:high])),
+                (time[intensity.index(max(intensity))],
+                time[intensity.index(max(intensity))]),
+                (self.master.peak.background, max(intensity)),
                 color='orange',linestyle='dotted')
         self.axes.plot(
                 (min(max(self.master.peak.center-self.master.peak.width,new_x[0]),
@@ -105,7 +103,7 @@ class Pdf(object):
                 '%)','Signal (S/N '+'{0:.2f}'.format(
                 self.master.peak.signal_noise)+')','FWHM: '+'{0:.2f}'.format(
                 self.master.peak.fwhm)], loc='best')
-        self.axes.set_title('Detail view: '+str(self.master.peak.peak))
+        self.axes.set_title('Detail view: '+str(self.master.peak.peak_name))
         self.pdf.savefig(self.fig)
 
     def close(self):

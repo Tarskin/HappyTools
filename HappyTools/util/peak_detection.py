@@ -1,5 +1,5 @@
 from HappyTools.util.fitting import gauss_function
-from HappyTools.util.functions import determine_breakpoints, subset_data
+#from HappyTools.util.functions import determine_breakpoints, subset_data
 from HappyTools.bin.peak import Peak
 import logging
 import tkinter.filedialog as filedialog
@@ -19,7 +19,6 @@ class PeakDetection(object):
         self.detected_peaks = []
 
     def detect_peaks(self):
-
         orig_time, orig_intensity = zip(*self.master.chrom.chrom_data)
         curr_intensity = orig_intensity
 
@@ -31,24 +30,13 @@ class PeakDetection(object):
                self.settings.peak_detection_min * max(
                orig_intensity[time_start:time_end])):
 
-            self.window = (self.settings.end - self.settings.start) / 2
-            self.time = self.window + self.settings.start
+            # Explore chromatogram to identify highest peak
+            self.explore_chromatogram()
 
-            # Determine breaks and get subset of data
-            self.breaks = determine_breakpoints(self)
-            self.data_subset = subset_data(self)
+            # Determine parameters of highest peak
+            self.determine_peak_parameters()
 
-            # Get time and intensity lists
-            x_data, _ = zip(*self.data_subset)
-
-            # Create Peak() object
-            self.peak = None
-            self.window = (x_data[-1] - x_data[0]) / 2
-            self.time = self.window + x_data[0]
-            self.peak = Peak(self)
-
-            # Gaussian fit
-            self.peak.determine_gaussian_coefficients()
+            # Foo
             if self.peak.coeff.any():
                 new_intensity = []
                 for index, i in enumerate(curr_intensity):
@@ -60,17 +48,12 @@ class PeakDetection(object):
             self.chrom_data = list(zip(orig_time, curr_intensity))
 
             # Create Gaussian data at 3 sigma width
-            gauss_start = self.time-3*self.peak.coeff[2]
-            gauss_end = self.time+3*self.peak.coeff[2]
-            gauss_time = linspace(gauss_start, gauss_end, (gauss_end-
-                                  gauss_start)*1000)
-            gauss_intensity = gauss_function(gauss_time, *self.peak.coeff)
+            self.fit_gaussian_data()
 
             # Store detected peak
-            self.detected_peaks.append({'data':list(zip(gauss_time,
-                                        gauss_intensity)),
+            self.detected_peaks.append({'data':self.gauss_data,
                                         'coeff': self.peak.coeff,
-                                        'central_time': self.time})
+                                        'central_time': self.peak_time})
 
         # Sort by retention time
         self.detected_peaks = sorted(self.detected_peaks, key=lambda x:
@@ -78,6 +61,43 @@ class PeakDetection(object):
 
         # Restore original data
         self.master.chrom.chrom_data = list(zip(orig_time, orig_intensity))
+
+    def explore_chromatogram(self):
+        self.peak_name = None
+        self.peak_window = (self.settings.end - self.settings.start) / 2
+        self.peak_time = self.peak_window + self.settings.start
+        peak_buffer = Peak(self)
+
+        peak_buffer.determine_spline_and_derivative()
+        peak_buffer.determine_breakpoints()
+        peak_buffer.subset_data()
+
+        self.peak_buffer = peak_buffer
+
+    def determine_peak_parameters(self):
+        x_data, _ = zip(*self.peak_buffer.peak_maximum_data)
+
+        self.peak_name = None
+        self.peak_window = (x_data[-1] - x_data[0]) / 2
+        self.peak_time = self.peak_window + x_data[0]
+        peak = Peak(self)
+
+        peak.determine_spline_and_derivative()
+        peak.determine_breakpoints()
+        peak.subset_data()
+        peak.determine_gaussian_coefficients()
+
+        self.peak = peak
+
+    def fit_gaussian_data(self):
+        gauss_start = self.peak_time-3*self.peak.coeff[2]
+        gauss_end = self.peak_time+3*self.peak.coeff[2]
+
+        gauss_time = linspace(gauss_start, gauss_end, (gauss_end-
+                              gauss_start)*1000)
+        gauss_intensity = gauss_function(gauss_time, *self.peak.coeff)
+
+        self.gauss_data = list(zip(gauss_time, gauss_intensity))
 
     def plot_peaks(self):
         for index, peak in enumerate(self.detected_peaks):

@@ -18,12 +18,12 @@ class Output(object):
         for chromatogram in self.master.data:
 
             for peak in chromatogram.peaks:
-                header = header + '\t' + str(peak.peak)
+                header = header + '\t' + str(peak.peak_name)
             header = header + '\n'
 
             header = header + 'RT'
             for peak in chromatogram.peaks:
-                header = header + '\t' + str(peak.time)
+                header = header + '\t' + str(peak.peak_time)
             header = header + '\n'
 
             break
@@ -244,7 +244,8 @@ class Output(object):
             for chromatogram in self.master.data:
                 fw.write(chromatogram.filename.stem)
                 for peak in chromatogram.peaks:
-                    fw.write('\t'+str(abs(peak.actual_time-peak.time)))
+                    fw.write('\t'+str(abs(peak.actual_time-
+                             peak.peak_time)))
                 fw.write('\n')
             fw.write('\n')
 
