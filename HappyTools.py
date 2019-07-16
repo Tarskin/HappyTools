@@ -123,7 +123,7 @@ class HappyToolsGui(object):
         try:
             master.iconbitmap(default=iconbitmap)
         except tk.TclError as e:
-            logging.getLogger(__name__).warn(e)
+            logging.getLogger(__name__).warning(e)
         if backgroundimage.is_file():
             img = image.imread(str(backgroundimage))
             axes.imshow(img)
