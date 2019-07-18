@@ -139,13 +139,18 @@ class Chromatogram(object):
             self.peak.subset_data()
 
             # Gaussian fit
-            self.peak.determine_gaussian_coefficients()
-            if self.peak.coeff.size > 0:
-                self.peak.determine_gaussian_area()
-                self.peak.determine_gaussian_parameters()
-                self.peak.determine_height()
-            self.peak.determine_actual_time()
-            self.peak.determine_residual()
+            try:
+                self.peak.determine_gaussian_coefficients()
+                if self.peak.coeff.size > 0:
+                    self.peak.determine_gaussian_area()
+                    self.peak.determine_gaussian_parameters()
+                    self.peak.determine_height()
+                self.peak.determine_actual_time()
+                self.peak.determine_residual()
+            except AttributeError:
+                self.logger.warning('Unable to determine Gaussian fit for' +
+                                    f'{self.peak_name}')
+                pass
 
             # Results
             self.peaks.append(self.peak)
