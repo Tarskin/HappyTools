@@ -407,7 +407,7 @@ class HappyToolsGui(object):
     def save_chromatogram(self):
         try:
             for chrom in self.data:
-                chrom.save_chromatogram(self)
+                chrom.save_chromatogram()
         except Exception as e:
             self.logger.error(e)
 

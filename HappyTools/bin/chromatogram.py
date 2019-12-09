@@ -164,7 +164,7 @@ class Chromatogram(object):
 
     def save_chromatogram(self):
         with open(self.filename, 'w') as fw:
-            for data_point in self.trace.chrom_data:
+            for data_point in self.chrom_data:
                 fw.write(
                     str(format(data_point[0], '0.' +
                         str(self.settings.decimal_numbers)+'f'))+'\t' +
