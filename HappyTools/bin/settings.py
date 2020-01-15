@@ -25,6 +25,7 @@ class Settings(object):
         self.min_peak_SN = 27
 
         # Advanced Settings (non-GUI)
+        self.encoding='utf-8_sig'
         self.noban_start = 0.25
         self.slicepoints = 5
         self.decimal_numbers = 6
