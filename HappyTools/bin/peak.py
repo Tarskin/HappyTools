@@ -1,8 +1,7 @@
 from HappyTools.util.fitting import gauss_function
 from bisect import bisect_left, bisect_right, bisect
 from math import sqrt, log
-from numpy import (amax, argmax, array, exp, greater, less, linspace,
-                   mean, std)
+from numpy import amax, argmax, array, exp, greater, less, linspace, mean, std
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
 from scipy.signal import argrelextrema
@@ -216,7 +215,8 @@ class Peak(object):
         if high == len(time):
             high =- 1
 
-        new_x = linspace(time[low], time[high], 2500*(time[high]-time[low]))
+        new_x = linspace(time[low], time[high],
+                         int(2500*(time[high]-time[low])))
 
         f = InterpolatedUnivariateSpline(time[low:high],
                                          intensity[low:high])

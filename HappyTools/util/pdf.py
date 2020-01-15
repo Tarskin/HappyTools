@@ -32,8 +32,8 @@ class Pdf(object):
         d = self.pdf.infodict()
         d['Title'] = 'PDF Report for: '+str(
                 PurePath(self.master.filename).stem)
-        d['Author'] = ('HappyTools version: '+str(version.version)+
-                       ' build: '+str(version.build))
+        d['Author'] = ('HappyTools version: ' + str(version.version) +
+                       ' build: ' + str(version.build))
         d['CreationDate'] = datetime.now()
         low = bisect_left(time, self.settings.start)
         high = bisect_right(time, self.settings.end)
@@ -64,23 +64,23 @@ class Pdf(object):
 
         f = InterpolatedUnivariateSpline(time, intensity)
 
-        new_x = linspace(time[0], time[-1],
-                         2500*(time[-1]-time[0]))
+        new_x = linspace(time[0], time[-1], int(2500*(time[-1]-time[0])))
         new_y = f(new_x)
 
         if self.master.peak.coeff.size > 0:
-            new_gauss_x = linspace(time[0], time[-1], 2500*(
-                                   time[-1]-time[0]))
+            new_gauss_x = linspace(time[0], time[-1], int(2500*(
+                                   time[-1]-time[0])))
             new_gauss_y = gauss_function(new_gauss_x,
                                          *self.master.peak.coeff)
+
 
         self.axes.clear()
         self.axes.plot(time, intensity, 'b*')
         self.axes.plot(
-                (new_x[0], new_x[-1]),(self.master.peak.background,
+                (new_x[0], new_x[-1]), (self.master.peak.background,
                 self.master.peak.background), 'red')
         self.axes.plot(
-                (new_x[0],new_x[-1]),(self.master.peak.background+
+                (new_x[0],new_x[-1]), (self.master.peak.background+
                 self.master.peak.noise,self.master.peak.background+
                 self.master.peak.noise), color='green')
         self.axes.plot(new_x,new_y, color='blue',linestyle='dashed')
