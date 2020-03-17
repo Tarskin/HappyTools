@@ -124,7 +124,6 @@ class Settings(object):
                 pass
 
     def save_to_disk(self):
-        print ('Trying Boss!')
         try:
             self.config.add_section('General')
         except configparser.DuplicateSectionError:

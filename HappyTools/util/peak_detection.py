@@ -93,8 +93,8 @@ class PeakDetection(object):
         gauss_start = self.peak_time-3*self.peak.coeff[2]
         gauss_end = self.peak_time+3*self.peak.coeff[2]
 
-        gauss_time = linspace(gauss_start, gauss_end, (gauss_end-
-                              gauss_start)*1000)
+        gauss_time = linspace(gauss_start, gauss_end, int((gauss_end-
+                              gauss_start)*1000))
         gauss_intensity = gauss_function(gauss_time, *self.peak.coeff)
 
         self.gauss_data = list(zip(gauss_time, gauss_intensity))
